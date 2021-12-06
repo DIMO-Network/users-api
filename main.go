@@ -34,13 +34,11 @@ type User struct {
 func getOrCreateUser(userID string) User {
 	var email string
 	if err := db.QueryRow(`SELECT email FROM users WHERE "id" = $1;`, userID).Scan(&email); err != nil {
-		fmt.Println("Got here")
 		// Race city
 		if _, err := db.Exec(`INSERT INTO users ("id") VALUES ($1);`, userID); err != nil {
 			panic(err)
 		}
 	}
-	fmt.Println("Email is", email)
 	return User{Id: userID, Email: email}
 }
 
@@ -48,7 +46,6 @@ func getUserHandler(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	claims := token.Claims.(jwt.MapClaims)
 	userID := claims["sub"].(string)
-	fmt.Println(userID)
 	user := getOrCreateUser(userID)
 	return c.JSON(user)
 }
@@ -61,7 +58,6 @@ func updateUserHandler(c *fiber.Ctx) error {
 	var user User
 
 	c.BodyParser(&user)
-	fmt.Println("PUT userID", userID)
 
 	if _, err := db.Exec("UPDATE users SET email = $1 WHERE id = $2", user.Email, userID); err != nil {
 		panic(err)
@@ -81,17 +77,11 @@ func main() {
 	}
 	dbConfig := config.Database
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", dbConfig.Host, dbConfig.Port, dbConfig.User, dbConfig.Password, dbConfig.DBName)
-	fmt.Println(connStr)
 	db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
-
-	_, err = db.Exec("DROP TABLE IF EXISTS users; CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT);")
-	if err != nil {
-		panic(err)
-	}
 
 	app := fiber.New()
 

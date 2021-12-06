@@ -1,27 +1,39 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
+	"net/smtp"
+	"os"
 
-	"github.com/BurntSushi/toml"
+	"github.com/DIMO-INC/users-api/models"
 	"github.com/gofiber/fiber/v2"
 	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/golang-jwt/jwt/v4"
 	_ "github.com/lib/pq"
+	"github.com/pressly/goose/v3"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Database DBConfig
-}
-
-type DBConfig struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	DBName   string
+	Database struct {
+		Host     string `yaml:"host"`
+		Port     int    `yaml:"port"`
+		User     string `yaml:"user"`
+		Password string `yaml:"password"`
+		DBName   string `yaml:"dbname"`
+	} `yaml:"database"`
+	Email struct {
+		Host     string `yaml:"host"`
+		Port     int    `yaml:"port"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+		From     string `yaml:"from"`
+	} `yaml:"email"`
 }
 
 const jwksURL = "http://127.0.0.1:5556/dex/keys"
@@ -31,22 +43,40 @@ type User struct {
 	Email string `json:"email"`
 }
 
-func getOrCreateUser(userID string) User {
-	var email string
-	if err := db.QueryRow(`SELECT email FROM users WHERE "id" = $1;`, userID).Scan(&email); err != nil {
-		// Race city
-		if _, err := db.Exec(`INSERT INTO users ("id") VALUES ($1);`, userID); err != nil {
-			panic(err)
-		}
+func getOrCreateUser(userID string, ctx context.Context) (user *models.User, err error) {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return
 	}
-	return User{Id: userID, Email: email}
+	user, err = models.FindUser(ctx, tx, userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			var newUser models.User
+			newUser.ID = userID
+			err = newUser.Insert(ctx, tx, boil.Infer())
+			if err != nil {
+				tx.Rollback()
+				return
+			}
+			tx.Commit()
+			return &newUser, nil
+		}
+		tx.Rollback()
+		return
+	}
+	tx.Commit()
+	return
 }
 
 func getUserHandler(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	claims := token.Claims.(jwt.MapClaims)
 	userID := claims["sub"].(string)
-	user := getOrCreateUser(userID)
+
+	user, err := getOrCreateUser(userID, c.Context())
+	if err != nil {
+		panic(err)
+	}
 	return c.JSON(user)
 }
 
@@ -55,26 +85,47 @@ func updateUserHandler(c *fiber.Ctx) error {
 	claims := token.Claims.(jwt.MapClaims)
 	userID := claims["sub"].(string)
 
-	var user User
-
-	c.BodyParser(&user)
-
-	if _, err := db.Exec("UPDATE users SET email = $1 WHERE id = $2", user.Email, userID); err != nil {
-		panic(err)
+	user, err := getOrCreateUser(userID, c.Context())
+	if err != nil {
+		return err
 	}
+
+	var body User
+	c.BodyParser(&body)
+	user.Email = null.StringFrom(body.Email)
+	user.Update(c.Context(), db, boil.Infer())
 
 	return c.JSON(user)
 }
 
+func sendEmailHandler(c *fiber.Ctx) error {
+	token := c.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	userID := claims["sub"].(string)
+
+	user, err := getOrCreateUser(userID, c.Context())
+	auth := smtp.PlainAuth("", config.Email.Username, config.Email.Password, config.Email.From)
+	addr := fmt.Sprintf("%s:%d", config.Email.Host, config.Email.Port)
+	err = smtp.SendMail(addr, auth, config.Email.From, []string{user.Email.String}, []byte{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 var db *sql.DB
+var config Config
 
 func main() {
 	var err error
-	const file = "config.toml"
-	var config Config
-	if _, err = toml.DecodeFile(file, &config); err != nil {
+	file, err := os.Open("config.yml")
+	if err != nil {
 		panic(err)
 	}
+	if err := yaml.NewDecoder(file).Decode(&config); err != nil {
+		panic(err)
+	}
+	defer file.Close()
 	dbConfig := config.Database
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", dbConfig.Host, dbConfig.Port, dbConfig.User, dbConfig.Password, dbConfig.DBName)
 	db, err = sql.Open("postgres", connStr)
@@ -83,11 +134,23 @@ func main() {
 	}
 	defer db.Close()
 
-	app := fiber.New()
+	command := ""
+	if len(os.Args) > 1 {
+		command = os.Args[1]
+	}
 
-	v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{KeySetURL: jwksURL}))
-	v1.Get("/", getUserHandler)
-	v1.Put("/", updateUserHandler)
+	switch command {
+	case "migrate":
+		goose.Run("up", db, "migrations")
+	default:
+		app := fiber.New()
 
-	log.Fatal(app.Listen(":3000"))
+		v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{KeySetURL: jwksURL}))
+		v1.Get("/", getUserHandler)
+		v1.Put("/", updateUserHandler)
+		v1.Post("/send-email", sendEmailHandler)
+
+		log.Fatal(app.Listen(":3000"))
+	}
+
 }

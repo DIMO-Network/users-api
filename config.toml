@@ -1,6 +1,6 @@
 [database]
 host = "localhost"
 port = 5432
-user = "postgres"
-password = ""
-dbname = "postgres"
+user = "dimo"
+password = "dimo"
+dbname = "users_api"

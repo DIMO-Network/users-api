@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  postgresql:
+    image: postgres:13.4-alpine  # Latest version supported by RDS
+    container_name: pg-users-api
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=dimo
+      - POSTGRES_PASSWORD=dimo
+      - POSTGRES_DB=users_api
+    volumes:
+      - ./resources/data:/var/log/postgresql/data:delegated

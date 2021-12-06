@@ -1,0 +1,9 @@
+[psql]
+schema = "users_api"
+dbname = "users_api"
+blacklist = ["migrations"]
+host = "localhost"
+port = 5432
+user = "dimo"
+pass = "dimo"
+sslmode = "disable"

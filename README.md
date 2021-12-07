@@ -46,7 +46,6 @@ JSON body
 `200`
 
 Response
-Response
 ```json
 {
     "id": "de5817c0-57a6-11ec-bf63-0242ac130002",
@@ -76,3 +75,4 @@ This can fail for a few reasons:
 - We already confirmed the email
 - We never sent a confirmation email for the current candidate email address
 - The confirmation key expired; the default timeout for this is 15 minutes
+- The submitted key does not match the one we've stored

@@ -43,29 +43,31 @@ func formatUser(user *models.User) *userResponse {
 	return &userResponse{user.ID, user.Email, user.EmailConfirmed}
 }
 
-func (d *UserController) getOrCreateUser(userID string, ctx context.Context) (user *models.User, err error) {
+func (d *UserController) getOrCreateUser(ctx context.Context, userID string) (user *models.User, err error) {
 	tx, err := d.DBS().Writer.BeginTx(ctx, nil)
 	if err != nil {
-		return
+		return nil, err
 	}
+	defer tx.Rollback()
+
 	user, err = models.FindUser(ctx, tx, userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			var newUser models.User
-			newUser.ID = userID
-			err = newUser.Insert(ctx, tx, boil.Infer())
-			if err != nil {
-				tx.Rollback()
-				return
+			// New user, insert a mostly-empty record
+			user = &models.User{ID: userID}
+			if err := user.Insert(ctx, tx, boil.Infer()); err != nil {
+				return nil, err
 			}
-			tx.Commit()
-			return &newUser, nil
+		} else {
+			return nil, err
 		}
-		tx.Rollback()
-		return
 	}
-	tx.Commit()
-	return
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (d *UserController) GetUser(c *fiber.Ctx) error {
@@ -73,7 +75,7 @@ func (d *UserController) GetUser(c *fiber.Ctx) error {
 	claims := token.Claims.(jwt.MapClaims)
 	userID := claims["sub"].(string)
 
-	user, err := d.getOrCreateUser(userID, c.Context())
+	user, err := d.getOrCreateUser(c.Context(), userID)
 	if err != nil {
 		panic(err)
 	}
@@ -85,15 +87,17 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	claims := token.Claims.(jwt.MapClaims)
 	userID := claims["sub"].(string)
 
-	user, err := d.getOrCreateUser(userID, c.Context())
+	user, err := d.getOrCreateUser(c.Context(), userID)
 	if err != nil {
-		errorResponseHandler(c, err, fiber.StatusInternalServerError)
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
 	var body struct {
 		Email null.String `json:"email"`
 	}
-	c.BodyParser(&body)
+	if err := c.BodyParser(&body); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusBadRequest)
+	}
 
 	if body.Email != user.Email {
 		if body.Email.Valid {
@@ -105,7 +109,9 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		user.EmailConfirmed = false
 		user.EmailConfirmationKey = null.StringFromPtr(nil)
 		user.EmailConfirmationSent = null.TimeFromPtr(nil)
-		user.Update(c.Context(), d.DBS().Writer, boil.Infer())
+		if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+			return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+		}
 	}
 
 	return c.JSON(formatUser(user))
@@ -126,22 +132,23 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	claims := token.Claims.(jwt.MapClaims)
 	userID := claims["sub"].(string)
 
-	user, err := models.FindUser(c.Context(), d.DBS().Reader, userID)
+	user, err := d.getOrCreateUser(c.Context(), userID)
 	if err != nil {
-		return nil
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 	if !user.Email.Valid {
-		return nil
+		return errorResponseHandler(c, fmt.Errorf("user has not provided an email"), fiber.StatusBadRequest)
 	}
-
 	if user.EmailConfirmed {
-		return nil
+		return errorResponseHandler(c, fmt.Errorf("email already confirmed"), fiber.StatusBadRequest)
 	}
 
 	key := generateConfirmationKey()
 	user.EmailConfirmationKey = null.StringFrom(key)
 	user.EmailConfirmationSent = null.TimeFrom(time.Now())
-	user.Update(c.Context(), d.DBS().Writer, boil.Infer())
+	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
 
 	auth := smtp.PlainAuth("", d.Settings.EmailUsername, d.Settings.EmailPassword, d.Settings.EmailHost)
 	addr := fmt.Sprintf("%s:%s", d.Settings.EmailHost, d.Settings.EmailPort)
@@ -154,7 +161,7 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 		key + "\r\n")
 	err = smtp.SendMail(addr, auth, d.Settings.EmailFrom, []string{user.Email.String}, msg)
 	if err != nil {
-		return err
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 	return nil
 }
@@ -178,7 +185,7 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	claims := token.Claims.(jwt.MapClaims)
 	userID := claims["sub"].(string)
 
-	user, err := d.getOrCreateUser(userID, c.Context())
+	user, err := d.getOrCreateUser(c.Context(), userID)
 	if err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
@@ -195,11 +202,15 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	var confirmationBody struct {
 		Key string `json:"key"`
 	}
-	c.BodyParser(&confirmationBody)
+	if err := c.BodyParser(&confirmationBody); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusBadRequest)
+	}
 
 	if confirmationBody.Key == user.EmailConfirmationKey.String {
 		user.EmailConfirmed = true
-		user.Update(c.Context(), d.DBS().Writer, boil.Infer())
+		if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+			return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+		}
 		return nil
 	}
 

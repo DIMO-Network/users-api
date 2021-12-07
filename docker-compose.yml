@@ -12,3 +12,9 @@ services:
       - POSTGRES_DB=users_api
     volumes:
       - ./resources/data:/var/log/postgresql/data:delegated
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: mail-users-api
+    ports:
+      - "1025:1025"
+      - "8025:8025"

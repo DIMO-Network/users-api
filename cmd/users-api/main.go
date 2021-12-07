@@ -64,7 +64,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	v1.Get("/", usersController.GetUser)
 	v1.Put("/", usersController.UpdateUser)
 	v1.Post("/send-confirmation-email", usersController.SendConfirmationEmail)
-	v1.Post("/verify-confirmation-email", usersController.VerifyConfirmationEmail)
+	v1.Post("/confirm-email", usersController.ConfirmEmail)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 

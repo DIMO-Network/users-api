@@ -87,7 +87,7 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 
 	user, err := d.getOrCreateUser(userID, c.Context())
 	if err != nil {
-		return err
+		errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
 	var body struct {
@@ -173,7 +173,7 @@ func init() {
 var emailPattern *regexp.Regexp
 var allowedLateness time.Duration
 
-func (d *UserController) VerifyConfirmationEmail(c *fiber.Ctx) error {
+func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	claims := token.Claims.(jwt.MapClaims)
 	userID := claims["sub"].(string)

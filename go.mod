@@ -3,11 +3,11 @@ module github.com/DIMO-INC/users-api
 go 1.17
 
 require (
-	github.com/BurntSushi/toml v0.4.1
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/friendsofgo/errors v0.9.2
+	github.com/gofiber/fiber v1.14.6
 	github.com/gofiber/fiber/v2 v2.22.0
 	github.com/gofiber/jwt/v3 v3.2.1
-	github.com/golang-jwt/jwt/v4 v4.1.0
 	github.com/lib/pq v1.10.4
 	github.com/pressly/goose/v3 v3.4.1
 	github.com/volatiletech/null/v8 v8.1.2
@@ -17,10 +17,19 @@ require (
 )
 
 require (
+	github.com/gofiber/utils v0.0.10 // indirect
+	github.com/golang-jwt/jwt/v4 v4.1.0 // indirect
+	github.com/gorilla/schema v1.1.0 // indirect
+	github.com/mattn/go-colorable v0.1.7 // indirect
+	github.com/mattn/go-isatty v0.0.12 // indirect
+)
+
+require (
 	github.com/andybalholm/brotli v1.0.2 // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
 	github.com/klauspost/compress v1.13.4 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pkg/errors v0.9.1
+	github.com/rs/zerolog v1.26.0
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.31.0 // indirect

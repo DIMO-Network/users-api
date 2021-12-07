@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/smtp"
+	"regexp"
 	"time"
 
 	"github.com/DIMO-INC/users-api/internal/config"
@@ -38,8 +39,8 @@ type userResponse struct {
 	EmailConfirmed bool        `json:"email_verified"`
 }
 
-type userRequest struct {
-	Email null.String `json:"email"`
+func formatUser(user *models.User) *userResponse {
+	return &userResponse{user.ID, user.Email, user.EmailConfirmed}
 }
 
 func (d *UserController) getOrCreateUser(userID string, ctx context.Context) (user *models.User, err error) {
@@ -79,10 +80,6 @@ func (d *UserController) GetUser(c *fiber.Ctx) error {
 	return c.JSON(formatUser(user))
 }
 
-func formatUser(user *models.User) *userResponse {
-	return &userResponse{ID: user.ID, Email: user.Email, EmailConfirmed: user.EmailConfirmed}
-}
-
 func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	claims := token.Claims.(jwt.MapClaims)
@@ -93,12 +90,21 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	var body userRequest
+	var body struct {
+		Email null.String `json:"email"`
+	}
 	c.BodyParser(&body)
 
 	if body.Email != user.Email {
+		if body.Email.Valid {
+			if !emailPattern.MatchString(body.Email.String) {
+				return errorResponseHandler(c, fmt.Errorf("invalid email"), fiber.StatusBadRequest)
+			}
+		}
 		user.Email = body.Email
 		user.EmailConfirmed = false
+		user.EmailConfirmationKey = null.StringFromPtr(nil)
+		user.EmailConfirmationSent = null.TimeFromPtr(nil)
 		user.Update(c.Context(), d.DBS().Writer, boil.Infer())
 	}
 
@@ -137,7 +143,7 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	user.EmailConfirmationSent = null.TimeFrom(time.Now())
 	user.Update(c.Context(), d.DBS().Writer, boil.Infer())
 
-	auth := smtp.PlainAuth("", d.Settings.EmailUsername, d.Settings.EmailPassword, d.Settings.EmailFrom)
+	auth := smtp.PlainAuth("", d.Settings.EmailUsername, d.Settings.EmailPassword, d.Settings.EmailHost)
 	addr := fmt.Sprintf("%s:%s", d.Settings.EmailHost, d.Settings.EmailPort)
 	msg := []byte("From: DIMO Mailer <mailer@dimo.zone>\r\n" +
 		"To: " + user.Email.String + "\r\n" +
@@ -159,8 +165,12 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	// https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
+	emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 }
 
+var emailPattern *regexp.Regexp
 var allowedLateness time.Duration
 
 func (d *UserController) VerifyConfirmationEmail(c *fiber.Ctx) error {
@@ -168,18 +178,18 @@ func (d *UserController) VerifyConfirmationEmail(c *fiber.Ctx) error {
 	claims := token.Claims.(jwt.MapClaims)
 	userID := claims["sub"].(string)
 
-	user, err := models.FindUser(c.Context(), d.DBS().Reader, userID)
+	user, err := d.getOrCreateUser(userID, c.Context())
 	if err != nil {
-		return nil
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 	if user.EmailConfirmed {
-		return nil
+		return errorResponseHandler(c, fmt.Errorf("email already confirmed"), fiber.StatusBadRequest)
 	}
 	if !user.EmailConfirmationKey.Valid || !user.EmailConfirmationSent.Valid {
-		return nil
+		return errorResponseHandler(c, fmt.Errorf("email confirmation never sent"), fiber.StatusBadRequest)
 	}
 	if time.Since(user.EmailConfirmationSent.Time) > allowedLateness {
-		return nil
+		return errorResponseHandler(c, fmt.Errorf("email confirmation message expired"), fiber.StatusBadRequest)
 	}
 
 	var confirmationBody struct {
@@ -190,7 +200,8 @@ func (d *UserController) VerifyConfirmationEmail(c *fiber.Ctx) error {
 	if confirmationBody.Key == user.EmailConfirmationKey.String {
 		user.EmailConfirmed = true
 		user.Update(c.Context(), d.DBS().Writer, boil.Infer())
+		return nil
 	}
 
-	return nil
+	return errorResponseHandler(c, fmt.Errorf("email confirmation code invalid"), fiber.StatusBadRequest)
 }

@@ -50,7 +50,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		},
 		DisableStartupMessage: true,
 	})
-	usersController := controllers.NewUsersController(settings, pdb.DBS, &logger)
+	usersController := controllers.NewUserController(settings, pdb.DBS, &logger)
 
 	app.Use(recover.New(recover.Config{
 		Next:              nil,
@@ -63,7 +63,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{KeySetURL: jwksURL}))
 	v1.Get("/", usersController.GetUser)
 	v1.Put("/", usersController.UpdateUser)
-	v1.Post("/send-verification", usersController.SendVerificationEmail)
+	v1.Post("/send-confirmation-email", usersController.SendConfirmationEmail)
+	v1.Post("/verify-confirmation-email", usersController.VerifyConfirmationEmail)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 

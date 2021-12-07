@@ -1,0 +1,4 @@
+### Endpoints
+
+`GET /user`
+

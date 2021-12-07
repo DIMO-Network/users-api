@@ -93,9 +93,12 @@ func (d *UsersController) UpdateUser(c *fiber.Ctx) error {
 
 	var body userRequest
 	c.BodyParser(&body)
-	user.Email = body.Email
-	user.Verified = false
-	user.Update(c.Context(), d.DBS().Writer, boil.Infer())
+
+	if body.Email != user.Email {
+		user.Email = body.Email
+		user.Verified = false
+		user.Update(c.Context(), d.DBS().Writer, boil.Infer())
+	}
 
 	return c.JSON(formatUser(user))
 }

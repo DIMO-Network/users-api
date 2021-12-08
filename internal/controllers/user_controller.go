@@ -13,23 +13,28 @@ import (
 	"github.com/DIMO-INC/users-api/internal/database"
 	"github.com/DIMO-INC/users-api/models"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 type UserController struct {
-	Settings *config.Settings
-	DBS      func() *database.DBReaderWriter
-	log      *zerolog.Logger
+	Settings        *config.Settings
+	DBS             func() *database.DBReaderWriter
+	log             *zerolog.Logger
+	allowedLateness time.Duration
 }
 
 func NewUserController(settings *config.Settings, dbs func() *database.DBReaderWriter, logger *zerolog.Logger) UserController {
+	allowedLateness, err := time.ParseDuration("15m")
+	if err != nil {
+		panic(err)
+	}
 	return UserController{
-		Settings: settings,
-		DBS:      dbs,
-		log:      logger,
+		Settings:        settings,
+		DBS:             dbs,
+		log:             logger,
+		allowedLateness: allowedLateness,
 	}
 }
 
@@ -71,9 +76,7 @@ func (d *UserController) getOrCreateUser(ctx context.Context, userID string) (us
 }
 
 func (d *UserController) GetUser(c *fiber.Ctx) error {
-	token := c.Locals("user").(*jwt.Token)
-	claims := token.Claims.(jwt.MapClaims)
-	userID := claims["sub"].(string)
+	userID := getUserId(c)
 
 	user, err := d.getOrCreateUser(c.Context(), userID)
 	if err != nil {
@@ -83,9 +86,7 @@ func (d *UserController) GetUser(c *fiber.Ctx) error {
 }
 
 func (d *UserController) UpdateUser(c *fiber.Ctx) error {
-	token := c.Locals("user").(*jwt.Token)
-	claims := token.Claims.(jwt.MapClaims)
-	userID := claims["sub"].(string)
+	userID := getUserId(c)
 
 	user, err := d.getOrCreateUser(c.Context(), userID)
 	if err != nil {
@@ -128,9 +129,7 @@ func generateConfirmationKey() string {
 }
 
 func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
-	token := c.Locals("user").(*jwt.Token)
-	claims := token.Claims.(jwt.MapClaims)
-	userID := claims["sub"].(string)
+	userID := getUserId(c)
 
 	user, err := d.getOrCreateUser(c.Context(), userID)
 	if err != nil {
@@ -166,24 +165,11 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	return nil
 }
 
-func init() {
-	var err error
-	allowedLateness, err = time.ParseDuration("15m")
-	if err != nil {
-		panic(err)
-	}
-
-	// https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
-	emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-}
-
-var emailPattern *regexp.Regexp
-var allowedLateness time.Duration
+// https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
+var emailPattern *regexp.Regexp = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
 func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
-	token := c.Locals("user").(*jwt.Token)
-	claims := token.Claims.(jwt.MapClaims)
-	userID := claims["sub"].(string)
+	userID := getUserId(c)
 
 	user, err := d.getOrCreateUser(c.Context(), userID)
 	if err != nil {
@@ -195,7 +181,7 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	if !user.EmailConfirmationKey.Valid || !user.EmailConfirmationSent.Valid {
 		return errorResponseHandler(c, fmt.Errorf("email confirmation never sent"), fiber.StatusBadRequest)
 	}
-	if time.Since(user.EmailConfirmationSent.Time) > allowedLateness {
+	if time.Since(user.EmailConfirmationSent.Time) > d.allowedLateness {
 		return errorResponseHandler(c, fmt.Errorf("email confirmation message expired"), fiber.StatusBadRequest)
 	}
 

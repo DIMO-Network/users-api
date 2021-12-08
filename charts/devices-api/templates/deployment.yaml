@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "devices-api.fullname" . }}
+  name: {{ include "users-api.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "devices-api.labels" . | nindent 4 }}
+    {{- include "users-api.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "devices-api.selectorLabels" . | nindent 6 }}
+      {{- include "users-api.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -19,13 +19,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "devices-api.selectorLabels" . | nindent 8 }}
+        {{- include "users-api.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "devices-api.serviceAccountName" . }}
+      serviceAccountName: {{ include "users-api.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       initContainers:
@@ -33,12 +33,12 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          command: ['sh', '-c', "/devices-api migrate"]
+          command: ['sh', '-c', "/users-api migrate"]
           envFrom:
           - configMapRef:
-              name: {{ include "devices-api.fullname" . }}-config
+              name: {{ include "users-api.fullname" . }}-config
           - secretRef:
-              name: {{ include "devices-api.fullname" . }}-secret
+              name: {{ include "users-api.fullname" . }}-secret
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -47,9 +47,9 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           envFrom:
           - configMapRef:
-              name: {{ include "devices-api.fullname" . }}-config
+              name: {{ include "users-api.fullname" . }}-config
           - secretRef:
-              name: {{ include "devices-api.fullname" . }}-secret
+              name: {{ include "users-api.fullname" . }}-secret
           ports:
             - name: http
               containerPort: 8080

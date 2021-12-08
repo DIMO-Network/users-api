@@ -31,12 +31,12 @@ jobs:
           context: .
           file: ./resources/docker/Dockerfile
           push: true
-          tags: dimozone/devices-api:${{steps.tag.outputs.tag}}
+          tags: dimozone/users-api:${{steps.tag.outputs.tag}}
 
       - name: Update Image Version in the related HelmChart values.yaml
         uses: fjogeleit/yaml-update-action@master
         with:
-          valueFile: 'charts/devices-api/values-prod.yaml'
+          valueFile: 'charts/users-api/values-prod.yaml'
           propertyPath: 'image.tag'
           value: ${{steps.tag.outputs.tag}}
           branch: main

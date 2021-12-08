@@ -19,12 +19,12 @@ LD_FLAGS   =
 GO_FLAGS   =
 DOCS_FLAGS =
 
-APPS = devices-api
+APPS = users-api
 all: $(APPS)
 
 install: $(APPS)
 	@mkdir -p bin
-	@cp $(PATHINSTBIN)/devices-api ./bin/
+	@cp $(PATHINSTBIN)/users-api ./bin/
 
 deps:
 	@go mod tidy
@@ -47,12 +47,12 @@ docker-cgo-tags:
 	@echo "latest-cgo,$(VER_CUT)-cgo,$(VER_MAJOR).$(VER_MINOR)-cgo,$(VER_MAJOR)-cgo" > .tags
 
 docker: deps
-	@docker build -f ./resources/docker/Dockerfile . -t dimozone/devices-api:$(VER_CUT)
-	@docker tag dimozone/devices-api:$(VER_CUT) dimozone/devices-api:latest
+	@docker build -f ./resources/docker/Dockerfile . -t dimozone/users-api:$(VER_CUT)
+	@docker tag dimozone/users-api:$(VER_CUT) dimozone/users-api:latest
 
 docker-cgo: deps
-	@docker build -f ./resources/docker/Dockerfile.cgo . -t dimozone/devices-api:$(VER_CUT)-cgo
-	@docker tag dimozone/devices-api:$(VER_CUT)-cgo dimozone/devices-api:latest-cgo
+	@docker build -f ./resources/docker/Dockerfile.cgo . -t dimozone/users-api:$(VER_CUT)-cgo
+	@docker tag dimozone/users-api:$(VER_CUT)-cgo dimozone/users-api:latest-cgo
 
 fmt:
 	@go list -f {{.Dir}} ./... | xargs -I{} gofmt -w -s {}
@@ -63,7 +63,7 @@ lint:
 
 test: $(APPS)
 	@go test $(GO_FLAGS) -timeout 3m -race ./...
-	@$(PATHINSTBIN)/devices-api test ./config/test/...
+	@$(PATHINSTBIN)/users-api test ./config/test/...
 
 clean:
 	rm -rf $(PATHINSTBIN)

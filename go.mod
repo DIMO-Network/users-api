@@ -7,6 +7,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.22.0
 	github.com/gofiber/jwt/v3 v3.2.1
 	github.com/golang-jwt/jwt/v4 v4.1.0
+	github.com/google/uuid v1.3.0
 	github.com/lib/pq v1.10.4
 	github.com/pressly/goose/v3 v3.4.1
 	github.com/volatiletech/null/v8 v8.1.2

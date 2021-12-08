@@ -25,10 +25,13 @@ import (
 // User is an object representing the database table.
 type User struct {
 	ID                    string      `boil:"id" json:"id" toml:"id" yaml:"id"`
-	Email                 null.String `boil:"email" json:"email,omitempty" toml:"email" yaml:"email,omitempty"`
+	OidcSubject           string      `boil:"oidc_subject" json:"oidc_subject" toml:"oidc_subject" yaml:"oidc_subject"`
+	Joined                time.Time   `boil:"joined" json:"joined" toml:"joined" yaml:"joined"`
+	EmailAddress          null.String `boil:"email_address" json:"email_address,omitempty" toml:"email_address" yaml:"email_address,omitempty"`
 	EmailConfirmed        bool        `boil:"email_confirmed" json:"email_confirmed" toml:"email_confirmed" yaml:"email_confirmed"`
 	EmailConfirmationSent null.Time   `boil:"email_confirmation_sent" json:"email_confirmation_sent,omitempty" toml:"email_confirmation_sent" yaml:"email_confirmation_sent,omitempty"`
 	EmailConfirmationKey  null.String `boil:"email_confirmation_key" json:"email_confirmation_key,omitempty" toml:"email_confirmation_key" yaml:"email_confirmation_key,omitempty"`
+	EthAddress            null.String `boil:"eth_address" json:"eth_address,omitempty" toml:"eth_address" yaml:"eth_address,omitempty"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -36,30 +39,42 @@ type User struct {
 
 var UserColumns = struct {
 	ID                    string
-	Email                 string
+	OidcSubject           string
+	Joined                string
+	EmailAddress          string
 	EmailConfirmed        string
 	EmailConfirmationSent string
 	EmailConfirmationKey  string
+	EthAddress            string
 }{
 	ID:                    "id",
-	Email:                 "email",
+	OidcSubject:           "oidc_subject",
+	Joined:                "joined",
+	EmailAddress:          "email_address",
 	EmailConfirmed:        "email_confirmed",
 	EmailConfirmationSent: "email_confirmation_sent",
 	EmailConfirmationKey:  "email_confirmation_key",
+	EthAddress:            "eth_address",
 }
 
 var UserTableColumns = struct {
 	ID                    string
-	Email                 string
+	OidcSubject           string
+	Joined                string
+	EmailAddress          string
 	EmailConfirmed        string
 	EmailConfirmationSent string
 	EmailConfirmationKey  string
+	EthAddress            string
 }{
 	ID:                    "users.id",
-	Email:                 "users.email",
+	OidcSubject:           "users.oidc_subject",
+	Joined:                "users.joined",
+	EmailAddress:          "users.email_address",
 	EmailConfirmed:        "users.email_confirmed",
 	EmailConfirmationSent: "users.email_confirmation_sent",
 	EmailConfirmationKey:  "users.email_confirmation_key",
+	EthAddress:            "users.eth_address",
 }
 
 // Generated where
@@ -85,6 +100,27 @@ func (w whereHelperstring) NIN(slice []string) qm.QueryMod {
 		values = append(values, value)
 	}
 	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
+}
+
+type whereHelpertime_Time struct{ field string }
+
+func (w whereHelpertime_Time) EQ(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.EQ, x)
+}
+func (w whereHelpertime_Time) NEQ(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
+}
+func (w whereHelpertime_Time) LT(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpertime_Time) LTE(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpertime_Time) GT(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
 }
 
 type whereHelpernull_String struct{ field string }
@@ -146,16 +182,22 @@ func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsN
 
 var UserWhere = struct {
 	ID                    whereHelperstring
-	Email                 whereHelpernull_String
+	OidcSubject           whereHelperstring
+	Joined                whereHelpertime_Time
+	EmailAddress          whereHelpernull_String
 	EmailConfirmed        whereHelperbool
 	EmailConfirmationSent whereHelpernull_Time
 	EmailConfirmationKey  whereHelpernull_String
+	EthAddress            whereHelpernull_String
 }{
 	ID:                    whereHelperstring{field: "\"users_api\".\"users\".\"id\""},
-	Email:                 whereHelpernull_String{field: "\"users_api\".\"users\".\"email\""},
+	OidcSubject:           whereHelperstring{field: "\"users_api\".\"users\".\"oidc_subject\""},
+	Joined:                whereHelpertime_Time{field: "\"users_api\".\"users\".\"joined\""},
+	EmailAddress:          whereHelpernull_String{field: "\"users_api\".\"users\".\"email_address\""},
 	EmailConfirmed:        whereHelperbool{field: "\"users_api\".\"users\".\"email_confirmed\""},
 	EmailConfirmationSent: whereHelpernull_Time{field: "\"users_api\".\"users\".\"email_confirmation_sent\""},
 	EmailConfirmationKey:  whereHelpernull_String{field: "\"users_api\".\"users\".\"email_confirmation_key\""},
+	EthAddress:            whereHelpernull_String{field: "\"users_api\".\"users\".\"eth_address\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -175,8 +217,8 @@ func (*userR) NewStruct() *userR {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "email", "email_confirmed", "email_confirmation_sent", "email_confirmation_key"}
-	userColumnsWithoutDefault = []string{"id", "email", "email_confirmed", "email_confirmation_sent", "email_confirmation_key"}
+	userAllColumns            = []string{"id", "oidc_subject", "joined", "email_address", "email_confirmed", "email_confirmation_sent", "email_confirmation_key", "eth_address"}
+	userColumnsWithoutDefault = []string{"id", "oidc_subject", "joined", "email_address", "email_confirmed", "email_confirmation_sent", "email_confirmation_key", "eth_address"}
 	userColumnsWithDefault    = []string{}
 	userPrimaryKeyColumns     = []string{"id"}
 )

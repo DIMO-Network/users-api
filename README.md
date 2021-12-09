@@ -1,4 +1,4 @@
-### Running the app
+## Running the app
 
 Make a copy of the settings file and edit as you see fit:
 ```sh
@@ -19,7 +19,15 @@ Finally, running the app is simple:
 go run ./cmd/users-api
 ```
 
-### Endpoints
+## Database modifications
+
+Create a new Goose migration file:  
+```
+goose -dir migrations postgres "host=localhost port=5432 user=postgres password= dbname=postgres sslmode=disable" create MIGRATION_TITLE sql
+```
+This will create a file in the `migrations` folder named something like `TIMESTAMP_MIGRATION_TITLE.sql`.
+
+## Endpoints
 
 `GET /user`
 
@@ -28,9 +36,10 @@ go run ./cmd/users-api
 Response
 ```json
 {
-    "id": "de5817c0-57a6-11ec-bf63-0242ac130002",
-    "email": "joe@dimo.zone",
-    "email_verified": true
+    "id": "CioweGNGQkFEZTY5MjgzMkFGYTFlOTM2OUM2RUE3MjQ3YjVEZTc5MTI5NjQSBHdlYjM",
+    "email_address": "joe@dimo.zone",
+    "email_verified": true,
+    "created_at": "2021-12-09T00:57:49.674985Z"
 }
 ```
 
@@ -39,7 +48,7 @@ Response
 JSON body
 ```json
 {
-    "email": "eric@dimo.zone"
+    "email_address": "eric@dimo.zone"
 }
 ```
 
@@ -48,9 +57,10 @@ JSON body
 Response
 ```json
 {
-    "id": "de5817c0-57a6-11ec-bf63-0242ac130002",
-    "email": "eric@dimo.zone",
-    "email_verified": false
+    "id": "CioweGNGQkFEZTY5MjgzMkFGYTFlOTM2OUM2RUE3MjQ3YjVEZTc5MTI5NjQSBHdlYjM",
+    "email_address": "eric@dimo.zone",
+    "email_verified": false,
+    "created_at": "2021-12-09T00:57:49.674985Z"
 }
 ```
 

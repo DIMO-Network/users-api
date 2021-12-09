@@ -42,10 +42,11 @@ type userResponse struct {
 	ID             string      `json:"id"`
 	EmailAddress   null.String `json:"email_address"`
 	EmailConfirmed bool        `json:"email_verified"`
+	CreatedAt      time.Time   `json:"created_at"`
 }
 
 func formatUser(user *models.User) *userResponse {
-	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed}
+	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed, user.CreatedAt}
 }
 
 func (d *UserController) getOrCreateUser(ctx context.Context, userID string) (user *models.User, err error) {

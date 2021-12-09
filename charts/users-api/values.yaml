@@ -1,0 +1,51 @@
+replicaCount: 1
+image:
+  repository: dimozone/users-api
+  pullPolicy: Always
+  tag: 6eed8ef
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ''
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+env:
+  PORT: '8080'
+  LOG_LEVEL: info
+  DB_PORT: '5432'
+  DB_NAME: users_api
+  DB_MAX_OPEN_CONNECTIONS: '10'
+  DB_MAX_IDLE_CONNECTIONS: '3'
+  SERVICE_NAME: users-api
+  JWT_KEY_SET_URL: https://auth.dev.dimo.zone/dex/keys
+service:
+  type: ClusterIP
+  port: 8080
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/auth-tls-secret: ingress/cf-origin-ca
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: 'on'
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/cors-allow-origin: https://users-api.dev.dimo.zone
+    external-dns.alpha.kubernetes.io/hostname: users-api.dev.dimo.zone
+  hosts:
+    - host: users-api.dev.dimo.zone
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+resources: {}
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+nodeSelector: {}
+tolerations: []
+affinity: {}

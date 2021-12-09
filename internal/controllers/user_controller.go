@@ -40,7 +40,7 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 
 type userResponse struct {
 	ID             string      `json:"id"`
-	Email          null.String `json:"email"`
+	EmailAddress   null.String `json:"email_address"`
 	EmailConfirmed bool        `json:"email_verified"`
 }
 

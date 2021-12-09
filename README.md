@@ -64,9 +64,9 @@ Response
 }
 ```
 
-`POST /send-confirmation-email`
+`POST /user/send-confirmation-email`
 
-`POST /confirm-email`
+`POST /user/confirm-email`
 
 JSON body
 

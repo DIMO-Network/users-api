@@ -26,10 +26,7 @@ type UserController struct {
 }
 
 func NewUserController(settings *config.Settings, dbs func() *database.DBReaderWriter, logger *zerolog.Logger) UserController {
-	allowedLateness, err := time.ParseDuration("15m")
-	if err != nil {
-		panic(err)
-	}
+	allowedLateness := 15 * time.Minute
 	return UserController{
 		Settings:        settings,
 		DBS:             dbs,

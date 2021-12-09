@@ -13,3 +13,4 @@ EMAIL_PORT: 1025
 EMAIL_USERNAME: dimo
 EMAIL_PASSWORD: dimo
 EMAIL_FROM: mailer@dimo.zone
+JWT_KEY_SET_URL: http://127.0.0.1:5556/dex/keys

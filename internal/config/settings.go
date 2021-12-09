@@ -19,6 +19,7 @@ type Settings struct {
 	EmailUsername        string `yaml:"EMAIL_USERNAME"`
 	EmailPassword        string `yaml:"EMAIL_PASSWORD"`
 	EmailFrom            string `yaml:"EMAIL_FROM"`
+	JWTKeySetURL         string `yaml:"JWT_KEY_SET_URL"`
 }
 
 // GetWriterDSN builds the connection string to the db writer - for now same as reader

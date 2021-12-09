@@ -24,37 +24,42 @@ import (
 
 // User is an object representing the database table.
 type User struct {
-	ID               string      `boil:"id" json:"id" toml:"id" yaml:"id"`
-	Email            null.String `boil:"email" json:"email,omitempty" toml:"email" yaml:"email,omitempty"`
-	Verified         bool        `boil:"verified" json:"verified" toml:"verified" yaml:"verified"`
-	VerificationCode null.String `boil:"verification_code" json:"verification_code,omitempty" toml:"verification_code" yaml:"verification_code,omitempty"`
+	ID                    string      `boil:"id" json:"id" toml:"id" yaml:"id"`
+	Email                 null.String `boil:"email" json:"email,omitempty" toml:"email" yaml:"email,omitempty"`
+	EmailConfirmed        bool        `boil:"email_confirmed" json:"email_confirmed" toml:"email_confirmed" yaml:"email_confirmed"`
+	EmailConfirmationSent null.Time   `boil:"email_confirmation_sent" json:"email_confirmation_sent,omitempty" toml:"email_confirmation_sent" yaml:"email_confirmation_sent,omitempty"`
+	EmailConfirmationKey  null.String `boil:"email_confirmation_key" json:"email_confirmation_key,omitempty" toml:"email_confirmation_key" yaml:"email_confirmation_key,omitempty"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var UserColumns = struct {
-	ID               string
-	Email            string
-	Verified         string
-	VerificationCode string
+	ID                    string
+	Email                 string
+	EmailConfirmed        string
+	EmailConfirmationSent string
+	EmailConfirmationKey  string
 }{
-	ID:               "id",
-	Email:            "email",
-	Verified:         "verified",
-	VerificationCode: "verification_code",
+	ID:                    "id",
+	Email:                 "email",
+	EmailConfirmed:        "email_confirmed",
+	EmailConfirmationSent: "email_confirmation_sent",
+	EmailConfirmationKey:  "email_confirmation_key",
 }
 
 var UserTableColumns = struct {
-	ID               string
-	Email            string
-	Verified         string
-	VerificationCode string
+	ID                    string
+	Email                 string
+	EmailConfirmed        string
+	EmailConfirmationSent string
+	EmailConfirmationKey  string
 }{
-	ID:               "users.id",
-	Email:            "users.email",
-	Verified:         "users.verified",
-	VerificationCode: "users.verification_code",
+	ID:                    "users.id",
+	Email:                 "users.email",
+	EmailConfirmed:        "users.email_confirmed",
+	EmailConfirmationSent: "users.email_confirmation_sent",
+	EmailConfirmationKey:  "users.email_confirmation_key",
 }
 
 // Generated where
@@ -115,16 +120,42 @@ func (w whereHelperbool) LTE(x bool) qm.QueryMod { return qmhelper.Where(w.field
 func (w whereHelperbool) GT(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
 func (w whereHelperbool) GTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
 
+type whereHelpernull_Time struct{ field string }
+
+func (w whereHelpernull_Time) EQ(x null.Time) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, false, x)
+}
+func (w whereHelpernull_Time) NEQ(x null.Time) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, true, x)
+}
+func (w whereHelpernull_Time) LT(x null.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpernull_Time) LTE(x null.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpernull_Time) GT(x null.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpernull_Time) GTE(x null.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
+func (w whereHelpernull_Time) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
+func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
+
 var UserWhere = struct {
-	ID               whereHelperstring
-	Email            whereHelpernull_String
-	Verified         whereHelperbool
-	VerificationCode whereHelpernull_String
+	ID                    whereHelperstring
+	Email                 whereHelpernull_String
+	EmailConfirmed        whereHelperbool
+	EmailConfirmationSent whereHelpernull_Time
+	EmailConfirmationKey  whereHelpernull_String
 }{
-	ID:               whereHelperstring{field: "\"users_api\".\"users\".\"id\""},
-	Email:            whereHelpernull_String{field: "\"users_api\".\"users\".\"email\""},
-	Verified:         whereHelperbool{field: "\"users_api\".\"users\".\"verified\""},
-	VerificationCode: whereHelpernull_String{field: "\"users_api\".\"users\".\"verification_code\""},
+	ID:                    whereHelperstring{field: "\"users_api\".\"users\".\"id\""},
+	Email:                 whereHelpernull_String{field: "\"users_api\".\"users\".\"email\""},
+	EmailConfirmed:        whereHelperbool{field: "\"users_api\".\"users\".\"email_confirmed\""},
+	EmailConfirmationSent: whereHelpernull_Time{field: "\"users_api\".\"users\".\"email_confirmation_sent\""},
+	EmailConfirmationKey:  whereHelpernull_String{field: "\"users_api\".\"users\".\"email_confirmation_key\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -144,8 +175,8 @@ func (*userR) NewStruct() *userR {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "email", "verified", "verification_code"}
-	userColumnsWithoutDefault = []string{"id", "email", "verified", "verification_code"}
+	userAllColumns            = []string{"id", "email", "email_confirmed", "email_confirmation_sent", "email_confirmation_key"}
+	userColumnsWithoutDefault = []string{"id", "email", "email_confirmed", "email_confirmation_sent", "email_confirmation_key"}
 	userColumnsWithDefault    = []string{}
 	userPrimaryKeyColumns     = []string{"id"}
 )

@@ -41,8 +41,6 @@ func main() {
 	}
 }
 
-const jwksURL = "http://127.0.0.1:5556/dex/keys"
-
 func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.DbStore) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -50,7 +48,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		},
 		DisableStartupMessage: true,
 	})
-	usersController := controllers.NewUsersController(settings, pdb.DBS, &logger)
+	userController := controllers.NewUserController(settings, pdb.DBS, &logger)
 
 	app.Use(recover.New(recover.Config{
 		Next:              nil,
@@ -60,10 +58,11 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	app.Use(cors.New())
 	app.Get("/", HealthCheck)
 
-	v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{KeySetURL: jwksURL}))
-	v1.Get("/", usersController.GetUser)
-	v1.Put("/", usersController.UpdateUser)
-	v1.Post("/send-verification", usersController.SendVerificationEmail)
+	v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{KeySetURL: settings.JWTKeySetURL}))
+	v1.Get("/", userController.GetUser)
+	v1.Put("/", userController.UpdateUser)
+	v1.Post("/send-confirmation-email", userController.SendConfirmationEmail)
+	v1.Post("/confirm-email", userController.ConfirmEmail)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 

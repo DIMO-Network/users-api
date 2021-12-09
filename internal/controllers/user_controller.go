@@ -166,7 +166,7 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 }
 
 // https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
-var emailPattern *regexp.Regexp = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
 func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	userID := getUserId(c)

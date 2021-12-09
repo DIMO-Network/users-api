@@ -21,9 +21,9 @@ go run ./cmd/users-api
 
 ## Database modifications
 
-Create a new Goose migration file:  
+Create a new Goose migration file:
 ```
-goose -dir migrations postgres "host=localhost port=5432 user=postgres password= dbname=postgres sslmode=disable" create MIGRATION_TITLE sql
+goose -dir migrations postgres "host=localhost port=5432 user=dimo password=dimo dbname=users_api sslmode=disable" create MIGRATION_TITLE sql
 ```
 This will create a file in the `migrations` folder named something like `TIMESTAMP_MIGRATION_TITLE.sql`.
 

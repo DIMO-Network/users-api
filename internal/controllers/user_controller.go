@@ -76,7 +76,7 @@ func (d *UserController) getOrCreateUser(ctx context.Context, userID string) (us
 }
 
 func (d *UserController) GetUser(c *fiber.Ctx) error {
-	userID := getUserId(c)
+	userID := getUserID(c)
 
 	user, err := d.getOrCreateUser(c.Context(), userID)
 	if err != nil {
@@ -86,7 +86,7 @@ func (d *UserController) GetUser(c *fiber.Ctx) error {
 }
 
 func (d *UserController) UpdateUser(c *fiber.Ctx) error {
-	userID := getUserId(c)
+	userID := getUserID(c)
 
 	user, err := d.getOrCreateUser(c.Context(), userID)
 	if err != nil {
@@ -129,7 +129,7 @@ func generateConfirmationKey() string {
 }
 
 func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
-	userID := getUserId(c)
+	userID := getUserID(c)
 
 	user, err := d.getOrCreateUser(c.Context(), userID)
 	if err != nil {
@@ -169,7 +169,7 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
 func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
-	userID := getUserId(c)
+	userID := getUserID(c)
 
 	user, err := d.getOrCreateUser(c.Context(), userID)
 	if err != nil {

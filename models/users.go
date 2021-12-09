@@ -25,10 +25,11 @@ import (
 // User is an object representing the database table.
 type User struct {
 	ID                    string      `boil:"id" json:"id" toml:"id" yaml:"id"`
-	Email                 null.String `boil:"email" json:"email,omitempty" toml:"email" yaml:"email,omitempty"`
+	EmailAddress          null.String `boil:"email_address" json:"email_address,omitempty" toml:"email_address" yaml:"email_address,omitempty"`
 	EmailConfirmed        bool        `boil:"email_confirmed" json:"email_confirmed" toml:"email_confirmed" yaml:"email_confirmed"`
 	EmailConfirmationSent null.Time   `boil:"email_confirmation_sent" json:"email_confirmation_sent,omitempty" toml:"email_confirmation_sent" yaml:"email_confirmation_sent,omitempty"`
 	EmailConfirmationKey  null.String `boil:"email_confirmation_key" json:"email_confirmation_key,omitempty" toml:"email_confirmation_key" yaml:"email_confirmation_key,omitempty"`
+	CreatedAt             time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -36,30 +37,34 @@ type User struct {
 
 var UserColumns = struct {
 	ID                    string
-	Email                 string
+	EmailAddress          string
 	EmailConfirmed        string
 	EmailConfirmationSent string
 	EmailConfirmationKey  string
+	CreatedAt             string
 }{
 	ID:                    "id",
-	Email:                 "email",
+	EmailAddress:          "email_address",
 	EmailConfirmed:        "email_confirmed",
 	EmailConfirmationSent: "email_confirmation_sent",
 	EmailConfirmationKey:  "email_confirmation_key",
+	CreatedAt:             "created_at",
 }
 
 var UserTableColumns = struct {
 	ID                    string
-	Email                 string
+	EmailAddress          string
 	EmailConfirmed        string
 	EmailConfirmationSent string
 	EmailConfirmationKey  string
+	CreatedAt             string
 }{
 	ID:                    "users.id",
-	Email:                 "users.email",
+	EmailAddress:          "users.email_address",
 	EmailConfirmed:        "users.email_confirmed",
 	EmailConfirmationSent: "users.email_confirmation_sent",
 	EmailConfirmationKey:  "users.email_confirmation_key",
+	CreatedAt:             "users.created_at",
 }
 
 // Generated where
@@ -144,18 +149,41 @@ func (w whereHelpernull_Time) GTE(x null.Time) qm.QueryMod {
 func (w whereHelpernull_Time) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
 func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
 
+type whereHelpertime_Time struct{ field string }
+
+func (w whereHelpertime_Time) EQ(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.EQ, x)
+}
+func (w whereHelpertime_Time) NEQ(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
+}
+func (w whereHelpertime_Time) LT(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpertime_Time) LTE(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpertime_Time) GT(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
 var UserWhere = struct {
 	ID                    whereHelperstring
-	Email                 whereHelpernull_String
+	EmailAddress          whereHelpernull_String
 	EmailConfirmed        whereHelperbool
 	EmailConfirmationSent whereHelpernull_Time
 	EmailConfirmationKey  whereHelpernull_String
+	CreatedAt             whereHelpertime_Time
 }{
 	ID:                    whereHelperstring{field: "\"users_api\".\"users\".\"id\""},
-	Email:                 whereHelpernull_String{field: "\"users_api\".\"users\".\"email\""},
+	EmailAddress:          whereHelpernull_String{field: "\"users_api\".\"users\".\"email_address\""},
 	EmailConfirmed:        whereHelperbool{field: "\"users_api\".\"users\".\"email_confirmed\""},
 	EmailConfirmationSent: whereHelpernull_Time{field: "\"users_api\".\"users\".\"email_confirmation_sent\""},
 	EmailConfirmationKey:  whereHelpernull_String{field: "\"users_api\".\"users\".\"email_confirmation_key\""},
+	CreatedAt:             whereHelpertime_Time{field: "\"users_api\".\"users\".\"created_at\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -175,8 +203,8 @@ func (*userR) NewStruct() *userR {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "email", "email_confirmed", "email_confirmation_sent", "email_confirmation_key"}
-	userColumnsWithoutDefault = []string{"id", "email", "email_confirmed", "email_confirmation_sent", "email_confirmation_key"}
+	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent", "email_confirmation_key", "created_at"}
+	userColumnsWithoutDefault = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent", "email_confirmation_key", "created_at"}
 	userColumnsWithDefault    = []string{}
 	userPrimaryKeyColumns     = []string{"id"}
 )
@@ -500,6 +528,13 @@ func (o *User) Insert(ctx context.Context, exec boil.ContextExecutor, columns bo
 	}
 
 	var err error
+	if !boil.TimestampsAreSkipped(ctx) {
+		currTime := time.Now().In(boil.GetLocation())
+
+		if o.CreatedAt.IsZero() {
+			o.CreatedAt = currTime
+		}
+	}
 
 	if err := o.doBeforeInsertHooks(ctx, exec); err != nil {
 		return err
@@ -704,6 +739,13 @@ func (o UserSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, col
 func (o *User) Upsert(ctx context.Context, exec boil.ContextExecutor, updateOnConflict bool, conflictColumns []string, updateColumns, insertColumns boil.Columns) error {
 	if o == nil {
 		return errors.New("models: no users provided for upsert")
+	}
+	if !boil.TimestampsAreSkipped(ctx) {
+		currTime := time.Now().In(boil.GetLocation())
+
+		if o.CreatedAt.IsZero() {
+			o.CreatedAt = currTime
+		}
 	}
 
 	if err := o.doBeforeUpsertHooks(ctx, exec); err != nil {

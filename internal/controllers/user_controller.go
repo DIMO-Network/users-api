@@ -45,7 +45,7 @@ type userResponse struct {
 }
 
 func formatUser(user *models.User) *userResponse {
-	return &userResponse{user.ID, user.Email, user.EmailConfirmed}
+	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed}
 }
 
 func (d *UserController) getOrCreateUser(ctx context.Context, userID string) (user *models.User, err error) {
@@ -94,19 +94,19 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	var body struct {
-		Email null.String `json:"email"`
+		EmailAddress null.String `json:"email_address"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)
 	}
 
-	if body.Email != user.Email {
-		if body.Email.Valid {
-			if !emailPattern.MatchString(body.Email.String) {
+	if body.EmailAddress != user.EmailAddress {
+		if body.EmailAddress.Valid {
+			if !emailPattern.MatchString(body.EmailAddress.String) {
 				return errorResponseHandler(c, fmt.Errorf("invalid email"), fiber.StatusBadRequest)
 			}
 		}
-		user.Email = body.Email
+		user.EmailAddress = body.EmailAddress
 		user.EmailConfirmed = false
 		user.EmailConfirmationKey = null.StringFromPtr(nil)
 		user.EmailConfirmationSent = null.TimeFromPtr(nil)
@@ -135,7 +135,7 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	if err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
-	if !user.Email.Valid {
+	if !user.EmailAddress.Valid {
 		return errorResponseHandler(c, fmt.Errorf("user has not provided an email"), fiber.StatusBadRequest)
 	}
 	if user.EmailConfirmed {
@@ -152,13 +152,13 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	auth := smtp.PlainAuth("", d.Settings.EmailUsername, d.Settings.EmailPassword, d.Settings.EmailHost)
 	addr := fmt.Sprintf("%s:%s", d.Settings.EmailHost, d.Settings.EmailPort)
 	msg := []byte("From: DIMO Mailer <mailer@dimo.zone>\r\n" +
-		"To: " + user.Email.String + "\r\n" +
+		"To: " + user.EmailAddress.String + "\r\n" +
 		"Subject: DIMO email confirmation\r\n" +
 		"\r\n" +
 		"Your email confirmation code is\r\n" +
 		"\r\n" +
 		key + "\r\n")
-	err = smtp.SendMail(addr, auth, d.Settings.EmailFrom, []string{user.Email.String}, msg)
+	err = smtp.SendMail(addr, auth, d.Settings.EmailFrom, []string{user.EmailAddress.String}, msg)
 	if err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}

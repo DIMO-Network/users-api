@@ -20,6 +20,7 @@ env:
   DB_NAME: users_api
   DB_MAX_OPEN_CONNECTIONS: '10'
   DB_MAX_IDLE_CONNECTIONS: '3'
+  EMAIL_PORT: 587
   SERVICE_NAME: users-api
 service:
   type: ClusterIP

@@ -47,7 +47,8 @@ Response
     "emailAddress": "joe@dimo.zone",
     "emailVerified": true,
     "createdAt": "2021-12-09T00:57:49.674985Z",
-    "countryCode": null
+    "countryCode": null,
+    "ethereumAddress": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F"
 }
 ```
 
@@ -70,7 +71,8 @@ Response
     "emailAddress": "eric@dimo.zone",
     "emailVerified": false,
     "createdAt": "2021-12-09T00:57:49.674985Z",
-    "countryCode": "PER"
+    "countryCode": "PER",
+    "ethereumAddress": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F"
 }
 ```
 

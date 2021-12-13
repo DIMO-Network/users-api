@@ -48,15 +48,16 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 }
 
 type userResponse struct {
-	ID             string      `json:"id"`
-	EmailAddress   null.String `json:"emailAddress"`
-	EmailConfirmed bool        `json:"emailVerified"`
-	CreatedAt      time.Time   `json:"createdAt"`
-	CountryCode    null.String `json:"countryCode"`
+	ID              string      `json:"id"`
+	EmailAddress    null.String `json:"emailAddress"`
+	EmailConfirmed  bool        `json:"emailVerified"`
+	CreatedAt       time.Time   `json:"createdAt"`
+	CountryCode     null.String `json:"countryCode"`
+	EthereumAddress null.String `json:"ethereumAddress"`
 }
 
 func formatUser(user *models.User) *userResponse {
-	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed, user.CreatedAt, user.CountryCode}
+	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed, user.CreatedAt, user.CountryCode, user.EthereumAddress}
 }
 
 func (d *UserController) getOrCreateUser(ctx context.Context, userID string) (user *models.User, err error) {

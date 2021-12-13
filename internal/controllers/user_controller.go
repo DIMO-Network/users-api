@@ -54,10 +54,11 @@ type userResponse struct {
 	CreatedAt       time.Time   `json:"createdAt"`
 	CountryCode     null.String `json:"countryCode"`
 	EthereumAddress null.String `json:"ethereumAddress"`
+	ReferralCode    string      `json:"referralCode"`
 }
 
 func formatUser(user *models.User) *userResponse {
-	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed, user.CreatedAt, user.CountryCode, user.EthereumAddress}
+	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed, user.CreatedAt, user.CountryCode, user.EthereumAddress, user.ReferralCode}
 }
 
 func getBooleanClaim(claims jwt.MapClaims, key string) (value, ok bool) {
@@ -88,7 +89,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	user, err = models.FindUser(c.Context(), tx, userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			user = &models.User{ID: userID}
+			user = &models.User{ID: userID, ReferralCode: generateReferralCode()}
 			// New user, insert a mostly-empty record
 
 			token := c.Locals("user").(*jwt.Token)
@@ -179,6 +180,16 @@ func generateConfirmationKey() string {
 	o := make([]rune, 8)
 	for i := range o {
 		o[i] = digits[rand.Intn(10)]
+	}
+	return string(o)
+}
+
+var validChars = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func generateReferralCode() string {
+	o := make([]rune, 8)
+	for i := range o {
+		o[i] = validChars[rand.Intn(len(validChars))]
 	}
 	return string(o)
 }

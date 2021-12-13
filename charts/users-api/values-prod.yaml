@@ -12,7 +12,8 @@ serviceAccount:
   name: ''
 podAnnotations: {}
 podSecurityContext: {}
-securityContext: {}
+securityContext: 
+  privileged: true
 env:
   PORT: '8080'
   LOG_LEVEL: info

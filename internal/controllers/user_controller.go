@@ -21,6 +21,7 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
+// Sorted JSON array of valid ISO 3116-1 apha-3 codes
 //go:embed country_codes.json
 var rawCountryCodes []byte
 

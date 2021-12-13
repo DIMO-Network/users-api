@@ -24,62 +24,62 @@ import (
 
 // User is an object representing the database table.
 type User struct {
-	ID                    string      `boil:"id" json:"id" toml:"id" yaml:"id"`
-	EmailAddress          null.String `boil:"email_address" json:"email_address,omitempty" toml:"email_address" yaml:"email_address,omitempty"`
-	EmailConfirmed        bool        `boil:"email_confirmed" json:"email_confirmed" toml:"email_confirmed" yaml:"email_confirmed"`
-	EmailConfirmationSent null.Time   `boil:"email_confirmation_sent" json:"email_confirmation_sent,omitempty" toml:"email_confirmation_sent" yaml:"email_confirmation_sent,omitempty"`
-	EmailConfirmationKey  null.String `boil:"email_confirmation_key" json:"email_confirmation_key,omitempty" toml:"email_confirmation_key" yaml:"email_confirmation_key,omitempty"`
-	CreatedAt             time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	CountryCode           null.String `boil:"country_code" json:"country_code,omitempty" toml:"country_code" yaml:"country_code,omitempty"`
-	EthereumAddress       null.String `boil:"ethereum_address" json:"ethereum_address,omitempty" toml:"ethereum_address" yaml:"ethereum_address,omitempty"`
-	ReferralCode          string      `boil:"referral_code" json:"referral_code" toml:"referral_code" yaml:"referral_code"`
+	ID                      string      `boil:"id" json:"id" toml:"id" yaml:"id"`
+	EmailAddress            null.String `boil:"email_address" json:"email_address,omitempty" toml:"email_address" yaml:"email_address,omitempty"`
+	EmailConfirmed          bool        `boil:"email_confirmed" json:"email_confirmed" toml:"email_confirmed" yaml:"email_confirmed"`
+	EmailConfirmationSentAt null.Time   `boil:"email_confirmation_sent_at" json:"email_confirmation_sent_at,omitempty" toml:"email_confirmation_sent_at" yaml:"email_confirmation_sent_at,omitempty"`
+	EmailConfirmationKey    null.String `boil:"email_confirmation_key" json:"email_confirmation_key,omitempty" toml:"email_confirmation_key" yaml:"email_confirmation_key,omitempty"`
+	CreatedAt               time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	CountryCode             null.String `boil:"country_code" json:"country_code,omitempty" toml:"country_code" yaml:"country_code,omitempty"`
+	EthereumAddress         null.String `boil:"ethereum_address" json:"ethereum_address,omitempty" toml:"ethereum_address" yaml:"ethereum_address,omitempty"`
+	ReferralCode            string      `boil:"referral_code" json:"referral_code" toml:"referral_code" yaml:"referral_code"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var UserColumns = struct {
-	ID                    string
-	EmailAddress          string
-	EmailConfirmed        string
-	EmailConfirmationSent string
-	EmailConfirmationKey  string
-	CreatedAt             string
-	CountryCode           string
-	EthereumAddress       string
-	ReferralCode          string
+	ID                      string
+	EmailAddress            string
+	EmailConfirmed          string
+	EmailConfirmationSentAt string
+	EmailConfirmationKey    string
+	CreatedAt               string
+	CountryCode             string
+	EthereumAddress         string
+	ReferralCode            string
 }{
-	ID:                    "id",
-	EmailAddress:          "email_address",
-	EmailConfirmed:        "email_confirmed",
-	EmailConfirmationSent: "email_confirmation_sent",
-	EmailConfirmationKey:  "email_confirmation_key",
-	CreatedAt:             "created_at",
-	CountryCode:           "country_code",
-	EthereumAddress:       "ethereum_address",
-	ReferralCode:          "referral_code",
+	ID:                      "id",
+	EmailAddress:            "email_address",
+	EmailConfirmed:          "email_confirmed",
+	EmailConfirmationSentAt: "email_confirmation_sent_at",
+	EmailConfirmationKey:    "email_confirmation_key",
+	CreatedAt:               "created_at",
+	CountryCode:             "country_code",
+	EthereumAddress:         "ethereum_address",
+	ReferralCode:            "referral_code",
 }
 
 var UserTableColumns = struct {
-	ID                    string
-	EmailAddress          string
-	EmailConfirmed        string
-	EmailConfirmationSent string
-	EmailConfirmationKey  string
-	CreatedAt             string
-	CountryCode           string
-	EthereumAddress       string
-	ReferralCode          string
+	ID                      string
+	EmailAddress            string
+	EmailConfirmed          string
+	EmailConfirmationSentAt string
+	EmailConfirmationKey    string
+	CreatedAt               string
+	CountryCode             string
+	EthereumAddress         string
+	ReferralCode            string
 }{
-	ID:                    "users.id",
-	EmailAddress:          "users.email_address",
-	EmailConfirmed:        "users.email_confirmed",
-	EmailConfirmationSent: "users.email_confirmation_sent",
-	EmailConfirmationKey:  "users.email_confirmation_key",
-	CreatedAt:             "users.created_at",
-	CountryCode:           "users.country_code",
-	EthereumAddress:       "users.ethereum_address",
-	ReferralCode:          "users.referral_code",
+	ID:                      "users.id",
+	EmailAddress:            "users.email_address",
+	EmailConfirmed:          "users.email_confirmed",
+	EmailConfirmationSentAt: "users.email_confirmation_sent_at",
+	EmailConfirmationKey:    "users.email_confirmation_key",
+	CreatedAt:               "users.created_at",
+	CountryCode:             "users.country_code",
+	EthereumAddress:         "users.ethereum_address",
+	ReferralCode:            "users.referral_code",
 }
 
 // Generated where
@@ -186,25 +186,25 @@ func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
 }
 
 var UserWhere = struct {
-	ID                    whereHelperstring
-	EmailAddress          whereHelpernull_String
-	EmailConfirmed        whereHelperbool
-	EmailConfirmationSent whereHelpernull_Time
-	EmailConfirmationKey  whereHelpernull_String
-	CreatedAt             whereHelpertime_Time
-	CountryCode           whereHelpernull_String
-	EthereumAddress       whereHelpernull_String
-	ReferralCode          whereHelperstring
+	ID                      whereHelperstring
+	EmailAddress            whereHelpernull_String
+	EmailConfirmed          whereHelperbool
+	EmailConfirmationSentAt whereHelpernull_Time
+	EmailConfirmationKey    whereHelpernull_String
+	CreatedAt               whereHelpertime_Time
+	CountryCode             whereHelpernull_String
+	EthereumAddress         whereHelpernull_String
+	ReferralCode            whereHelperstring
 }{
-	ID:                    whereHelperstring{field: "\"users_api\".\"users\".\"id\""},
-	EmailAddress:          whereHelpernull_String{field: "\"users_api\".\"users\".\"email_address\""},
-	EmailConfirmed:        whereHelperbool{field: "\"users_api\".\"users\".\"email_confirmed\""},
-	EmailConfirmationSent: whereHelpernull_Time{field: "\"users_api\".\"users\".\"email_confirmation_sent\""},
-	EmailConfirmationKey:  whereHelpernull_String{field: "\"users_api\".\"users\".\"email_confirmation_key\""},
-	CreatedAt:             whereHelpertime_Time{field: "\"users_api\".\"users\".\"created_at\""},
-	CountryCode:           whereHelpernull_String{field: "\"users_api\".\"users\".\"country_code\""},
-	EthereumAddress:       whereHelpernull_String{field: "\"users_api\".\"users\".\"ethereum_address\""},
-	ReferralCode:          whereHelperstring{field: "\"users_api\".\"users\".\"referral_code\""},
+	ID:                      whereHelperstring{field: "\"users_api\".\"users\".\"id\""},
+	EmailAddress:            whereHelpernull_String{field: "\"users_api\".\"users\".\"email_address\""},
+	EmailConfirmed:          whereHelperbool{field: "\"users_api\".\"users\".\"email_confirmed\""},
+	EmailConfirmationSentAt: whereHelpernull_Time{field: "\"users_api\".\"users\".\"email_confirmation_sent_at\""},
+	EmailConfirmationKey:    whereHelpernull_String{field: "\"users_api\".\"users\".\"email_confirmation_key\""},
+	CreatedAt:               whereHelpertime_Time{field: "\"users_api\".\"users\".\"created_at\""},
+	CountryCode:             whereHelpernull_String{field: "\"users_api\".\"users\".\"country_code\""},
+	EthereumAddress:         whereHelpernull_String{field: "\"users_api\".\"users\".\"ethereum_address\""},
+	ReferralCode:            whereHelperstring{field: "\"users_api\".\"users\".\"referral_code\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -224,8 +224,8 @@ func (*userR) NewStruct() *userR {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code"}
-	userColumnsWithoutDefault = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code"}
+	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code"}
+	userColumnsWithoutDefault = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code"}
 	userColumnsWithDefault    = []string{}
 	userPrimaryKeyColumns     = []string{"id"}
 )

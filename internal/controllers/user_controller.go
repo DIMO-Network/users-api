@@ -42,23 +42,33 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 		Settings:        settings,
 		DBS:             dbs,
 		log:             logger,
-		allowedLateness: 15 * time.Minute,
+		allowedLateness: 5 * time.Minute,
 		countryCodes:    countryCodes,
 	}
 }
 
 type userResponse struct {
-	ID              string      `json:"id"`
-	EmailAddress    null.String `json:"emailAddress"`
-	EmailConfirmed  bool        `json:"emailVerified"`
-	CreatedAt       time.Time   `json:"createdAt"`
-	CountryCode     null.String `json:"countryCode"`
-	EthereumAddress null.String `json:"ethereumAddress"`
-	ReferralCode    string      `json:"referralCode"`
+	ID                      string      `json:"id"`
+	EmailAddress            null.String `json:"emailAddress"`
+	EmailConfirmed          bool        `json:"emailVerified"`
+	EmailConfirmationSentAt null.Time   `json:"emailConfirmationSentAt"`
+	CreatedAt               time.Time   `json:"createdAt"`
+	CountryCode             null.String `json:"countryCode"`
+	EthereumAddress         null.String `json:"ethereumAddress"`
+	ReferralCode            string      `json:"referralCode"`
 }
 
 func formatUser(user *models.User) *userResponse {
-	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed, user.CreatedAt, user.CountryCode, user.EthereumAddress, user.ReferralCode}
+	return &userResponse{
+		ID:                      user.ID,
+		EmailAddress:            user.EmailAddress,
+		EmailConfirmed:          user.EmailConfirmed,
+		EmailConfirmationSentAt: user.EmailConfirmationSentAt,
+		CreatedAt:               user.CreatedAt,
+		CountryCode:             user.CountryCode,
+		EthereumAddress:         user.EthereumAddress,
+		ReferralCode:            user.ReferralCode,
+	}
 }
 
 func getBooleanClaim(claims jwt.MapClaims, key string) (value, ok bool) {
@@ -164,7 +174,7 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		user.EmailAddress = body.EmailAddress
 		user.EmailConfirmed = false
 		user.EmailConfirmationKey = null.StringFromPtr(nil)
-		user.EmailConfirmationSent = null.TimeFromPtr(nil)
+		user.EmailConfirmationSentAt = null.TimeFromPtr(nil)
 	}
 
 	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
@@ -210,7 +220,7 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 
 	key := generateConfirmationKey()
 	user.EmailConfirmationKey = null.StringFrom(key)
-	user.EmailConfirmationSent = null.TimeFrom(time.Now())
+	user.EmailConfirmationSentAt = null.TimeFrom(time.Now())
 	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
@@ -244,10 +254,10 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	if user.EmailConfirmed {
 		return errorResponseHandler(c, fmt.Errorf("email already confirmed"), fiber.StatusBadRequest)
 	}
-	if !user.EmailConfirmationKey.Valid || !user.EmailConfirmationSent.Valid {
+	if !user.EmailConfirmationKey.Valid || !user.EmailConfirmationSentAt.Valid {
 		return errorResponseHandler(c, fmt.Errorf("email confirmation never sent"), fiber.StatusBadRequest)
 	}
-	if time.Since(user.EmailConfirmationSent.Time) > d.allowedLateness {
+	if time.Since(user.EmailConfirmationSentAt.Time) > d.allowedLateness {
 		return errorResponseHandler(c, fmt.Errorf("email confirmation message expired"), fiber.StatusBadRequest)
 	}
 
@@ -260,6 +270,8 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 
 	if confirmationBody.Key == user.EmailConfirmationKey.String {
 		user.EmailConfirmed = true
+		user.EmailConfirmationKey = null.StringFromPtr(nil)
+		user.EmailConfirmationSentAt = null.TimeFromPtr(nil)
 		if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
 			return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 		}

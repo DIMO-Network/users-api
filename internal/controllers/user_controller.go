@@ -40,10 +40,11 @@ type userResponse struct {
 	EmailAddress   null.String `json:"email_address"`
 	EmailConfirmed bool        `json:"email_verified"`
 	CreatedAt      time.Time   `json:"created_at"`
+	CountryCode    null.String `json:"country_code"`
 }
 
 func formatUser(user *models.User) *userResponse {
-	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed, user.CreatedAt}
+	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed, user.CreatedAt, user.CountryCode}
 }
 
 func (d *UserController) getOrCreateUser(ctx context.Context, userID string) (user *models.User, err error) {
@@ -93,10 +94,15 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 
 	var body struct {
 		EmailAddress null.String `json:"email_address"`
+		CountryCode  null.String `json:"country_code"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)
 	}
+	if body.CountryCode.Valid && len(body.CountryCode.String) != 3 {
+		return errorResponseHandler(c, fmt.Errorf("country code should have length 3"), fiber.StatusBadRequest)
+	}
+	user.CountryCode = body.CountryCode
 
 	if body.EmailAddress != user.EmailAddress {
 		if body.EmailAddress.Valid {
@@ -108,9 +114,10 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		user.EmailConfirmed = false
 		user.EmailConfirmationKey = null.StringFromPtr(nil)
 		user.EmailConfirmationSent = null.TimeFromPtr(nil)
-		if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
-			return errorResponseHandler(c, err, fiber.StatusInternalServerError)
-		}
+	}
+
+	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
 	return c.JSON(formatUser(user))

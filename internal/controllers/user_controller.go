@@ -49,10 +49,10 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 
 type userResponse struct {
 	ID             string      `json:"id"`
-	EmailAddress   null.String `json:"email_address"`
-	EmailConfirmed bool        `json:"email_verified"`
-	CreatedAt      time.Time   `json:"created_at"`
-	CountryCode    null.String `json:"country_code"`
+	EmailAddress   null.String `json:"emailAddress"`
+	EmailConfirmed bool        `json:"emailVerified"`
+	CreatedAt      time.Time   `json:"createdAt"`
+	CountryCode    null.String `json:"countryCode"`
 }
 
 func formatUser(user *models.User) *userResponse {
@@ -110,8 +110,8 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	var body struct {
-		EmailAddress null.String `json:"email_address"`
-		CountryCode  null.String `json:"country_code"`
+		EmailAddress null.String `json:"emailAddress"`
+		CountryCode  null.String `json:"countryCode"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)

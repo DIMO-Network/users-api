@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/DIMO-INC/users-api/internal/config"
@@ -60,7 +59,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	app.Use(cors.New())
 	app.Get("/", HealthCheck)
 
-	fmt.Println("AAA", settings.JWTKeySetURL)
 	v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{KeySetURL: settings.JWTKeySetURL}))
 	v1.Get("/", userController.GetUser)
 	v1.Put("/", userController.UpdateUser)

@@ -3,10 +3,13 @@ package controllers
 import (
 	"context"
 	"database/sql"
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/smtp"
 	"regexp"
+	"sort"
 	"time"
 
 	"github.com/DIMO-INC/users-api/internal/config"
@@ -18,20 +21,28 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
+//go:embed country_codes.json
+var rawCountryCodes []byte
+
 type UserController struct {
 	Settings        *config.Settings
 	DBS             func() *database.DBReaderWriter
 	log             *zerolog.Logger
 	allowedLateness time.Duration
+	countryCodes    []string
 }
 
 func NewUserController(settings *config.Settings, dbs func() *database.DBReaderWriter, logger *zerolog.Logger) UserController {
-	allowedLateness := 15 * time.Minute
+	var countryCodes []string
+	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
+		panic(err)
+	}
 	return UserController{
 		Settings:        settings,
 		DBS:             dbs,
 		log:             logger,
-		allowedLateness: allowedLateness,
+		allowedLateness: 15 * time.Minute,
+		countryCodes:    countryCodes,
 	}
 }
 
@@ -84,6 +95,11 @@ func (d *UserController) GetUser(c *fiber.Ctx) error {
 	return c.JSON(formatUser(user))
 }
 
+func inSorted(v []string, x string) bool {
+	i := sort.SearchStrings(v, x)
+	return i < len(v) && v[i] == x
+}
+
 func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
@@ -99,8 +115,8 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)
 	}
-	if body.CountryCode.Valid && len(body.CountryCode.String) != 3 {
-		return errorResponseHandler(c, fmt.Errorf("country code should have length 3"), fiber.StatusBadRequest)
+	if body.CountryCode.Valid && !inSorted(d.countryCodes, body.CountryCode.String) {
+		return errorResponseHandler(c, fmt.Errorf("invalid country code"), fiber.StatusBadRequest)
 	}
 	user.CountryCode = body.CountryCode
 

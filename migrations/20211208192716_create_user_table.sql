@@ -1,9 +1,16 @@
 -- +goose Up
 -- +goose StatementBegin
-ALTER TABLE users_api.users ADD COLUMN country_code CHAR(3);
+CREATE TABLE users_api.users (
+    id TEXT PRIMARY KEY,
+    email_address TEXT,
+    email_confirmed BOOLEAN NOT NULL,
+    email_confirmation_sent timestamptz,
+    email_confirmation_key TEXT,
+    created_at timestamptz NOT NULL
+);
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-ALTER TABLE users_api.users DROP COLUMN country_code;
+DROP TABLE users_api.users;
 -- +goose StatementEnd

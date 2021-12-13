@@ -63,7 +63,7 @@ func (d *UserController) getOrCreateUser(ctx context.Context, userID string) (us
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint
 
 	user, err = models.FindUser(ctx, tx, userID)
 	if err != nil {

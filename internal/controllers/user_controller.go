@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"database/sql"
 	_ "embed"
 	"encoding/json"
@@ -16,6 +15,7 @@ import (
 	"github.com/DIMO-INC/users-api/internal/database"
 	"github.com/DIMO-INC/users-api/models"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -60,19 +60,51 @@ func formatUser(user *models.User) *userResponse {
 	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed, user.CreatedAt, user.CountryCode, user.EthereumAddress}
 }
 
-func (d *UserController) getOrCreateUser(ctx context.Context, userID string) (user *models.User, err error) {
-	tx, err := d.DBS().Writer.BeginTx(ctx, nil)
+func getBooleanClaim(claims jwt.MapClaims, key string) (value, ok bool) {
+	if rawValue, ok := claims[key]; ok {
+		if value, ok := rawValue.(bool); ok {
+			return value, true
+		}
+	}
+	return false, false
+}
+
+func getStringClaim(claims jwt.MapClaims, key string) (value string, ok bool) {
+	if rawValue, ok := claims[key]; ok {
+		if value, ok := rawValue.(string); ok {
+			return value, true
+		}
+	}
+	return "", false
+}
+
+func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *models.User, err error) {
+	tx, err := d.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback() //nolint
 
-	user, err = models.FindUser(ctx, tx, userID)
+	user, err = models.FindUser(c.Context(), tx, userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			// New user, insert a mostly-empty record
 			user = &models.User{ID: userID}
-			if err := user.Insert(ctx, tx, boil.Infer()); err != nil {
+			// New user, insert a mostly-empty record
+
+			token := c.Locals("user").(*jwt.Token)
+			claims := token.Claims.(jwt.MapClaims)
+
+			if emailVerified, ok := getBooleanClaim(claims, "email_verified"); ok && emailVerified {
+				if email, ok := getStringClaim(claims, "email"); ok {
+					user.EmailAddress = null.StringFrom(email)
+				}
+			}
+
+			if ethereumAddress, ok := getStringClaim(claims, "ethereum_address"); ok && ethereumAddress != "" {
+				user.EthereumAddress = null.StringFrom(ethereumAddress)
+			}
+
+			if err := user.Insert(c.Context(), tx, boil.Infer()); err != nil {
 				return nil, err
 			}
 		} else {
@@ -90,7 +122,7 @@ func (d *UserController) getOrCreateUser(ctx context.Context, userID string) (us
 func (d *UserController) GetUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
-	user, err := d.getOrCreateUser(c.Context(), userID)
+	user, err := d.getOrCreateUser(c, userID)
 	if err != nil {
 		panic(err)
 	}
@@ -105,7 +137,7 @@ func inSorted(v []string, x string) bool {
 func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
-	user, err := d.getOrCreateUser(c.Context(), userID)
+	user, err := d.getOrCreateUser(c, userID)
 	if err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
@@ -154,7 +186,7 @@ func generateConfirmationKey() string {
 func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
-	user, err := d.getOrCreateUser(c.Context(), userID)
+	user, err := d.getOrCreateUser(c, userID)
 	if err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
@@ -194,7 +226,7 @@ var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z
 func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
-	user, err := d.getOrCreateUser(c.Context(), userID)
+	user, err := d.getOrCreateUser(c, userID)
 	if err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}

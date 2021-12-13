@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   repository: dimozone/users-api
   pullPolicy: IfNotPresent
-  tag: e283e1e
+  tag: 755a109
 imagePullSecrets: []
 nameOverride: ''
 fullnameOverride: ''
@@ -43,7 +43,7 @@ ingress:
         - path: /
           pathType: ImplementationSpecific
   tls: []
-resources: 
+resources:
   limits:
     cpu: 250m
     memory: 256Mi

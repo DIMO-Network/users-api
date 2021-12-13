@@ -3,10 +3,13 @@ package controllers
 import (
 	"context"
 	"database/sql"
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/smtp"
 	"regexp"
+	"sort"
 	"time"
 
 	"github.com/DIMO-INC/users-api/internal/config"
@@ -18,32 +21,42 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
+// Sorted JSON array of valid ISO 3116-1 apha-3 codes
+//go:embed country_codes.json
+var rawCountryCodes []byte
+
 type UserController struct {
 	Settings        *config.Settings
 	DBS             func() *database.DBReaderWriter
 	log             *zerolog.Logger
 	allowedLateness time.Duration
+	countryCodes    []string
 }
 
 func NewUserController(settings *config.Settings, dbs func() *database.DBReaderWriter, logger *zerolog.Logger) UserController {
-	allowedLateness := 15 * time.Minute
+	var countryCodes []string
+	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
+		panic(err)
+	}
 	return UserController{
 		Settings:        settings,
 		DBS:             dbs,
 		log:             logger,
-		allowedLateness: allowedLateness,
+		allowedLateness: 15 * time.Minute,
+		countryCodes:    countryCodes,
 	}
 }
 
 type userResponse struct {
 	ID             string      `json:"id"`
-	EmailAddress   null.String `json:"email_address"`
-	EmailConfirmed bool        `json:"email_verified"`
-	CreatedAt      time.Time   `json:"created_at"`
+	EmailAddress   null.String `json:"emailAddress"`
+	EmailConfirmed bool        `json:"emailVerified"`
+	CreatedAt      time.Time   `json:"createdAt"`
+	CountryCode    null.String `json:"countryCode"`
 }
 
 func formatUser(user *models.User) *userResponse {
-	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed, user.CreatedAt}
+	return &userResponse{user.ID, user.EmailAddress, user.EmailConfirmed, user.CreatedAt, user.CountryCode}
 }
 
 func (d *UserController) getOrCreateUser(ctx context.Context, userID string) (user *models.User, err error) {
@@ -51,7 +64,7 @@ func (d *UserController) getOrCreateUser(ctx context.Context, userID string) (us
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint
 
 	user, err = models.FindUser(ctx, tx, userID)
 	if err != nil {
@@ -83,6 +96,11 @@ func (d *UserController) GetUser(c *fiber.Ctx) error {
 	return c.JSON(formatUser(user))
 }
 
+func inSorted(v []string, x string) bool {
+	i := sort.SearchStrings(v, x)
+	return i < len(v) && v[i] == x
+}
+
 func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
@@ -92,11 +110,16 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	var body struct {
-		EmailAddress null.String `json:"email_address"`
+		EmailAddress null.String `json:"emailAddress"`
+		CountryCode  null.String `json:"countryCode"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)
 	}
+	if body.CountryCode.Valid && !inSorted(d.countryCodes, body.CountryCode.String) {
+		return errorResponseHandler(c, fmt.Errorf("invalid country code"), fiber.StatusBadRequest)
+	}
+	user.CountryCode = body.CountryCode
 
 	if body.EmailAddress != user.EmailAddress {
 		if body.EmailAddress.Valid {
@@ -108,9 +131,10 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		user.EmailConfirmed = false
 		user.EmailConfirmationKey = null.StringFromPtr(nil)
 		user.EmailConfirmationSent = null.TimeFromPtr(nil)
-		if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
-			return errorResponseHandler(c, err, fiber.StatusInternalServerError)
-		}
+	}
+
+	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
 	return c.JSON(formatUser(user))

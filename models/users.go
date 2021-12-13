@@ -30,6 +30,8 @@ type User struct {
 	EmailConfirmationSent null.Time   `boil:"email_confirmation_sent" json:"email_confirmation_sent,omitempty" toml:"email_confirmation_sent" yaml:"email_confirmation_sent,omitempty"`
 	EmailConfirmationKey  null.String `boil:"email_confirmation_key" json:"email_confirmation_key,omitempty" toml:"email_confirmation_key" yaml:"email_confirmation_key,omitempty"`
 	CreatedAt             time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	EthereumAddress       null.String `boil:"ethereum_address" json:"ethereum_address,omitempty" toml:"ethereum_address" yaml:"ethereum_address,omitempty"`
+	CountryCode           null.String `boil:"country_code" json:"country_code,omitempty" toml:"country_code" yaml:"country_code,omitempty"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -42,6 +44,8 @@ var UserColumns = struct {
 	EmailConfirmationSent string
 	EmailConfirmationKey  string
 	CreatedAt             string
+	EthereumAddress       string
+	CountryCode           string
 }{
 	ID:                    "id",
 	EmailAddress:          "email_address",
@@ -49,6 +53,8 @@ var UserColumns = struct {
 	EmailConfirmationSent: "email_confirmation_sent",
 	EmailConfirmationKey:  "email_confirmation_key",
 	CreatedAt:             "created_at",
+	EthereumAddress:       "ethereum_address",
+	CountryCode:           "country_code",
 }
 
 var UserTableColumns = struct {
@@ -58,6 +64,8 @@ var UserTableColumns = struct {
 	EmailConfirmationSent string
 	EmailConfirmationKey  string
 	CreatedAt             string
+	EthereumAddress       string
+	CountryCode           string
 }{
 	ID:                    "users.id",
 	EmailAddress:          "users.email_address",
@@ -65,6 +73,8 @@ var UserTableColumns = struct {
 	EmailConfirmationSent: "users.email_confirmation_sent",
 	EmailConfirmationKey:  "users.email_confirmation_key",
 	CreatedAt:             "users.created_at",
+	EthereumAddress:       "users.ethereum_address",
+	CountryCode:           "users.country_code",
 }
 
 // Generated where
@@ -177,6 +187,8 @@ var UserWhere = struct {
 	EmailConfirmationSent whereHelpernull_Time
 	EmailConfirmationKey  whereHelpernull_String
 	CreatedAt             whereHelpertime_Time
+	EthereumAddress       whereHelpernull_String
+	CountryCode           whereHelpernull_String
 }{
 	ID:                    whereHelperstring{field: "\"users_api\".\"users\".\"id\""},
 	EmailAddress:          whereHelpernull_String{field: "\"users_api\".\"users\".\"email_address\""},
@@ -184,6 +196,8 @@ var UserWhere = struct {
 	EmailConfirmationSent: whereHelpernull_Time{field: "\"users_api\".\"users\".\"email_confirmation_sent\""},
 	EmailConfirmationKey:  whereHelpernull_String{field: "\"users_api\".\"users\".\"email_confirmation_key\""},
 	CreatedAt:             whereHelpertime_Time{field: "\"users_api\".\"users\".\"created_at\""},
+	EthereumAddress:       whereHelpernull_String{field: "\"users_api\".\"users\".\"ethereum_address\""},
+	CountryCode:           whereHelpernull_String{field: "\"users_api\".\"users\".\"country_code\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -203,8 +217,8 @@ func (*userR) NewStruct() *userR {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent", "email_confirmation_key", "created_at"}
-	userColumnsWithoutDefault = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent", "email_confirmation_key", "created_at"}
+	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent", "email_confirmation_key", "created_at", "ethereum_address", "country_code"}
+	userColumnsWithoutDefault = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent", "email_confirmation_key", "created_at", "ethereum_address", "country_code"}
 	userColumnsWithDefault    = []string{}
 	userPrimaryKeyColumns     = []string{"id"}
 )

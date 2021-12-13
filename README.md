@@ -31,8 +31,7 @@ go run ./cmd/users-api migrate
 ```
 And then to generate the models:
 ```
-rm -rf models
-sqlboiler psql --no-tests
+sqlboiler psql --no-tests --wipe
 ```
 
 ## Endpoints
@@ -47,7 +46,8 @@ Response
     "id": "CioweGNGQkFEZTY5MjgzMkFGYTFlOTM2OUM2RUE3MjQ3YjVEZTc5MTI5NjQSBHdlYjM",
     "email_address": "joe@dimo.zone",
     "email_verified": true,
-    "created_at": "2021-12-09T00:57:49.674985Z"
+    "created_at": "2021-12-09T00:57:49.674985Z",
+    "country_code": null
 }
 ```
 
@@ -56,7 +56,8 @@ Response
 JSON body
 ```json
 {
-    "email_address": "eric@dimo.zone"
+    "email_address": "eric@dimo.zone",
+    "country_code": "PER"
 }
 ```
 
@@ -68,7 +69,8 @@ Response
     "id": "CioweGNGQkFEZTY5MjgzMkFGYTFlOTM2OUM2RUE3MjQ3YjVEZTc5MTI5NjQSBHdlYjM",
     "email_address": "eric@dimo.zone",
     "email_verified": false,
-    "created_at": "2021-12-09T00:57:49.674985Z"
+    "created_at": "2021-12-09T00:57:49.674985Z",
+    "country_code": "PER"
 }
 ```
 

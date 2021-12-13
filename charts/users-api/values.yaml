@@ -1,13 +1,8 @@
 replicaCount: 1
 image:
   repository: dimozone/users-api
-<<<<<<< HEAD
-  pullPolicy: Always
-  tag: 9eb9905
-=======
   pullPolicy: IfNotPresent
   tag: 1dc67e4
->>>>>>> 8adfa19 (Updating pull policy and values files)
 imagePullSecrets: []
 nameOverride: ''
 fullnameOverride: ''
@@ -27,7 +22,7 @@ env:
   DB_MAX_IDLE_CONNECTIONS: '3'
   SERVICE_NAME: users-api
   EMAIL_PORT: '587'
-  JWT_KEY_SET_URL: https://auth.dev.dimo.zone/dex/keys
+  JWT_KEY_SET_URL: https://auth.dev.dimo.zone/keys
 service:
   type: ClusterIP
   port: 8080

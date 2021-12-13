@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   repository: dimozone/users-api
   pullPolicy: Always
-  tag: 8561dc8
+  tag: 9b8ca40
 imagePullSecrets: []
 nameOverride: ''
 fullnameOverride: ''

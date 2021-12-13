@@ -32,7 +32,7 @@ go run ./cmd/users-api migrate
 And then to generate the models:
 ```
 rm -rf models
-sqlboiler psql --no-tests
+sqlboiler psql --no-tests --wipe
 ```
 
 ## Endpoints

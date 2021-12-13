@@ -48,6 +48,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 			return ErrorHandler(c, err, logger)
 		},
 		DisableStartupMessage: true,
+		ReadBufferSize:        16000,
 	})
 	userController := controllers.NewUserController(settings, pdb.DBS, &logger)
 

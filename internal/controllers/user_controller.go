@@ -148,6 +148,16 @@ func inSorted(v []string, x string) bool {
 	return i < len(v) && v[i] == x
 }
 
+type optionalString struct {
+	Defined bool
+	Value   null.String
+}
+
+func (o *optionalString) UnmarshalJSON(data []byte) error {
+	o.Defined = true
+	return json.Unmarshal(data, &o.Value)
+}
+
 func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
@@ -157,24 +167,27 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	var body struct {
-		EmailAddress null.String `json:"emailAddress"`
-		CountryCode  null.String `json:"countryCode"`
+		EmailAddress optionalString `json:"emailAddress"`
+		CountryCode  optionalString `json:"countryCode"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)
 	}
-	if body.CountryCode.Valid && !inSorted(d.countryCodes, body.CountryCode.String) {
-		return errorResponseHandler(c, fmt.Errorf("invalid country code"), fiber.StatusBadRequest)
-	}
-	user.CountryCode = body.CountryCode
 
-	if body.EmailAddress != user.EmailAddress {
-		if body.EmailAddress.Valid {
-			if !emailPattern.MatchString(body.EmailAddress.String) {
+	if body.CountryCode.Defined {
+		if body.CountryCode.Value.Valid && !inSorted(d.countryCodes, body.CountryCode.Value.String) {
+			return errorResponseHandler(c, fmt.Errorf("invalid country code"), fiber.StatusBadRequest)
+		}
+		user.CountryCode = body.CountryCode.Value
+	}
+
+	if body.EmailAddress.Defined && body.EmailAddress.Value != user.EmailAddress {
+		if body.EmailAddress.Value.Valid {
+			if !emailPattern.MatchString(body.EmailAddress.Value.String) {
 				return errorResponseHandler(c, fmt.Errorf("invalid email"), fiber.StatusBadRequest)
 			}
 		}
-		user.EmailAddress = body.EmailAddress
+		user.EmailAddress = body.EmailAddress.Value
 		user.EmailConfirmed = false
 		user.EmailConfirmationKey = null.StringFromPtr(nil)
 		user.EmailConfirmationSentAt = null.TimeFromPtr(nil)

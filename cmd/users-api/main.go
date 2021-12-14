@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	_ "go.uber.org/automaxprocs"
+
 	"github.com/DIMO-INC/users-api/internal/config"
 	"github.com/DIMO-INC/users-api/internal/controllers"
 	"github.com/DIMO-INC/users-api/internal/database"

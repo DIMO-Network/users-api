@@ -3,6 +3,7 @@ package controllers
 import (
 	"database/sql"
 	_ "embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -11,6 +12,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/DIMO-INC/users-api/internal"
 	"github.com/DIMO-INC/users-api/internal/config"
 	"github.com/DIMO-INC/users-api/internal/database"
 	"github.com/DIMO-INC/users-api/models"
@@ -19,6 +21,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"google.golang.org/protobuf/proto"
 )
 
 // Sorted JSON array of valid ISO 3116-1 apha-3 codes
@@ -279,4 +282,72 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	}
 
 	return errorResponseHandler(c, fmt.Errorf("email confirmation code invalid"), fiber.StatusBadRequest)
+}
+
+var addressRegex = regexp.MustCompile("^0x[a-fA-F0-9]{40}$")
+
+func (d *UserController) AdminCreateUser(c *fiber.Ctx) error {
+	var body struct {
+		NewID      string `json:"new_id"`
+		Email      string `json:"email"`
+		ReferralId string `json:"referral_id"`
+		Region     string `json:"region"`
+		EthAddress string `json:"eth_address"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusBadRequest)
+	}
+	var user models.User
+	if body.NewID == "" {
+		return errorResponseHandler(c, fmt.Errorf("ID required"), fiber.StatusBadRequest)
+	}
+	user.ID = body.NewID
+
+	if !emailPattern.MatchString(body.Email) {
+		return errorResponseHandler(c, fmt.Errorf("invalid email"), fiber.StatusBadRequest)
+	}
+	user.EmailAddress = null.StringFrom(body.Email)
+	user.EmailConfirmed = true
+
+	if body.ReferralId == "" || len(body.ReferralId) > 12 {
+		return errorResponseHandler(c, fmt.Errorf("invalid referral code"), fiber.StatusBadRequest)
+	}
+	user.ReferralCode = body.ReferralId
+
+	if body.Region != "" {
+		if !inSorted(d.countryCodes, body.Region) {
+			return errorResponseHandler(c, fmt.Errorf("invalid country code"), fiber.StatusBadRequest)
+		}
+		user.CountryCode = null.StringFrom(body.Region)
+	}
+
+	if body.EthAddress != "" {
+		if !addressRegex.MatchString(body.EthAddress) {
+			return errorResponseHandler(c, fmt.Errorf("invalid Ethereum address"), fiber.StatusBadRequest)
+		}
+		user.EthereumAddress = null.StringFrom(body.EthAddress)
+	}
+
+	// One last sanity check
+	var userSomething internal.IDTokenSubject
+	data, err := base64.RawURLEncoding.DecodeString(body.NewID)
+	if err != nil {
+		return errorResponseHandler(c, fmt.Errorf("invalid ID"), fiber.StatusBadRequest)
+	}
+
+	if err := proto.Unmarshal(data, &userSomething); err != nil {
+		return errorResponseHandler(c, fmt.Errorf("invalid ID"), fiber.StatusBadRequest)
+	}
+
+	if user.EthereumAddress.Valid {
+		if userSomething.ConnId != "web3" || userSomething.UserId != user.EthereumAddress.String {
+			return errorResponseHandler(c, fmt.Errorf("invalid ID"), fiber.StatusBadRequest)
+		}
+	} else if userSomething.ConnId != "google" || userSomething.UserId != user.EmailAddress.String {
+		return errorResponseHandler(c, fmt.Errorf("invalid ID"), fiber.StatusBadRequest)
+	}
+
+	return c.JSON(
+		fiber.Map{"success": "hooray"},
+	)
 }

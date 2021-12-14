@@ -288,11 +288,13 @@ var addressRegex = regexp.MustCompile("^0x[a-fA-F0-9]{40}$")
 
 func (d *UserController) AdminCreateUser(c *fiber.Ctx) error {
 	var body struct {
-		NewID      string `json:"new_id"`
-		Email      string `json:"email"`
-		ReferralId string `json:"referral_id"`
-		Region     string `json:"region"`
-		EthAddress string `json:"eth_address"`
+		NewID      string  `json:"new_id"`
+		Email      string  `json:"email"`
+		ReferralId string  `json:"referral_id"`
+		CreatedAt  float64 `json:"created_at"`
+		Region     string  `json:"region"`
+		EthAddress string  `json:"eth_address"`
+		GoogleId   string  `json:"google_id"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)
@@ -321,6 +323,11 @@ func (d *UserController) AdminCreateUser(c *fiber.Ctx) error {
 		user.CountryCode = null.StringFrom(body.Region)
 	}
 
+	if body.CreatedAt == 0 {
+		return errorResponseHandler(c, fmt.Errorf("invalid creation time"), fiber.StatusBadRequest)
+	}
+	user.CreatedAt = time.UnixMicro(int64(1e6 * body.CreatedAt))
+
 	if body.EthAddress != "" {
 		if !addressRegex.MatchString(body.EthAddress) {
 			return errorResponseHandler(c, fmt.Errorf("invalid Ethereum address"), fiber.StatusBadRequest)
@@ -332,22 +339,58 @@ func (d *UserController) AdminCreateUser(c *fiber.Ctx) error {
 	var userSomething internal.IDTokenSubject
 	data, err := base64.RawURLEncoding.DecodeString(body.NewID)
 	if err != nil {
-		return errorResponseHandler(c, fmt.Errorf("invalid ID"), fiber.StatusBadRequest)
+		return errorResponseHandler(c, fmt.Errorf("invalid ID: could not decode as base64"), fiber.StatusBadRequest)
 	}
 
 	if err := proto.Unmarshal(data, &userSomething); err != nil {
-		return errorResponseHandler(c, fmt.Errorf("invalid ID"), fiber.StatusBadRequest)
+		return errorResponseHandler(c, fmt.Errorf("invalid ID: could not deserialize into protobuf"), fiber.StatusBadRequest)
 	}
 
 	if user.EthereumAddress.Valid {
-		if userSomething.ConnId != "web3" || userSomething.UserId != user.EthereumAddress.String {
-			return errorResponseHandler(c, fmt.Errorf("invalid ID"), fiber.StatusBadRequest)
+		if userSomething.ConnId != "web3" {
+			return errorResponseHandler(c, fmt.Errorf("invalid ID: Eth address given but connector not web3"), fiber.StatusBadRequest)
 		}
-	} else if userSomething.ConnId != "google" || userSomething.UserId != user.EmailAddress.String {
-		return errorResponseHandler(c, fmt.Errorf("invalid ID"), fiber.StatusBadRequest)
+		if userSomething.UserId != user.EthereumAddress.String {
+			return errorResponseHandler(c, fmt.Errorf("invalid ID: Eth address in body and ID don't match"), fiber.StatusBadRequest)
+		}
+	} else {
+		if userSomething.ConnId != "google" {
+			return errorResponseHandler(c, fmt.Errorf("invalid ID: No Eth address given but connector not google"), fiber.StatusBadRequest)
+		}
+		if body.GoogleId == "" {
+			return errorResponseHandler(c, fmt.Errorf("invalid ID: No Eth address or Google ID given"), fiber.StatusBadRequest)
+		}
+		if userSomething.UserId != body.GoogleId {
+			return errorResponseHandler(c, fmt.Errorf("invalid ID: Google ID in body and ID don't match"), fiber.StatusBadRequest)
+		}
+	}
+
+	if err := user.Insert(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
 	return c.JSON(
-		fiber.Map{"success": "hooray"},
+		formatUser(&user),
 	)
+}
+
+func (d *UserController) AdminViewUsers(c *fiber.Ctx) error {
+	users, err := models.Users().All(c.Context(), d.DBS().Reader)
+	if err != nil {
+		return errorResponseHandler(c, err, fiber.StatusBadRequest)
+	}
+	return c.JSON(users)
+}
+
+func (d *UserController) DeleteUser(c *fiber.Ctx) error {
+	user, err := models.FindUser(c.Context(), d.DBS().Writer, c.Params("userID"))
+	if err != nil {
+		return errorResponseHandler(c, err, fiber.StatusBadRequest)
+	}
+	_, err = user.Delete(c.Context(), d.DBS().Writer)
+	if err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	return c.JSON(fiber.Map{"status": "overwhelming_success"})
 }

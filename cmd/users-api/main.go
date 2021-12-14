@@ -73,6 +73,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		admin.Post("/delete-user/:userID", userController.DeleteUser)
 	}
 
+	keyRefreshUnknownKID := true
 	v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{
 		KeySetURL: settings.JWTKeySetURL,
 		KeyRefreshErrorHandler: func(j *jwtware.KeySet, err error) {
@@ -83,6 +84,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 				Message string `json:"message"`
 			}{"Invalid or expired JWT"})
 		},
+		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
 	}))
 	v1.Get("/", userController.GetUser)
 	v1.Put("/", userController.UpdateUser)

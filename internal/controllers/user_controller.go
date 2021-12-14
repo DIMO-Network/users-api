@@ -243,7 +243,7 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 
 	auth := smtp.PlainAuth("", d.Settings.EmailUsername, d.Settings.EmailPassword, d.Settings.EmailHost)
 	addr := fmt.Sprintf("%s:%s", d.Settings.EmailHost, d.Settings.EmailPort)
-	msg := []byte("From: DIMO Mailer <mailer@dimo.zone>\r\n" +
+	msg := []byte("From: DIMO <" + d.Settings.EmailFrom + ">\r\n" +
 		"To: " + user.EmailAddress.String + "\r\n" +
 		"Subject: DIMO email confirmation\r\n" +
 		"\r\n" +

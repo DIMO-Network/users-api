@@ -23,6 +23,7 @@ env:
   SERVICE_NAME: users-api
   EMAIL_PORT: '587'
   JWT_KEY_SET_URL: https://auth.dev.dimo.zone/keys
+  EMAIL_FROM: hello@dimo.zone
 service:
   type: ClusterIP
   port: 8080

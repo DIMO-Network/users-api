@@ -68,6 +68,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		}))
 		admin.Post("/create-user", userController.AdminCreateUser)
 		admin.Get("/view-users", userController.AdminViewUsers)
+		admin.Get("/delete-user/:userID", userController.DeleteUser)
 	}
 
 	v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{KeySetURL: settings.JWTKeySetURL}))

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"time"
 
 	_ "go.uber.org/automaxprocs"
 
@@ -73,6 +74,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		admin.Post("/delete-user/:userID", userController.DeleteUser)
 	}
 
+	keyRefreshInterval := time.Hour
 	keyRefreshUnknownKID := true
 	v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{
 		KeySetURL: settings.JWTKeySetURL,
@@ -84,6 +86,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 				Message string `json:"message"`
 			}{"Invalid or expired JWT"})
 		},
+		KeyRefreshInterval:   &keyRefreshInterval,
 		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
 	}))
 	v1.Get("/", userController.GetUser)

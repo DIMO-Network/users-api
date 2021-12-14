@@ -203,7 +203,7 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 var digits = []rune("0123456789")
 
 func generateConfirmationKey() string {
-	o := make([]rune, 8)
+	o := make([]rune, 6)
 	for i := range o {
 		o[i] = digits[rand.Intn(10)]
 	}

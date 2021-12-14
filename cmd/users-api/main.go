@@ -60,12 +60,14 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	app.Use(cors.New())
 	app.Get("/", HealthCheck)
 
-	admin := app.Group("/admin", basicauth.New(basicauth.Config{
-		Users: map[string]string{
-			"admin": settings.AdminPassword,
-		},
-	}))
-	admin.Post("/create-user", userController.AdminCreateUser)
+	if len(settings.AdminPassword) >= 8 {
+		admin := app.Group("/admin", basicauth.New(basicauth.Config{
+			Users: map[string]string{
+				"admin": settings.AdminPassword,
+			},
+		}))
+		admin.Post("/create-user", userController.AdminCreateUser)
+	}
 
 	v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{KeySetURL: settings.JWTKeySetURL}))
 	v1.Get("/", userController.GetUser)

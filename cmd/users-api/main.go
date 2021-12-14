@@ -73,7 +73,17 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		admin.Post("/delete-user/:userID", userController.DeleteUser)
 	}
 
-	v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{KeySetURL: settings.JWTKeySetURL}))
+	v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{
+		KeySetURL: settings.JWTKeySetURL,
+		KeyRefreshErrorHandler: func(j *jwtware.KeySet, err error) {
+			logger.Error().Err(err).Msg("Key refresh error")
+		},
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			return c.Status(fiber.StatusUnauthorized).JSON(struct {
+				Message string `json:"message"`
+			}{"Invalid or expired JWT"})
+		},
+	}))
 	v1.Get("/", userController.GetUser)
 	v1.Put("/", userController.UpdateUser)
 	v1.Post("/send-confirmation-email", userController.SendConfirmationEmail)

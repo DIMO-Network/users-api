@@ -303,11 +303,11 @@ func (d *UserController) AdminCreateUser(c *fiber.Ctx) error {
 	var body struct {
 		NewID      string  `json:"new_id"`
 		Email      string  `json:"email"`
-		ReferralId string  `json:"referral_id"`
+		ReferralID string  `json:"referral_id"`
 		CreatedAt  float64 `json:"created_at"`
 		Region     string  `json:"region"`
 		EthAddress string  `json:"eth_address"`
-		GoogleId   string  `json:"google_id"`
+		GoogleID   string  `json:"google_id"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)
@@ -324,10 +324,10 @@ func (d *UserController) AdminCreateUser(c *fiber.Ctx) error {
 	user.EmailAddress = null.StringFrom(body.Email)
 	user.EmailConfirmed = true
 
-	if body.ReferralId == "" || len(body.ReferralId) > 12 {
+	if body.ReferralID == "" || len(body.ReferralID) > 12 {
 		return errorResponseHandler(c, fmt.Errorf("invalid referral code"), fiber.StatusBadRequest)
 	}
-	user.ReferralCode = body.ReferralId
+	user.ReferralCode = body.ReferralID
 
 	if body.Region != "" {
 		if !inSorted(d.countryCodes, body.Region) {
@@ -370,10 +370,10 @@ func (d *UserController) AdminCreateUser(c *fiber.Ctx) error {
 		if userSomething.ConnId != "google" {
 			return errorResponseHandler(c, fmt.Errorf("invalid ID: No Eth address given but connector not google"), fiber.StatusBadRequest)
 		}
-		if body.GoogleId == "" {
+		if body.GoogleID == "" {
 			return errorResponseHandler(c, fmt.Errorf("invalid ID: No Eth address or Google ID given"), fiber.StatusBadRequest)
 		}
-		if userSomething.UserId != body.GoogleId {
+		if userSomething.UserId != body.GoogleID {
 			return errorResponseHandler(c, fmt.Errorf("invalid ID: Google ID in body and ID don't match"), fiber.StatusBadRequest)
 		}
 	}

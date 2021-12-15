@@ -148,6 +148,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 // @Summary Get attributes for the authenticated user
 // @Produce json
 // @Success 200 {object} controllers.UserResponse
+// @Failure 403 {object} controllers.ErrorResponse
 // @Router /v1/user [get]
 func (d *UserController) GetUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
@@ -183,12 +184,13 @@ type UserUpdateRequest struct {
 	CountryCode optionalString `json:"countryCode" swaggertype:"string" example:"USA"`
 }
 
-// GetUser godoc
+// UpdateUser godoc
 // @Summary Modify attributes for the authenticated user
 // @Accept json
 // @Produce json
 // @Param userUpdateRequest body controllers.UserUpdateRequest true "New field values"
 // @Success 200 {object} controllers.UserResponse
+// @Success 400 {object} controllers.ErrorMessage
 // @Router /v1/user [put]
 func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
@@ -251,7 +253,9 @@ func generateReferralCode() string {
 
 // SendConfirmationEmail godoc
 // @Summary Send a confirmation email to the authenticated user
-// @Success 200
+// @Success 204
+// @Failure 400 {object} controllers.ErrorMessage
+// @Failure 500 {object} controllers.ErrorMessage
 // @Router /v1/user/send-confirmation-email [post]
 func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	userID := getUserID(c)
@@ -302,7 +306,8 @@ type ConfirmEmailRequest struct {
 // @Summary Submit an email confirmation key
 // @Accept json
 // @Param confirmEmailRequest body controllers.ConfirmEmailRequest true "Specifies the key from the email"
-// @Success 200
+// @Success 204
+// @Failure 400 {object} controllers.ErrorMessage
 // @Router /v1/user/confirm-email [post]
 func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	userID := getUserID(c)

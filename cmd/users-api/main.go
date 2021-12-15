@@ -7,9 +7,11 @@ import (
 
 	_ "go.uber.org/automaxprocs"
 
+	_ "github.com/DIMO-INC/users-api/docs"
 	"github.com/DIMO-INC/users-api/internal/config"
 	"github.com/DIMO-INC/users-api/internal/controllers"
 	"github.com/DIMO-INC/users-api/internal/database"
+	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -18,6 +20,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// @title DIMO Devices API
+// @version 1.0
 func main() {
 	gitSha1 := os.Getenv("GIT_SHA1")
 	ctx := context.Background()
@@ -62,6 +66,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	}))
 	app.Use(cors.New())
 	app.Get("/", HealthCheck)
+
+	app.Get("/swagger/*", swagger.Handler)
 
 	if len(settings.AdminPassword) >= 8 {
 		admin := app.Group("/admin", basicauth.New(basicauth.Config{

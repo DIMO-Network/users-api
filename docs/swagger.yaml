@@ -1,0 +1,173 @@
+definitions:
+  controllers.ConfirmEmailRequest:
+    properties:
+      key:
+        description: Key is the 6-digit number from the confirmation email
+        example: "010990"
+        type: string
+    type: object
+  controllers.ErrorResponse:
+    properties:
+      errorMessage:
+        type: string
+    type: object
+  controllers.UserResponse:
+    properties:
+      countryCode:
+        description: CountryCode, if present, is a valid ISO 3166-1 alpha-3 country
+          code
+        example: USA
+        type: string
+      createdAt:
+        description: CreatedAt is when the user first logged in
+        example: "2021-12-01T09:00:00Z"
+        type: string
+      emailAddress:
+        description: EmailAddress is the email address coming from a user's login
+          or manual election
+        example: koblitz@dimo.zone
+        type: string
+      emailConfirmationSentAt:
+        description: |-
+          EmailConfirmationSentAt is the time when we last sent the user an email
+          confirmation message, and is only present if such an email has been sent but
+          confirmation has not yet occurred
+        example: "2021-12-01T09:01:12Z"
+        type: string
+      emailVerified:
+        description: |-
+          EmailConfirmed indicates whether DIMO has confirmed the user's ownership of
+          EmailAddress
+        example: false
+        type: boolean
+      ethereumAddress:
+        description: EthereumAddress is the Ethereum address used to log in, if the
+          user did use Web3
+        example: 0x142e0C7A098622Ea98E5D67034251C4dFA746B5d
+        type: string
+      id:
+        description: ID is the user's DIMO-internal ID
+        example: ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl
+        type: string
+      referralCode:
+        description: ReferralCode is the short code used in a user's share link
+        example: bUkZuSL7
+        type: string
+    type: object
+  controllers.UserUpdateRequest:
+    properties:
+      countryCode:
+        description: CountryCode, if specified, should be a valid ISO 3166-1 alpha-3
+          country code
+        example: USA
+        type: string
+      emailAddress:
+        description: |-
+          EmailAddress, if specified, should be a valid email address. Note when this field
+          is modified the user's verification status will reset.
+        example: neal@dimo.zone
+        type: string
+    type: object
+info:
+  contact: {}
+  title: DIMO Devices API
+  version: "1.0"
+paths:
+  /:
+    get:
+      consumes:
+      - '*/*'
+      description: get the status of server.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Show the status of server.
+      tags:
+      - root
+  /v1/user:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.UserResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Get attributes for the authenticated user
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: New field values
+        in: body
+        name: userUpdateRequest
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UserUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Modify attributes for the authenticated user
+  /v1/user/confirm-email:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Specifies the key from the email
+        in: body
+        name: confirmEmailRequest
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.ConfirmEmailRequest'
+      responses:
+        "204":
+          description: ""
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Submit an email confirmation key
+  /v1/user/send-confirmation-email:
+    post:
+      responses:
+        "204":
+          description: ""
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Send a confirmation email to the authenticated user
+swagger: "2.0"

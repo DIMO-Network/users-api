@@ -38,6 +38,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.0.2 // indirect
+	github.com/customerio/go-customerio/v3 v3.1.0
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/klauspost/compress v1.13.4 // indirect
 	github.com/pkg/errors v0.9.1

@@ -57,7 +57,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		DisableStartupMessage: true,
 		ReadBufferSize:        16000,
 	})
-	userController := controllers.NewUserController(settings, pdb.DBS, &logger)
 
 	app.Use(recover.New(recover.Config{
 		Next:              nil,
@@ -68,17 +67,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	app.Get("/", HealthCheck)
 
 	app.Get("/swagger/*", swagger.Handler)
-
-	if len(settings.AdminPassword) >= 8 {
-		admin := app.Group("/admin", basicauth.New(basicauth.Config{
-			Users: map[string]string{
-				"admin": settings.AdminPassword,
-			},
-		}))
-		admin.Post("/create-user", userController.AdminCreateUser)
-		admin.Get("/view-users", userController.AdminViewUsers)
-		admin.Post("/delete-user/:userID", userController.DeleteUser)
-	}
 
 	keyRefreshInterval := time.Hour
 	keyRefreshUnknownKID := true
@@ -95,10 +83,27 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		KeyRefreshInterval:   &keyRefreshInterval,
 		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
 	}))
+
+	userController := controllers.NewUserController(settings, pdb.DBS, &logger)
 	v1.Get("/", userController.GetUser)
 	v1.Put("/", userController.UpdateUser)
 	v1.Post("/send-confirmation-email", userController.SendConfirmationEmail)
 	v1.Post("/confirm-email", userController.ConfirmEmail)
+
+	// Temporary endpoints for the migration from Django
+	if len(settings.AdminPassword) >= 8 {
+		admin := app.Group("/admin", basicauth.New(basicauth.Config{
+			Users: map[string]string{
+				"admin": settings.AdminPassword,
+			},
+		}))
+		admin.Post("/create-user", userController.AdminCreateUser)
+		admin.Get("/view-users", userController.AdminViewUsers)
+		admin.Post("/delete-user/:userID", userController.DeleteUser)
+	}
+
+	customerIOController := controllers.NewCustomerIOController(settings, &logger)
+	v1.Post("/vitamins/known", customerIOController.Track)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 

@@ -334,7 +334,7 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
-	return nil
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 // https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
@@ -377,17 +377,18 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)
 	}
 
-	if confirmationBody.Key == user.EmailConfirmationKey.String {
-		user.EmailConfirmed = true
-		user.EmailConfirmationKey = null.StringFromPtr(nil)
-		user.EmailConfirmationSentAt = null.TimeFromPtr(nil)
-		if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
-			return errorResponseHandler(c, err, fiber.StatusInternalServerError)
-		}
-		return nil
+	if confirmationBody.Key != user.EmailConfirmationKey.String {
+		return errorResponseHandler(c, fmt.Errorf("email confirmation code invalid"), fiber.StatusBadRequest)
 	}
 
-	return errorResponseHandler(c, fmt.Errorf("email confirmation code invalid"), fiber.StatusBadRequest)
+	user.EmailConfirmed = true
+	user.EmailConfirmationKey = null.StringFromPtr(nil)
+	user.EmailConfirmationSentAt = null.TimeFromPtr(nil)
+	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 var addressRegex = regexp.MustCompile("^0x[a-fA-F0-9]{40}$")

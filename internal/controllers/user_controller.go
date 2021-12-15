@@ -191,6 +191,7 @@ type UserUpdateRequest struct {
 // @Param userUpdateRequest body controllers.UserUpdateRequest true "New field values"
 // @Success 200 {object} controllers.UserResponse
 // @Success 400 {object} controllers.ErrorMessage
+// @Failure 403 {object} controllers.ErrorResponse
 // @Router /v1/user [put]
 func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
@@ -255,6 +256,7 @@ func generateReferralCode() string {
 // @Summary Send a confirmation email to the authenticated user
 // @Success 204
 // @Failure 400 {object} controllers.ErrorMessage
+// @Failure 403 {object} controllers.ErrorResponse
 // @Failure 500 {object} controllers.ErrorMessage
 // @Router /v1/user/send-confirmation-email [post]
 func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
@@ -307,6 +309,7 @@ type ConfirmEmailRequest struct {
 // @Accept json
 // @Param confirmEmailRequest body controllers.ConfirmEmailRequest true "Specifies the key from the email"
 // @Success 204
+// @Failure 403 {object} controllers.ErrorResponse
 // @Failure 400 {object} controllers.ErrorMessage
 // @Router /v1/user/confirm-email [post]
 func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {

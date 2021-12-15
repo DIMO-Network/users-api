@@ -1,13 +1,18 @@
 package controllers
 
 import (
+	"bytes"
 	"database/sql"
 	_ "embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"math/rand"
+	"mime/multipart"
+	"mime/quotedprintable"
 	"net/smtp"
+	"net/textproto"
 	"regexp"
 	"sort"
 	"time"
@@ -28,12 +33,16 @@ import (
 //go:embed country_codes.json
 var rawCountryCodes []byte
 
+//go:embed confirmation_email.html
+var rawConfirmationEmail string
+
 type UserController struct {
 	Settings        *config.Settings
 	DBS             func() *database.DBReaderWriter
 	log             *zerolog.Logger
 	allowedLateness time.Duration
 	countryCodes    []string
+	emailTemplate   *template.Template
 }
 
 func NewUserController(settings *config.Settings, dbs func() *database.DBReaderWriter, logger *zerolog.Logger) UserController {
@@ -41,12 +50,14 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
 		panic(err)
 	}
+	t := template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail))
 	return UserController{
 		Settings:        settings,
 		DBS:             dbs,
 		log:             logger,
 		allowedLateness: 5 * time.Minute,
 		countryCodes:    countryCodes,
+		emailTemplate:   t,
 	}
 }
 
@@ -237,23 +248,52 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	key := generateConfirmationKey()
 	user.EmailConfirmationKey = null.StringFrom(key)
 	user.EmailConfirmationSentAt = null.TimeFrom(time.Now())
+
+	auth := smtp.PlainAuth("", d.Settings.EmailUsername, d.Settings.EmailPassword, d.Settings.EmailHost)
+	addr := fmt.Sprintf("%s:%s", d.Settings.EmailHost, d.Settings.EmailPort)
+
+	var partsBuffer bytes.Buffer
+	w := multipart.NewWriter(&partsBuffer)
+	defer w.Close() //nolint
+
+	p, err := w.CreatePart(textproto.MIMEHeader{"Content-Type": {"text/plain"}, "Content-Transfer-Encoding": {"quoted-printable"}})
+	if err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+	pw := quotedprintable.NewWriter(p)
+	if _, err := pw.Write([]byte("Hi,\r\n\r\nYour email verification code is: " + key + "\r\n")); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+	pw.Close()
+
+	h, err := w.CreatePart(textproto.MIMEHeader{"Content-Type": {"text/html"}, "Content-Transfer-Encoding": {"quoted-printable"}})
+	if err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+	hw := quotedprintable.NewWriter(h)
+	if err := d.emailTemplate.Execute(hw, struct{ Key string }{key}); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+	hw.Close()
+
+	var buffer bytes.Buffer
+	buffer.WriteString("From: DIMO <" + d.Settings.EmailFrom + ">\r\n" +
+		"To: " + user.EmailAddress.String + "\r\n" +
+		"Subject: DIMO email confirmation\r\n" +
+		"Content-Type: multipart/alternative; boundary=\"" + w.Boundary() + "\"\r\n" +
+		"\r\n")
+	if _, err := partsBuffer.WriteTo(&buffer); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	if err := smtp.SendMail(addr, auth, d.Settings.EmailFrom, []string{user.EmailAddress.String}, buffer.Bytes()); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
 	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
-	auth := smtp.PlainAuth("", d.Settings.EmailUsername, d.Settings.EmailPassword, d.Settings.EmailHost)
-	addr := fmt.Sprintf("%s:%s", d.Settings.EmailHost, d.Settings.EmailPort)
-	msg := []byte("From: DIMO <" + d.Settings.EmailFrom + ">\r\n" +
-		"To: " + user.EmailAddress.String + "\r\n" +
-		"Subject: DIMO email confirmation\r\n" +
-		"\r\n" +
-		"Your email confirmation code is\r\n" +
-		"\r\n" +
-		key + "\r\n")
-	err = smtp.SendMail(addr, auth, d.Settings.EmailFrom, []string{user.EmailAddress.String}, msg)
-	if err != nil {
-		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
-	}
 	return nil
 }
 

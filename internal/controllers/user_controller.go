@@ -111,6 +111,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			if emailVerified, ok := getBooleanClaim(claims, "email_verified"); ok && emailVerified {
 				if email, ok := getStringClaim(claims, "email"); ok {
 					user.EmailAddress = null.StringFrom(email)
+					user.EmailConfirmed = true
 				}
 			}
 

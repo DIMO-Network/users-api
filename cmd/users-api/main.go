@@ -58,6 +58,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		ReadBufferSize:        16000,
 	})
 	userController := controllers.NewUserController(settings, pdb.DBS, &logger)
+	customerIOController := controllers.NewCustomerIOController(settings, &logger)
 
 	app.Use(recover.New(recover.Config{
 		Next:              nil,
@@ -99,6 +100,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	v1.Put("/", userController.UpdateUser)
 	v1.Post("/send-confirmation-email", userController.SendConfirmationEmail)
 	v1.Post("/confirm-email", userController.ConfirmEmail)
+
+	v1.Post("/vitamins/known", customerIOController.Track)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 

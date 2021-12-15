@@ -23,25 +23,23 @@ func NewCustomerIOController(settings *config.Settings, logger *zerolog.Logger) 
 	}
 }
 
-type CustomerIOTrackRequest struct {
-	Params map[string]interface{} `json:"params"`
-}
-
 func (d *CustomerIOController) Track(c *fiber.Ctx) error {
-	var req CustomerIOTrackRequest
+	var req struct {
+		Params map[string]interface{} `json:"params"`
+	}
 	if err := c.BodyParser(&req); err != nil {
-		errorResponseHandler(c, err, fiber.StatusBadRequest)
+		return errorResponseHandler(c, err, fiber.StatusBadRequest)
 	}
 	rawName, ok := req.Params["name"]
 	if !ok {
-		errorResponseHandler(c, fmt.Errorf("couldn't find key params.name"), fiber.StatusBadRequest)
+		return errorResponseHandler(c, fmt.Errorf("couldn't find key params.name"), fiber.StatusBadRequest)
 	}
 	name, ok := rawName.(string)
 	if !ok {
-		errorResponseHandler(c, fmt.Errorf("params.name should be a string"), fiber.StatusBadRequest)
+		return errorResponseHandler(c, fmt.Errorf("params.name should be a string"), fiber.StatusBadRequest)
 	}
 	if err := d.client.Track(getUserID(c), name, req.Params); err != nil {
-		errorResponseHandler(c, fmt.Errorf("failed Customer.io request"), fiber.StatusInternalServerError)
+		return errorResponseHandler(c, fmt.Errorf("failed Customer.io request"), fiber.StatusInternalServerError)
 	}
 	return c.JSON(fiber.Map{"success": true})
 }

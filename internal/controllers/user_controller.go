@@ -50,19 +50,30 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 	}
 }
 
-type userResponse struct {
-	ID                      string      `json:"id"`
-	EmailAddress            null.String `json:"emailAddress"`
-	EmailConfirmed          bool        `json:"emailVerified"`
-	EmailConfirmationSentAt null.Time   `json:"emailConfirmationSentAt"`
-	CreatedAt               time.Time   `json:"createdAt"`
-	CountryCode             null.String `json:"countryCode"`
-	EthereumAddress         null.String `json:"ethereumAddress"`
-	ReferralCode            string      `json:"referralCode"`
+type UserResponse struct {
+	// ID is the user's DIMO-internal ID
+	ID string `json:"id" example:"ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"`
+	// EmailAddress is the email address coming from a user's login or manual election
+	EmailAddress null.String `json:"emailAddress" swaggertype:"string" example:"koblitz@dimo.zone"`
+	// EmailConfirmed indicates whether DIMO has confirmed the user's ownership of
+	// EmailAddress
+	EmailConfirmed bool `json:"emailVerified" example:"false"`
+	// EmailConfirmationSentAt is the time when we last sent the user an email
+	// confirmation message, and is only present if such an email has been sent but
+	// confirmation has not yet occurred
+	EmailConfirmationSentAt null.Time `json:"emailConfirmationSentAt" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
+	// CreatedAt is when the user first logged in
+	CreatedAt time.Time `json:"createdAt" swaggertype:"string" example:"2021-12-01T09:00:00Z"`
+	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code
+	CountryCode null.String `json:"countryCode" swaggertype:"string" example:"USA"`
+	// EthereumAddress is the Ethereum address used to log in, if the user did use Web3
+	EthereumAddress null.String `json:"ethereumAddress" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
+	// ReferralCode is the short code used in a user's share link
+	ReferralCode string `json:"referralCode" example:"bUkZuSL7"`
 }
 
-func formatUser(user *models.User) *userResponse {
-	return &userResponse{
+func formatUser(user *models.User) *UserResponse {
+	return &UserResponse{
 		ID:                      user.ID,
 		EmailAddress:            user.EmailAddress,
 		EmailConfirmed:          user.EmailConfirmed,
@@ -133,6 +144,11 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	return user, nil
 }
 
+// GetUser godoc
+// @Summary Get attributes for the authenticated user
+// @Produce json
+// @Success 200 {object} controllers.UserResponse
+// @Router /v1/user [get]
 func (d *UserController) GetUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
@@ -158,6 +174,22 @@ func (o *optionalString) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &o.Value)
 }
 
+// UserUpdateRequest describes a user's request to modify or delete certain fields
+type UserUpdateRequest struct {
+	// EmailAddress, if specified, should be a valid email address. Note when this field
+	// is modified the user's verification status will reset.
+	EmailAddress optionalString `json:"emailAddress" swaggertype:"string" example:"neal@dimo.zone"`
+	// CountryCode, if specified, should be a valid ISO 3166-1 alpha-3 country code
+	CountryCode optionalString `json:"countryCode" swaggertype:"string" example:"USA"`
+}
+
+// GetUser godoc
+// @Summary Modify attributes for the authenticated user
+// @Accept json
+// @Produce json
+// @Param userUpdateRequest body controllers.UserUpdateRequest true "New field values"
+// @Success 200 {object} controllers.UserResponse
+// @Router /v1/user [put]
 func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
@@ -166,10 +198,7 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
-	var body struct {
-		EmailAddress optionalString `json:"emailAddress"`
-		CountryCode  optionalString `json:"countryCode"`
-	}
+	var body UserUpdateRequest
 	if err := c.BodyParser(&body); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)
 	}
@@ -220,6 +249,10 @@ func generateReferralCode() string {
 	return string(o)
 }
 
+// SendConfirmationEmail godoc
+// @Summary Send a confirmation email to the authenticated user
+// @Success 200
+// @Router /v1/user/send-confirmation-email [post]
 func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
@@ -260,6 +293,17 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 // https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
 var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
+type ConfirmEmailRequest struct {
+	// Key is the 6-digit number from the confirmation email
+	Key string `json:"key" example:"010990"`
+}
+
+// ConfirmEmail godoc
+// @Summary Submit an email confirmation key
+// @Accept json
+// @Param confirmEmailRequest body controllers.ConfirmEmailRequest true "Specifies the key from the email"
+// @Success 200
+// @Router /v1/user/confirm-email [post]
 func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	userID := getUserID(c)
 

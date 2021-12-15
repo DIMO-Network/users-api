@@ -16,8 +16,8 @@ type CustomerIOController struct {
 func NewCustomerIOController(settings *config.Settings, logger *zerolog.Logger) CustomerIOController {
 	return CustomerIOController{
 		client: customerio.NewTrackClient(
-			settings.CustomerIOSiteID,
-			settings.CustomerIOApiKey,
+			settings.CIOSiteID,
+			settings.CIOApiKey,
 			customerio.WithRegion(customerio.RegionUS),
 		),
 	}

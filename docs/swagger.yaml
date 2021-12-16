@@ -13,6 +13,12 @@ definitions:
     type: object
   controllers.UserResponse:
     properties:
+      agreedTOSAt:
+        description: |-
+          AgreedTOSAt is the last time at which the user last agreed to the terms of
+          service
+        example: "2021-12-01T09:00:41Z"
+        type: string
       countryCode:
         description: CountryCode, if present, is a valid ISO 3166-1 alpha-3 country
           code
@@ -129,6 +135,16 @@ paths:
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
       summary: Modify attributes for the authenticated user
+  /v1/user/agree-tos:
+    post:
+      responses:
+        "204":
+          description: ""
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Agree to the current terms of service
   /v1/user/confirm-email:
     post:
       consumes:

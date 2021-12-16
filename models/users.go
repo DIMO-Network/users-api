@@ -33,6 +33,7 @@ type User struct {
 	CountryCode             null.String `boil:"country_code" json:"country_code,omitempty" toml:"country_code" yaml:"country_code,omitempty"`
 	EthereumAddress         null.String `boil:"ethereum_address" json:"ethereum_address,omitempty" toml:"ethereum_address" yaml:"ethereum_address,omitempty"`
 	ReferralCode            string      `boil:"referral_code" json:"referral_code" toml:"referral_code" yaml:"referral_code"`
+	AgreedTosAt             null.Time   `boil:"agreed_tos_at" json:"agreed_tos_at,omitempty" toml:"agreed_tos_at" yaml:"agreed_tos_at,omitempty"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -48,6 +49,7 @@ var UserColumns = struct {
 	CountryCode             string
 	EthereumAddress         string
 	ReferralCode            string
+	AgreedTosAt             string
 }{
 	ID:                      "id",
 	EmailAddress:            "email_address",
@@ -58,6 +60,7 @@ var UserColumns = struct {
 	CountryCode:             "country_code",
 	EthereumAddress:         "ethereum_address",
 	ReferralCode:            "referral_code",
+	AgreedTosAt:             "agreed_tos_at",
 }
 
 var UserTableColumns = struct {
@@ -70,6 +73,7 @@ var UserTableColumns = struct {
 	CountryCode             string
 	EthereumAddress         string
 	ReferralCode            string
+	AgreedTosAt             string
 }{
 	ID:                      "users.id",
 	EmailAddress:            "users.email_address",
@@ -80,6 +84,7 @@ var UserTableColumns = struct {
 	CountryCode:             "users.country_code",
 	EthereumAddress:         "users.ethereum_address",
 	ReferralCode:            "users.referral_code",
+	AgreedTosAt:             "users.agreed_tos_at",
 }
 
 // Generated where
@@ -195,6 +200,7 @@ var UserWhere = struct {
 	CountryCode             whereHelpernull_String
 	EthereumAddress         whereHelpernull_String
 	ReferralCode            whereHelperstring
+	AgreedTosAt             whereHelpernull_Time
 }{
 	ID:                      whereHelperstring{field: "\"users_api\".\"users\".\"id\""},
 	EmailAddress:            whereHelpernull_String{field: "\"users_api\".\"users\".\"email_address\""},
@@ -205,6 +211,7 @@ var UserWhere = struct {
 	CountryCode:             whereHelpernull_String{field: "\"users_api\".\"users\".\"country_code\""},
 	EthereumAddress:         whereHelpernull_String{field: "\"users_api\".\"users\".\"ethereum_address\""},
 	ReferralCode:            whereHelperstring{field: "\"users_api\".\"users\".\"referral_code\""},
+	AgreedTosAt:             whereHelpernull_Time{field: "\"users_api\".\"users\".\"agreed_tos_at\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -224,8 +231,8 @@ func (*userR) NewStruct() *userR {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code"}
-	userColumnsWithoutDefault = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code"}
+	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code", "agreed_tos_at"}
+	userColumnsWithoutDefault = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code", "agreed_tos_at"}
 	userColumnsWithDefault    = []string{}
 	userPrimaryKeyColumns     = []string{"id"}
 )

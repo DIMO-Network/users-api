@@ -81,6 +81,8 @@ type UserResponse struct {
 	EthereumAddress null.String `json:"ethereumAddress" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
 	// ReferralCode is the short code used in a user's share link
 	ReferralCode string `json:"referralCode" example:"bUkZuSL7"`
+	// AgreedTOSAt is the time at which the user last agreed to the terms of service
+	AgreedTOSAt null.Time `json:"agreedTOSAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 }
 
 func formatUser(user *models.User) *UserResponse {
@@ -93,6 +95,7 @@ func formatUser(user *models.User) *UserResponse {
 		CountryCode:             user.CountryCode,
 		EthereumAddress:         user.EthereumAddress,
 		ReferralCode:            user.ReferralCode,
+		AgreedTOSAt:             user.AgreedTosAt,
 	}
 }
 
@@ -262,6 +265,28 @@ func generateReferralCode() string {
 		o[i] = validChars[rand.Intn(len(validChars))]
 	}
 	return string(o)
+}
+
+// AgreeTOS godoc
+// @Summary Agree to the current terms of service
+// @Success 204
+// @Failure 400 {object} controllers.ErrorResponse
+// @Router /v1/user/agree-tos [post]
+func (d *UserController) AgreeTOS(c *fiber.Ctx) error {
+	userID := getUserID(c)
+
+	user, err := d.getOrCreateUser(c, userID)
+	if err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	user.AgreedTosAt = null.TimeFrom(time.Now())
+
+	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 // SendConfirmationEmail godoc

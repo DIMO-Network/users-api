@@ -109,6 +109,22 @@ var doc = `{
                 }
             }
         },
+        "/v1/user/agree-tos": {
+            "post": {
+                "summary": "Agree to the current terms of service",
+                "responses": {
+                    "204": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/user/confirm-email": {
             "post": {
                 "consumes": [
@@ -196,6 +212,11 @@ var doc = `{
         "controllers.UserResponse": {
             "type": "object",
             "properties": {
+                "agreedTOSAt": {
+                    "description": "AgreedTOSAt is the last time at which the user last agreed to the terms of\nservice",
+                    "type": "string",
+                    "example": "2021-12-01T09:00:41Z"
+                },
                 "countryCode": {
                     "description": "CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code",
                     "type": "string",

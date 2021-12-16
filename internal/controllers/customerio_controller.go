@@ -39,7 +39,7 @@ func (d *CustomerIOController) Track(c *fiber.Ctx) error {
 		return errorResponseHandler(c, fmt.Errorf("params.name should be a string"), fiber.StatusBadRequest)
 	}
 	if err := d.client.Track(getUserID(c), name, req.Params); err != nil {
-		return errorResponseHandler(c, fmt.Errorf("failed Customer.io request"), fiber.StatusInternalServerError)
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 	return c.JSON(fiber.Map{"success": true})
 }

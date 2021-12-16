@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"math/rand"
@@ -242,6 +243,40 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(formatUser(user))
+}
+
+// DeleteUser godoc
+// @Summary Delete the authenticated user
+// @Success 204
+// @Failure 400 {object} controllers.ErrorResponse
+// @Failure 403 {object} controllers.ErrorResponse
+// @Router /v1/user [delete]
+func (d *UserController) DeleteUser(c *fiber.Ctx) error {
+	userID := getUserID(c)
+
+	tx, err := d.DBS().Writer.BeginTx(c.Context(), nil)
+	if err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+	defer tx.Rollback() //nolint
+
+	user, err := models.FindUser(c.Context(), tx, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errorResponseHandler(c, err, fiber.StatusBadRequest)
+		}
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	if _, err := user.Delete(c.Context(), d.DBS().Writer); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 var digits = []rune("0123456789")
@@ -489,7 +524,7 @@ func (d *UserController) AdminViewUsers(c *fiber.Ctx) error {
 	return c.JSON(users)
 }
 
-func (d *UserController) DeleteUser(c *fiber.Ctx) error {
+func (d *UserController) AdminDeleteUser(c *fiber.Ctx) error {
 	user, err := models.FindUser(c.Context(), d.DBS().Writer, c.Params("userID"))
 	if err != nil {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)

@@ -150,11 +150,13 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 
 			if ethereumAddress, ok := getStringClaim(claims, "ethereum_address"); ok && ethereumAddress != "" {
 				user.EthereumAddress = null.StringFrom(ethereumAddress)
-				go func() {
-					if err := d.cioClient.Track(userID, "walletAdded", nil); err != nil {
-						d.log.Error().Err(err).Msg("")
-					}
-				}()
+				if d.cioClient != nil {
+					go func() {
+						if err := d.cioClient.Track(userID, "walletAdded", nil); err != nil {
+							d.log.Error().Err(err).Msg("")
+						}
+					}()
+				}
 			}
 
 			if err := user.Insert(c.Context(), tx, boil.Infer()); err != nil {

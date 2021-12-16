@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 ALTER TABLE users_api.users ADD COLUMN agreed_tos_at timestamptz;
-UPDATE users_api.users SET agreed_to_tos_at = NOW();
+UPDATE users_api.users SET agreed_tos_at = NOW();
 -- +goose StatementEnd
 
 -- +goose Down

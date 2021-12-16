@@ -22,6 +22,7 @@ import (
 	"github.com/DIMO-INC/users-api/internal/config"
 	"github.com/DIMO-INC/users-api/internal/database"
 	"github.com/DIMO-INC/users-api/models"
+	"github.com/customerio/go-customerio/v3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
@@ -44,6 +45,7 @@ type UserController struct {
 	allowedLateness time.Duration
 	countryCodes    []string
 	emailTemplate   *template.Template
+	cioClient       *customerio.CustomerIO
 }
 
 func NewUserController(settings *config.Settings, dbs func() *database.DBReaderWriter, logger *zerolog.Logger) UserController {
@@ -52,6 +54,14 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 		panic(err)
 	}
 	t := template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail))
+	var cioClient *customerio.CustomerIO
+	if settings.CIOSiteID != "" && settings.CIOApiKey != "" {
+		cioClient = customerio.NewTrackClient(
+			settings.CIOSiteID,
+			settings.CIOApiKey,
+			customerio.WithRegion(customerio.RegionUS),
+		)
+	}
 	return UserController{
 		Settings:        settings,
 		DBS:             dbs,
@@ -59,6 +69,7 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 		allowedLateness: 5 * time.Minute,
 		countryCodes:    countryCodes,
 		emailTemplate:   t,
+		cioClient:       cioClient,
 	}
 }
 
@@ -140,6 +151,13 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 
 			if ethereumAddress, ok := getStringClaim(claims, "ethereum_address"); ok && ethereumAddress != "" {
 				user.EthereumAddress = null.StringFrom(ethereumAddress)
+				if d.cioClient != nil {
+					go func() {
+						if err := d.cioClient.Track(userID, "walletAdded", nil); err != nil {
+							d.log.Error().Err(err).Msg("")
+						}
+					}()
+				}
 			}
 
 			if err := user.Insert(c.Context(), tx, boil.Infer()); err != nil {

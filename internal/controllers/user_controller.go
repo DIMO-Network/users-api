@@ -156,7 +156,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 				user.EthereumAddress = null.StringFrom(ethereumAddress)
 				if d.cioClient != nil {
 					go func() {
-						if err := d.cioClient.Track(userID, "walletAdded", nil); err != nil {
+						if err := d.cioClient.Track(userID, "walletAdded", map[string]interface{}{}); err != nil {
 							d.log.Error().Err(err).Msg("")
 						}
 					}()

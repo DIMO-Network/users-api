@@ -397,7 +397,7 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	var buffer bytes.Buffer
 	buffer.WriteString("From: DIMO <" + d.Settings.EmailFrom + ">\r\n" +
 		"To: " + user.EmailAddress.String + "\r\n" +
-		"Subject: DIMO email confirmation\r\n" +
+		"Subject: [DIMO] Verification Code\r\n" +
 		"Content-Type: multipart/alternative; boundary=\"" + w.Boundary() + "\"\r\n" +
 		"\r\n")
 	if _, err := partsBuffer.WriteTo(&buffer); err != nil {

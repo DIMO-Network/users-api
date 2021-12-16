@@ -87,6 +87,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	userController := controllers.NewUserController(settings, pdb.DBS, &logger)
 	v1.Get("/", userController.GetUser)
 	v1.Put("/", userController.UpdateUser)
+  v1.Delete("/", userController.DeleteUser)
 	v1.Post("/agree-tos", userController.AgreeTOS)
 	v1.Post("/send-confirmation-email", userController.SendConfirmationEmail)
 	v1.Post("/confirm-email", userController.ConfirmEmail)
@@ -100,7 +101,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		}))
 		admin.Post("/create-user", userController.AdminCreateUser)
 		admin.Get("/view-users", userController.AdminViewUsers)
-		admin.Post("/delete-user/:userID", userController.DeleteUser)
+		admin.Post("/delete-user/:userID", userController.AdminDeleteUser)
 	}
 
 	customerIOController := controllers.NewCustomerIOController(settings, &logger)

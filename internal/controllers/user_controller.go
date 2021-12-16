@@ -511,7 +511,9 @@ func (d *UserController) AdminCreateUser(c *fiber.Ctx) error {
 	if body.CreatedAt == 0 {
 		return errorResponseHandler(c, fmt.Errorf("invalid creation time"), fiber.StatusBadRequest)
 	}
-	user.CreatedAt = time.UnixMicro(int64(1e6 * body.CreatedAt))
+	createdAt := time.UnixMicro(int64(1e6 * body.CreatedAt))
+	user.CreatedAt = createdAt
+	user.AgreedTosAt = null.TimeFrom(createdAt)
 
 	if body.EthAddress != "" {
 		if !addressRegex.MatchString(body.EthAddress) {

@@ -107,6 +107,26 @@ var doc = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "summary": "Delete the authenticated user",
+                "responses": {
+                    "204": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/v1/user/agree-tos": {
@@ -213,7 +233,7 @@ var doc = `{
             "type": "object",
             "properties": {
                 "agreedTOSAt": {
-                    "description": "AgreedTOSAt is the last time at which the user last agreed to the terms of\nservice",
+                    "description": "AgreedTOSAt is the time at which the user last agreed to the terms of service",
                     "type": "string",
                     "example": "2021-12-01T09:00:41Z"
                 },
@@ -274,6 +294,13 @@ var doc = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
     }
 }`
 
@@ -292,7 +319,7 @@ var SwaggerInfo = swaggerInfo{
 	Host:        "",
 	BasePath:    "",
 	Schemes:     []string{},
-	Title:       "DIMO Devices API",
+	Title:       "DIMO User API",
 	Description: "",
 }
 

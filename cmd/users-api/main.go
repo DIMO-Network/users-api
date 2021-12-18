@@ -20,8 +20,11 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// @title DIMO Devices API
+// @title DIMO User API
 // @version 1.0
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	gitSha1 := os.Getenv("GIT_SHA1")
 	ctx := context.Background()
@@ -143,7 +146,6 @@ func ErrorHandler(c *fiber.Ctx, err error, logger zerolog.Logger) error {
 		// Override status code if fiber.Error type
 		code = e.Code
 	}
-	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
 	logger.Err(err).Msg("caught a panic")
 
 	return c.Status(code).JSON(fiber.Map{

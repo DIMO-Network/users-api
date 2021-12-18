@@ -14,9 +14,8 @@ definitions:
   controllers.UserResponse:
     properties:
       agreedTOSAt:
-        description: |-
-          AgreedTOSAt is the last time at which the user last agreed to the terms of
-          service
+        description: AgreedTOSAt is the time at which the user last agreed to the
+          terms of service
         example: "2021-12-01T09:00:41Z"
         type: string
       countryCode:
@@ -76,7 +75,7 @@ definitions:
     type: object
 info:
   contact: {}
-  title: DIMO Devices API
+  title: DIMO User API
   version: "1.0"
 paths:
   /:
@@ -96,6 +95,19 @@ paths:
       tags:
       - root
   /v1/user:
+    delete:
+      responses:
+        "204":
+          description: ""
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Delete the authenticated user
     get:
       produces:
       - application/json
@@ -186,4 +198,9 @@ paths:
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
       summary: Send a confirmation email to the authenticated user
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

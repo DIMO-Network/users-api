@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "title": "DIMO Devices API",
+        "title": "DIMO User API",
         "contact": {},
         "version": "1.0"
     },
@@ -76,6 +76,26 @@
                         "schema": {
                             "$ref": "#/definitions/controllers.UserResponse"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete the authenticated user",
+                "responses": {
+                    "204": {
+                        "description": ""
                     },
                     "400": {
                         "description": "Bad Request",
@@ -196,7 +216,7 @@
             "type": "object",
             "properties": {
                 "agreedTOSAt": {
-                    "description": "AgreedTOSAt is the last time at which the user last agreed to the terms of\nservice",
+                    "description": "AgreedTOSAt is the time at which the user last agreed to the terms of service",
                     "type": "string",
                     "example": "2021-12-01T09:00:41Z"
                 },
@@ -256,6 +276,13 @@
                     "example": "neal@dimo.zone"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

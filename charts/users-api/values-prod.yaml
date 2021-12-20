@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 3
 image:
   repository: dimozone/users-api
   pullPolicy: IfNotPresent
@@ -59,3 +59,5 @@ autoscaling:
 nodeSelector: {}
 tolerations: []
 affinity: {}
+podDisruptionBudget:
+  minAvailable: 1

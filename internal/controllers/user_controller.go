@@ -49,6 +49,7 @@ type UserController struct {
 }
 
 func NewUserController(settings *config.Settings, dbs func() *database.DBReaderWriter, logger *zerolog.Logger) UserController {
+	rand.Seed(time.Now().UnixNano())
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
 		panic(err)

@@ -107,7 +107,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		admin.Post("/delete-user/:userID", userController.AdminDeleteUser)
 	}
 
-	customerIOController := controllers.NewCustomerIOController(settings, &logger)
+	customerIOController := controllers.NewCustomerIOController(settings, pdb.DBS, &logger)
 	v1.Post("/vitamins/known", customerIOController.Track)
 
 	logger.Info().Msg("Server started on port " + settings.Port)

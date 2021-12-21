@@ -96,7 +96,7 @@ type UserResponse struct {
 	// ReferralCode is the short code used in a user's share link
 	ReferralCode string `json:"referralCode" example:"bUkZuSL7"`
 	// ReferredBy is the referral code of the person who referred this user to the site
-	ReferredBy null.String `json:"referredBy" example:"k9H7RoTG"`
+	ReferredBy null.String `json:"referredBy" swaggertype:"string" example:"k9H7RoTG"`
 	// AgreedTOSAt is the time at which the user last agreed to the terms of service
 	AgreedTOSAt null.Time `json:"agreedTOSAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 }

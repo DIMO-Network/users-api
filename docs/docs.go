@@ -276,6 +276,11 @@ var doc = `{
                     "description": "ReferralCode is the short code used in a user's share link",
                     "type": "string",
                     "example": "bUkZuSL7"
+                },
+                "referredBy": {
+                    "description": "ReferredBy is the referral code of the person who referred this user to the site",
+                    "type": "string",
+                    "example": "k9H7RoTG"
                 }
             }
         },

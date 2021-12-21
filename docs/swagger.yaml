@@ -58,6 +58,11 @@ definitions:
         description: ReferralCode is the short code used in a user's share link
         example: bUkZuSL7
         type: string
+      referredBy:
+        description: ReferredBy is the referral code of the person who referred this
+          user to the site
+        example: k9H7RoTG
+        type: string
     type: object
   controllers.UserUpdateRequest:
     properties:

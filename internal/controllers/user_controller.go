@@ -28,6 +28,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -94,11 +95,19 @@ type UserResponse struct {
 	EthereumAddress null.String `json:"ethereumAddress" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
 	// ReferralCode is the short code used in a user's share link
 	ReferralCode string `json:"referralCode" example:"bUkZuSL7"`
+	// ReferredBy is the referral code of the person who referred this user to the site
+	ReferredBy null.String `json:"referredBy" example:"k9H7RoTG"`
 	// AgreedTOSAt is the time at which the user last agreed to the terms of service
 	AgreedTOSAt null.Time `json:"agreedTOSAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 }
 
 func formatUser(user *models.User) *UserResponse {
+	refferedBy := func(user *models.User) null.String {
+		if user.R.Referrer != nil {
+			return null.StringFrom(user.R.Referrer.ReferralCode)
+		}
+		return null.StringFromPtr(nil)
+	}
 	return &UserResponse{
 		ID:                      user.ID,
 		EmailAddress:            user.EmailAddress,
@@ -108,6 +117,7 @@ func formatUser(user *models.User) *UserResponse {
 		CountryCode:             user.CountryCode,
 		EthereumAddress:         user.EthereumAddress,
 		ReferralCode:            user.ReferralCode,
+		ReferredBy:              refferedBy(user),
 		AgreedTOSAt:             user.AgreedTosAt,
 	}
 }
@@ -137,7 +147,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	}
 	defer tx.Rollback() //nolint
 
-	user, err = models.FindUser(c.Context(), tx, userID)
+	user, err = models.Users(qm.Where("id = ?", userID), qm.Load("Referrer")).One(c.Context(), tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			user = &models.User{ID: userID, ReferralCode: generateReferralCode()}

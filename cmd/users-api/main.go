@@ -11,6 +11,7 @@ import (
 	"github.com/DIMO-INC/users-api/internal/config"
 	"github.com/DIMO-INC/users-api/internal/controllers"
 	"github.com/DIMO-INC/users-api/internal/database"
+	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
@@ -65,6 +66,10 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	}))
 	app.Use(cors.New())
 	app.Get("/", HealthCheck)
+
+	prometheus := fiberprometheus.New("devices-api")
+	prometheus.RegisterAt(app, "/metrics")
+	app.Use(prometheus.Middleware)
 
 	app.Get("/swagger/*", swagger.Handler)
 

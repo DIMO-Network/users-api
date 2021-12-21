@@ -67,7 +67,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	app.Use(cors.New())
 	app.Get("/", HealthCheck)
 
-	prometheus := fiberprometheus.New("devices-api")
+	prometheus := fiberprometheus.New("users-api")
 	prometheus.RegisterAt(app, "/metrics")
 	app.Use(prometheus.Middleware)
 

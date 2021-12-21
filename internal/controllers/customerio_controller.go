@@ -9,8 +9,7 @@ import (
 	"github.com/customerio/go-customerio/v3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 type CustomerIOController struct {
@@ -60,7 +59,7 @@ func (d *CustomerIOController) Track(c *fiber.Ctx) error {
 		err := d.setReferrer(c, userID, code)
 		if err != nil {
 			// Log, but continue and still forward to Customer.io
-			d.log.Error().Err(err).Msgf("Failed to set referrer of %s to %s", userID, code)
+			d.log.Error().Err(err).Msgf("Failed to set referrer for user %s using code %s", userID, code)
 		}
 	}
 	if err := d.client.Track(userID, name, req.Params); err != nil {
@@ -69,23 +68,28 @@ func (d *CustomerIOController) Track(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"success": true})
 }
 
-func (d *CustomerIOController) setReferrer(c *fiber.Ctx, userID, referralCode string) (err error) {
+func (d *CustomerIOController) setReferrer(c *fiber.Ctx, userID, code string) (err error) {
 	tx, err := d.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
 		return
 	}
 	defer tx.Rollback() //nolint
 
+	referrer, err := models.Users(qm.Where("referral_code = ?", code)).One(c.Context(), tx)
+	if err != nil {
+		return
+	}
+
 	user, err := models.FindUser(c.Context(), tx, userID)
 	if err != nil {
 		return
 	}
 
-	user.ReferredBy = null.StringFrom(referralCode)
-	_, err = user.Update(c.Context(), tx, boil.Infer())
+	err = user.SetReferrer(c.Context(), tx, false, referrer)
 	if err != nil {
 		return
 	}
+
 	err = tx.Commit()
 	return
 }

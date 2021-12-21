@@ -34,7 +34,7 @@ type User struct {
 	EthereumAddress         null.String `boil:"ethereum_address" json:"ethereum_address,omitempty" toml:"ethereum_address" yaml:"ethereum_address,omitempty"`
 	ReferralCode            string      `boil:"referral_code" json:"referral_code" toml:"referral_code" yaml:"referral_code"`
 	AgreedTosAt             null.Time   `boil:"agreed_tos_at" json:"agreed_tos_at,omitempty" toml:"agreed_tos_at" yaml:"agreed_tos_at,omitempty"`
-	ReferredBy              null.String `boil:"referred_by" json:"referred_by,omitempty" toml:"referred_by" yaml:"referred_by,omitempty"`
+	ReferrerID              null.String `boil:"referrer_id" json:"referrer_id,omitempty" toml:"referrer_id" yaml:"referrer_id,omitempty"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -51,7 +51,7 @@ var UserColumns = struct {
 	EthereumAddress         string
 	ReferralCode            string
 	AgreedTosAt             string
-	ReferredBy              string
+	ReferrerID              string
 }{
 	ID:                      "id",
 	EmailAddress:            "email_address",
@@ -63,7 +63,7 @@ var UserColumns = struct {
 	EthereumAddress:         "ethereum_address",
 	ReferralCode:            "referral_code",
 	AgreedTosAt:             "agreed_tos_at",
-	ReferredBy:              "referred_by",
+	ReferrerID:              "referrer_id",
 }
 
 var UserTableColumns = struct {
@@ -77,7 +77,7 @@ var UserTableColumns = struct {
 	EthereumAddress         string
 	ReferralCode            string
 	AgreedTosAt             string
-	ReferredBy              string
+	ReferrerID              string
 }{
 	ID:                      "users.id",
 	EmailAddress:            "users.email_address",
@@ -89,7 +89,7 @@ var UserTableColumns = struct {
 	EthereumAddress:         "users.ethereum_address",
 	ReferralCode:            "users.referral_code",
 	AgreedTosAt:             "users.agreed_tos_at",
-	ReferredBy:              "users.referred_by",
+	ReferrerID:              "users.referrer_id",
 }
 
 // Generated where
@@ -206,7 +206,7 @@ var UserWhere = struct {
 	EthereumAddress         whereHelpernull_String
 	ReferralCode            whereHelperstring
 	AgreedTosAt             whereHelpernull_Time
-	ReferredBy              whereHelpernull_String
+	ReferrerID              whereHelpernull_String
 }{
 	ID:                      whereHelperstring{field: "\"users_api\".\"users\".\"id\""},
 	EmailAddress:            whereHelpernull_String{field: "\"users_api\".\"users\".\"email_address\""},
@@ -218,22 +218,22 @@ var UserWhere = struct {
 	EthereumAddress:         whereHelpernull_String{field: "\"users_api\".\"users\".\"ethereum_address\""},
 	ReferralCode:            whereHelperstring{field: "\"users_api\".\"users\".\"referral_code\""},
 	AgreedTosAt:             whereHelpernull_Time{field: "\"users_api\".\"users\".\"agreed_tos_at\""},
-	ReferredBy:              whereHelpernull_String{field: "\"users_api\".\"users\".\"referred_by\""},
+	ReferrerID:              whereHelpernull_String{field: "\"users_api\".\"users\".\"referrer_id\""},
 }
 
 // UserRels is where relationship names are stored.
 var UserRels = struct {
-	ReferredByUser  string
-	ReferredByUsers string
+	Referrer      string
+	ReferrerUsers string
 }{
-	ReferredByUser:  "ReferredByUser",
-	ReferredByUsers: "ReferredByUsers",
+	Referrer:      "Referrer",
+	ReferrerUsers: "ReferrerUsers",
 }
 
 // userR is where relationships are stored.
 type userR struct {
-	ReferredByUser  *User     `boil:"ReferredByUser" json:"ReferredByUser" toml:"ReferredByUser" yaml:"ReferredByUser"`
-	ReferredByUsers UserSlice `boil:"ReferredByUsers" json:"ReferredByUsers" toml:"ReferredByUsers" yaml:"ReferredByUsers"`
+	Referrer      *User     `boil:"Referrer" json:"Referrer" toml:"Referrer" yaml:"Referrer"`
+	ReferrerUsers UserSlice `boil:"ReferrerUsers" json:"ReferrerUsers" toml:"ReferrerUsers" yaml:"ReferrerUsers"`
 }
 
 // NewStruct creates a new relationship struct
@@ -245,8 +245,8 @@ func (*userR) NewStruct() *userR {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code", "agreed_tos_at", "referred_by"}
-	userColumnsWithoutDefault = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code", "agreed_tos_at", "referred_by"}
+	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code", "agreed_tos_at", "referrer_id"}
+	userColumnsWithoutDefault = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code", "agreed_tos_at", "referrer_id"}
 	userColumnsWithDefault    = []string{}
 	userPrimaryKeyColumns     = []string{"id"}
 )
@@ -526,10 +526,10 @@ func (q userQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool,
 	return count > 0, nil
 }
 
-// ReferredByUser pointed to by the foreign key.
-func (o *User) ReferredByUser(mods ...qm.QueryMod) userQuery {
+// Referrer pointed to by the foreign key.
+func (o *User) Referrer(mods ...qm.QueryMod) userQuery {
 	queryMods := []qm.QueryMod{
-		qm.Where("\"referral_code\" = ?", o.ReferredBy),
+		qm.Where("\"id\" = ?", o.ReferrerID),
 	}
 
 	queryMods = append(queryMods, mods...)
@@ -540,15 +540,15 @@ func (o *User) ReferredByUser(mods ...qm.QueryMod) userQuery {
 	return query
 }
 
-// ReferredByUsers retrieves all the user's Users with an executor via referred_by column.
-func (o *User) ReferredByUsers(mods ...qm.QueryMod) userQuery {
+// ReferrerUsers retrieves all the user's Users with an executor via referrer_id column.
+func (o *User) ReferrerUsers(mods ...qm.QueryMod) userQuery {
 	var queryMods []qm.QueryMod
 	if len(mods) != 0 {
 		queryMods = append(queryMods, mods...)
 	}
 
 	queryMods = append(queryMods,
-		qm.Where("\"users_api\".\"users\".\"referred_by\"=?", o.ReferralCode),
+		qm.Where("\"users_api\".\"users\".\"referrer_id\"=?", o.ID),
 	)
 
 	query := Users(queryMods...)
@@ -561,9 +561,9 @@ func (o *User) ReferredByUsers(mods ...qm.QueryMod) userQuery {
 	return query
 }
 
-// LoadReferredByUser allows an eager lookup of values, cached into the
+// LoadReferrer allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
-func (userL) LoadReferredByUser(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
+func (userL) LoadReferrer(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
 	var slice []*User
 	var object *User
 
@@ -578,8 +578,8 @@ func (userL) LoadReferredByUser(ctx context.Context, e boil.ContextExecutor, sin
 		if object.R == nil {
 			object.R = &userR{}
 		}
-		if !queries.IsNil(object.ReferredBy) {
-			args = append(args, object.ReferredBy)
+		if !queries.IsNil(object.ReferrerID) {
+			args = append(args, object.ReferrerID)
 		}
 
 	} else {
@@ -590,13 +590,13 @@ func (userL) LoadReferredByUser(ctx context.Context, e boil.ContextExecutor, sin
 			}
 
 			for _, a := range args {
-				if queries.Equal(a, obj.ReferredBy) {
+				if queries.Equal(a, obj.ReferrerID) {
 					continue Outer
 				}
 			}
 
-			if !queries.IsNil(obj.ReferredBy) {
-				args = append(args, obj.ReferredBy)
+			if !queries.IsNil(obj.ReferrerID) {
+				args = append(args, obj.ReferrerID)
 			}
 
 		}
@@ -608,7 +608,7 @@ func (userL) LoadReferredByUser(ctx context.Context, e boil.ContextExecutor, sin
 
 	query := NewQuery(
 		qm.From(`users_api.users`),
-		qm.WhereIn(`users_api.users.referral_code in ?`, args...),
+		qm.WhereIn(`users_api.users.id in ?`, args...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -645,22 +645,22 @@ func (userL) LoadReferredByUser(ctx context.Context, e boil.ContextExecutor, sin
 
 	if singular {
 		foreign := resultSlice[0]
-		object.R.ReferredByUser = foreign
+		object.R.Referrer = foreign
 		if foreign.R == nil {
 			foreign.R = &userR{}
 		}
-		foreign.R.ReferredByUsers = append(foreign.R.ReferredByUsers, object)
+		foreign.R.ReferrerUsers = append(foreign.R.ReferrerUsers, object)
 		return nil
 	}
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
-			if queries.Equal(local.ReferredBy, foreign.ReferralCode) {
-				local.R.ReferredByUser = foreign
+			if queries.Equal(local.ReferrerID, foreign.ID) {
+				local.R.Referrer = foreign
 				if foreign.R == nil {
 					foreign.R = &userR{}
 				}
-				foreign.R.ReferredByUsers = append(foreign.R.ReferredByUsers, local)
+				foreign.R.ReferrerUsers = append(foreign.R.ReferrerUsers, local)
 				break
 			}
 		}
@@ -669,9 +669,9 @@ func (userL) LoadReferredByUser(ctx context.Context, e boil.ContextExecutor, sin
 	return nil
 }
 
-// LoadReferredByUsers allows an eager lookup of values, cached into the
+// LoadReferrerUsers allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
-func (userL) LoadReferredByUsers(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
+func (userL) LoadReferrerUsers(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
 	var slice []*User
 	var object *User
 
@@ -686,7 +686,7 @@ func (userL) LoadReferredByUsers(ctx context.Context, e boil.ContextExecutor, si
 		if object.R == nil {
 			object.R = &userR{}
 		}
-		args = append(args, object.ReferralCode)
+		args = append(args, object.ID)
 	} else {
 	Outer:
 		for _, obj := range slice {
@@ -695,12 +695,12 @@ func (userL) LoadReferredByUsers(ctx context.Context, e boil.ContextExecutor, si
 			}
 
 			for _, a := range args {
-				if queries.Equal(a, obj.ReferralCode) {
+				if queries.Equal(a, obj.ID) {
 					continue Outer
 				}
 			}
 
-			args = append(args, obj.ReferralCode)
+			args = append(args, obj.ID)
 		}
 	}
 
@@ -710,7 +710,7 @@ func (userL) LoadReferredByUsers(ctx context.Context, e boil.ContextExecutor, si
 
 	query := NewQuery(
 		qm.From(`users_api.users`),
-		qm.WhereIn(`users_api.users.referred_by in ?`, args...),
+		qm.WhereIn(`users_api.users.referrer_id in ?`, args...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -741,24 +741,24 @@ func (userL) LoadReferredByUsers(ctx context.Context, e boil.ContextExecutor, si
 		}
 	}
 	if singular {
-		object.R.ReferredByUsers = resultSlice
+		object.R.ReferrerUsers = resultSlice
 		for _, foreign := range resultSlice {
 			if foreign.R == nil {
 				foreign.R = &userR{}
 			}
-			foreign.R.ReferredByUser = object
+			foreign.R.Referrer = object
 		}
 		return nil
 	}
 
 	for _, foreign := range resultSlice {
 		for _, local := range slice {
-			if queries.Equal(local.ReferralCode, foreign.ReferredBy) {
-				local.R.ReferredByUsers = append(local.R.ReferredByUsers, foreign)
+			if queries.Equal(local.ID, foreign.ReferrerID) {
+				local.R.ReferrerUsers = append(local.R.ReferrerUsers, foreign)
 				if foreign.R == nil {
 					foreign.R = &userR{}
 				}
-				foreign.R.ReferredByUser = local
+				foreign.R.Referrer = local
 				break
 			}
 		}
@@ -767,10 +767,10 @@ func (userL) LoadReferredByUsers(ctx context.Context, e boil.ContextExecutor, si
 	return nil
 }
 
-// SetReferredByUser of the user to the related item.
-// Sets o.R.ReferredByUser to related.
-// Adds o to related.R.ReferredByUsers.
-func (o *User) SetReferredByUser(ctx context.Context, exec boil.ContextExecutor, insert bool, related *User) error {
+// SetReferrer of the user to the related item.
+// Sets o.R.Referrer to related.
+// Adds o to related.R.ReferrerUsers.
+func (o *User) SetReferrer(ctx context.Context, exec boil.ContextExecutor, insert bool, related *User) error {
 	var err error
 	if insert {
 		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
@@ -780,10 +780,10 @@ func (o *User) SetReferredByUser(ctx context.Context, exec boil.ContextExecutor,
 
 	updateQuery := fmt.Sprintf(
 		"UPDATE \"users_api\".\"users\" SET %s WHERE %s",
-		strmangle.SetParamNames("\"", "\"", 1, []string{"referred_by"}),
+		strmangle.SetParamNames("\"", "\"", 1, []string{"referrer_id"}),
 		strmangle.WhereClause("\"", "\"", 2, userPrimaryKeyColumns),
 	)
-	values := []interface{}{related.ReferralCode, o.ID}
+	values := []interface{}{related.ID, o.ID}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -794,78 +794,78 @@ func (o *User) SetReferredByUser(ctx context.Context, exec boil.ContextExecutor,
 		return errors.Wrap(err, "failed to update local table")
 	}
 
-	queries.Assign(&o.ReferredBy, related.ReferralCode)
+	queries.Assign(&o.ReferrerID, related.ID)
 	if o.R == nil {
 		o.R = &userR{
-			ReferredByUser: related,
+			Referrer: related,
 		}
 	} else {
-		o.R.ReferredByUser = related
+		o.R.Referrer = related
 	}
 
 	if related.R == nil {
 		related.R = &userR{
-			ReferredByUsers: UserSlice{o},
+			ReferrerUsers: UserSlice{o},
 		}
 	} else {
-		related.R.ReferredByUsers = append(related.R.ReferredByUsers, o)
+		related.R.ReferrerUsers = append(related.R.ReferrerUsers, o)
 	}
 
 	return nil
 }
 
-// RemoveReferredByUser relationship.
-// Sets o.R.ReferredByUser to nil.
+// RemoveReferrer relationship.
+// Sets o.R.Referrer to nil.
 // Removes o from all passed in related items' relationships struct (Optional).
-func (o *User) RemoveReferredByUser(ctx context.Context, exec boil.ContextExecutor, related *User) error {
+func (o *User) RemoveReferrer(ctx context.Context, exec boil.ContextExecutor, related *User) error {
 	var err error
 
-	queries.SetScanner(&o.ReferredBy, nil)
-	if _, err = o.Update(ctx, exec, boil.Whitelist("referred_by")); err != nil {
+	queries.SetScanner(&o.ReferrerID, nil)
+	if _, err = o.Update(ctx, exec, boil.Whitelist("referrer_id")); err != nil {
 		return errors.Wrap(err, "failed to update local table")
 	}
 
 	if o.R != nil {
-		o.R.ReferredByUser = nil
+		o.R.Referrer = nil
 	}
 	if related == nil || related.R == nil {
 		return nil
 	}
 
-	for i, ri := range related.R.ReferredByUsers {
-		if queries.Equal(o.ReferredBy, ri.ReferredBy) {
+	for i, ri := range related.R.ReferrerUsers {
+		if queries.Equal(o.ReferrerID, ri.ReferrerID) {
 			continue
 		}
 
-		ln := len(related.R.ReferredByUsers)
+		ln := len(related.R.ReferrerUsers)
 		if ln > 1 && i < ln-1 {
-			related.R.ReferredByUsers[i] = related.R.ReferredByUsers[ln-1]
+			related.R.ReferrerUsers[i] = related.R.ReferrerUsers[ln-1]
 		}
-		related.R.ReferredByUsers = related.R.ReferredByUsers[:ln-1]
+		related.R.ReferrerUsers = related.R.ReferrerUsers[:ln-1]
 		break
 	}
 	return nil
 }
 
-// AddReferredByUsers adds the given related objects to the existing relationships
+// AddReferrerUsers adds the given related objects to the existing relationships
 // of the user, optionally inserting them as new records.
-// Appends related to o.R.ReferredByUsers.
-// Sets related.R.ReferredByUser appropriately.
-func (o *User) AddReferredByUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
+// Appends related to o.R.ReferrerUsers.
+// Sets related.R.Referrer appropriately.
+func (o *User) AddReferrerUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
 	var err error
 	for _, rel := range related {
 		if insert {
-			queries.Assign(&rel.ReferredBy, o.ReferralCode)
+			queries.Assign(&rel.ReferrerID, o.ID)
 			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
 				return errors.Wrap(err, "failed to insert into foreign table")
 			}
 		} else {
 			updateQuery := fmt.Sprintf(
 				"UPDATE \"users_api\".\"users\" SET %s WHERE %s",
-				strmangle.SetParamNames("\"", "\"", 1, []string{"referred_by"}),
+				strmangle.SetParamNames("\"", "\"", 1, []string{"referrer_id"}),
 				strmangle.WhereClause("\"", "\"", 2, userPrimaryKeyColumns),
 			)
-			values := []interface{}{o.ReferralCode, rel.ID}
+			values := []interface{}{o.ID, rel.ID}
 
 			if boil.IsDebug(ctx) {
 				writer := boil.DebugWriterFrom(ctx)
@@ -876,39 +876,39 @@ func (o *User) AddReferredByUsers(ctx context.Context, exec boil.ContextExecutor
 				return errors.Wrap(err, "failed to update foreign table")
 			}
 
-			queries.Assign(&rel.ReferredBy, o.ReferralCode)
+			queries.Assign(&rel.ReferrerID, o.ID)
 		}
 	}
 
 	if o.R == nil {
 		o.R = &userR{
-			ReferredByUsers: related,
+			ReferrerUsers: related,
 		}
 	} else {
-		o.R.ReferredByUsers = append(o.R.ReferredByUsers, related...)
+		o.R.ReferrerUsers = append(o.R.ReferrerUsers, related...)
 	}
 
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &userR{
-				ReferredByUser: o,
+				Referrer: o,
 			}
 		} else {
-			rel.R.ReferredByUser = o
+			rel.R.Referrer = o
 		}
 	}
 	return nil
 }
 
-// SetReferredByUsers removes all previously related items of the
+// SetReferrerUsers removes all previously related items of the
 // user replacing them completely with the passed
 // in related items, optionally inserting them as new records.
-// Sets o.R.ReferredByUser's ReferredByUsers accordingly.
-// Replaces o.R.ReferredByUsers with related.
-// Sets related.R.ReferredByUser's ReferredByUsers accordingly.
-func (o *User) SetReferredByUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
-	query := "update \"users_api\".\"users\" set \"referred_by\" = null where \"referred_by\" = $1"
-	values := []interface{}{o.ReferralCode}
+// Sets o.R.Referrer's ReferrerUsers accordingly.
+// Replaces o.R.ReferrerUsers with related.
+// Sets related.R.Referrer's ReferrerUsers accordingly.
+func (o *User) SetReferrerUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
+	query := "update \"users_api\".\"users\" set \"referrer_id\" = null where \"referrer_id\" = $1"
+	values := []interface{}{o.ID}
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, query)
@@ -920,35 +920,35 @@ func (o *User) SetReferredByUsers(ctx context.Context, exec boil.ContextExecutor
 	}
 
 	if o.R != nil {
-		for _, rel := range o.R.ReferredByUsers {
-			queries.SetScanner(&rel.ReferredBy, nil)
+		for _, rel := range o.R.ReferrerUsers {
+			queries.SetScanner(&rel.ReferrerID, nil)
 			if rel.R == nil {
 				continue
 			}
 
-			rel.R.ReferredByUser = nil
+			rel.R.Referrer = nil
 		}
 
-		o.R.ReferredByUsers = nil
+		o.R.ReferrerUsers = nil
 	}
-	return o.AddReferredByUsers(ctx, exec, insert, related...)
+	return o.AddReferrerUsers(ctx, exec, insert, related...)
 }
 
-// RemoveReferredByUsers relationships from objects passed in.
-// Removes related items from R.ReferredByUsers (uses pointer comparison, removal does not keep order)
-// Sets related.R.ReferredByUser.
-func (o *User) RemoveReferredByUsers(ctx context.Context, exec boil.ContextExecutor, related ...*User) error {
+// RemoveReferrerUsers relationships from objects passed in.
+// Removes related items from R.ReferrerUsers (uses pointer comparison, removal does not keep order)
+// Sets related.R.Referrer.
+func (o *User) RemoveReferrerUsers(ctx context.Context, exec boil.ContextExecutor, related ...*User) error {
 	if len(related) == 0 {
 		return nil
 	}
 
 	var err error
 	for _, rel := range related {
-		queries.SetScanner(&rel.ReferredBy, nil)
+		queries.SetScanner(&rel.ReferrerID, nil)
 		if rel.R != nil {
-			rel.R.ReferredByUser = nil
+			rel.R.Referrer = nil
 		}
-		if _, err = rel.Update(ctx, exec, boil.Whitelist("referred_by")); err != nil {
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("referrer_id")); err != nil {
 			return err
 		}
 	}
@@ -957,16 +957,16 @@ func (o *User) RemoveReferredByUsers(ctx context.Context, exec boil.ContextExecu
 	}
 
 	for _, rel := range related {
-		for i, ri := range o.R.ReferredByUsers {
+		for i, ri := range o.R.ReferrerUsers {
 			if rel != ri {
 				continue
 			}
 
-			ln := len(o.R.ReferredByUsers)
+			ln := len(o.R.ReferrerUsers)
 			if ln > 1 && i < ln-1 {
-				o.R.ReferredByUsers[i] = o.R.ReferredByUsers[ln-1]
+				o.R.ReferrerUsers[i] = o.R.ReferrerUsers[ln-1]
 			}
-			o.R.ReferredByUsers = o.R.ReferredByUsers[:ln-1]
+			o.R.ReferrerUsers = o.R.ReferrerUsers[:ln-1]
 			break
 		}
 	}

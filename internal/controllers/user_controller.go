@@ -103,7 +103,7 @@ type UserResponse struct {
 
 func formatUser(user *models.User) *UserResponse {
 	refferedBy := func(user *models.User) null.String {
-		if user.R.Referrer != nil {
+		if user.R != nil && user.R.Referrer != nil {
 			return null.StringFrom(user.R.Referrer.ReferralCode)
 		}
 		return null.StringFromPtr(nil)

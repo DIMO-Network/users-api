@@ -27,6 +27,11 @@ Check linting with
 golangci-lint run -E prealloc -E revive -E goimports -E deadcode -E errcheck -E gosimple -E govet -E ineffassign -E staticcheck -E structcheck -E typecheck -E unused -E varcheck --timeout=5m
 ```
 
+Update OpenAPI documentation with 
+```
+swag init --generalInfo cmd/users-api/main.go --parseInternal true --generatedTime true
+```
+
 ## Database modifications
 
 Create a new Goose migration file:

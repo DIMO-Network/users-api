@@ -61,3 +61,11 @@ tolerations: []
 affinity: {}
 podDisruptionBudget:
   minAvailable: 0
+<<<<<<< HEAD
+=======
+serviceMonitor:
+  enabled: true
+  path: /metrics
+  port: http
+  interval: 30s
+>>>>>>> b9063c6 (Adding servicemonitor)

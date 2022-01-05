@@ -72,29 +72,37 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 	}
 }
 
+type UserResponseEmail struct {
+	// Address is the email address for the user.
+	Address null.String `json:"address" swaggertype:"string" example:"koblitz@dimo.zone"`
+	// Confirmed indicates whether the user has confirmed the address by entering a code.
+	Confirmed bool `json:"confirmed" example:"false"`
+	// ConfirmationSentAt is the time at which we last sent a confirmation email. This will only
+	// be present if we've sent an email but the code has not been sent back to us.
+	ConfirmationSentAt null.Time `json:"confirmationSentAt" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
+}
+
+type UserResponseWeb3 struct {
+	// Address is the Ethereum address associated with the user.
+	Address null.String `json:"address" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
+}
+
 type UserResponse struct {
-	// ID is the user's DIMO-internal ID
+	// ID is the user's DIMO-internal ID.
 	ID string `json:"id" example:"ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"`
-	// EmailAddress is the email address coming from a user's login or manual election
-	EmailAddress null.String `json:"emailAddress" swaggertype:"string" example:"koblitz@dimo.zone"`
-	// EmailConfirmed indicates whether DIMO has confirmed the user's ownership of
-	// EmailAddress
-	EmailConfirmed bool `json:"emailVerified" example:"false"`
-	// EmailConfirmationSentAt is the time when we last sent the user an email
-	// confirmation message, and is only present if such an email has been sent but
-	// confirmation has not yet occurred
-	EmailConfirmationSentAt null.Time `json:"emailConfirmationSentAt" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
-	// CreatedAt is when the user first logged in
+	// Email describes the user's email and the state of its confirmation.
+	Email UserResponseEmail `json:"email"`
+	// Web3 describes the user's blockchain account.
+	Web3 UserResponseWeb3 `json:"web3"`
+	// CreatedAt is when the user first logged in.
 	CreatedAt time.Time `json:"createdAt" swaggertype:"string" example:"2021-12-01T09:00:00Z"`
-	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code
+	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.
 	CountryCode null.String `json:"countryCode" swaggertype:"string" example:"USA"`
-	// EthereumAddress is the Ethereum address used to log in, if the user did use Web3
-	EthereumAddress null.String `json:"ethereumAddress" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
-	// ReferralCode is the short code used in a user's share link
+	// ReferralCode is the short code used in a user's share link.
 	ReferralCode string `json:"referralCode" example:"bUkZuSL7"`
-	// ReferredBy is the referral code of the person who referred this user to the site
+	// ReferredBy is the referral code of the person who referred this user to the site.
 	ReferredBy null.String `json:"referredBy" swaggertype:"string" example:"k9H7RoTG"`
-	// AgreedTOSAt is the time at which the user last agreed to the terms of service
+	// AgreedTOSAt is the time at which the user last agreed to the terms of service.
 	AgreedTOSAt null.Time `json:"agreedTOSAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 }
 
@@ -106,16 +114,20 @@ func formatUser(user *models.User) *UserResponse {
 		return null.StringFromPtr(nil)
 	}
 	return &UserResponse{
-		ID:                      user.ID,
-		EmailAddress:            user.EmailAddress,
-		EmailConfirmed:          user.EmailConfirmed,
-		EmailConfirmationSentAt: user.EmailConfirmationSentAt,
-		CreatedAt:               user.CreatedAt,
-		CountryCode:             user.CountryCode,
-		EthereumAddress:         user.EthereumAddress,
-		ReferralCode:            user.ReferralCode,
-		ReferredBy:              refferedBy(user),
-		AgreedTOSAt:             user.AgreedTosAt,
+		ID: user.ID,
+		Email: UserResponseEmail{
+			Address:            user.EmailAddress,
+			Confirmed:          user.EmailConfirmed,
+			ConfirmationSentAt: user.EmailConfirmationSentAt,
+		},
+		Web3: UserResponseWeb3{
+			Address: user.EthereumAddress,
+		},
+		CreatedAt:    user.CreatedAt,
+		CountryCode:  user.CountryCode,
+		ReferralCode: user.ReferralCode,
+		ReferredBy:   refferedBy(user),
+		AgreedTOSAt:  user.AgreedTosAt,
 	}
 }
 
@@ -219,9 +231,11 @@ func (o *optionalString) UnmarshalJSON(data []byte) error {
 
 // UserUpdateRequest describes a user's request to modify or delete certain fields
 type UserUpdateRequest struct {
-	// EmailAddress, if specified, should be a valid email address. Note when this field
-	// is modified the user's verification status will reset.
-	EmailAddress optionalString `json:"emailAddress" swaggertype:"string" example:"neal@dimo.zone"`
+	Email struct {
+		// Address, if present, should be a valid email address. Note when this field
+		// is modified the user's verification status will reset.
+		Address optionalString `json:"address" swaggertype:"string" example:"neal@dimo.zone"`
+	} `json:"email"`
 	// CountryCode, if specified, should be a valid ISO 3166-1 alpha-3 country code
 	CountryCode optionalString `json:"countryCode" swaggertype:"string" example:"USA"`
 }
@@ -255,13 +269,13 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		user.CountryCode = body.CountryCode.Value
 	}
 
-	if body.EmailAddress.Defined && body.EmailAddress.Value != user.EmailAddress {
-		if body.EmailAddress.Value.Valid {
-			if !emailPattern.MatchString(body.EmailAddress.Value.String) {
+	if body.Email.Address.Defined && body.Email.Address.Value != user.EmailAddress {
+		if body.Email.Address.Value.Valid {
+			if !emailPattern.MatchString(body.Email.Address.Value.String) {
 				return errorResponseHandler(c, fmt.Errorf("invalid email"), fiber.StatusBadRequest)
 			}
 		}
-		user.EmailAddress = body.EmailAddress.Value
+		user.EmailAddress = body.Email.Address.Value
 		user.EmailConfirmed = false
 		user.EmailConfirmationKey = null.StringFromPtr(nil)
 		user.EmailConfirmationSentAt = null.TimeFromPtr(nil)

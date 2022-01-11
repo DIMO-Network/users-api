@@ -21,6 +21,7 @@ import (
 	"github.com/DIMO-INC/users-api/internal"
 	"github.com/DIMO-INC/users-api/internal/config"
 	"github.com/DIMO-INC/users-api/internal/database"
+	"github.com/DIMO-INC/users-api/internal/services"
 	"github.com/DIMO-INC/users-api/models"
 	"github.com/customerio/go-customerio/v3"
 	"github.com/gofiber/fiber/v2"
@@ -47,9 +48,10 @@ type UserController struct {
 	countryCodes    []string
 	emailTemplate   *template.Template
 	cioClient       *customerio.CustomerIO
+	eventService    *services.EventService
 }
 
-func NewUserController(settings *config.Settings, dbs func() *database.DBReaderWriter, logger *zerolog.Logger) UserController {
+func NewUserController(settings *config.Settings, dbs func() *database.DBReaderWriter, eventService *services.EventService, logger *zerolog.Logger) UserController {
 	rand.Seed(time.Now().UnixNano())
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
@@ -72,6 +74,7 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 		countryCodes:    countryCodes,
 		emailTemplate:   t,
 		cioClient:       cioClient,
+		eventService:    eventService,
 	}
 }
 
@@ -140,6 +143,8 @@ func getStringClaim(claims jwt.MapClaims, key string) (value string, ok bool) {
 	return "", false
 }
 
+const userCreationEventType = "com.dimo.zone.user.create"
+
 func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *models.User, err error) {
 	tx, err := d.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
@@ -147,9 +152,13 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	}
 	defer tx.Rollback() //nolint
 
+	newUser := false
+	method := ""
+
 	user, err = models.Users(qm.Where("id = ?", userID), qm.Load("Referrer")).One(c.Context(), tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			newUser = true
 			user = &models.User{ID: userID, ReferralCode: generateReferralCode()}
 			// New user, insert a mostly-empty record
 
@@ -160,11 +169,13 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 				if email, ok := getStringClaim(claims, "email"); ok {
 					user.EmailAddress = null.StringFrom(email)
 					user.EmailConfirmed = true
+					method = "google"
 				}
 			}
 
 			if ethereumAddress, ok := getStringClaim(claims, "ethereum_address"); ok && ethereumAddress != "" {
 				user.EthereumAddress = null.StringFrom(ethereumAddress)
+				method = "web3"
 				if d.cioClient != nil {
 					go func() {
 						if err := d.cioClient.Track(userID, "walletAdded", map[string]interface{}{}); err != nil {
@@ -184,6 +195,18 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
+	}
+
+	if newUser {
+		msg := struct {
+			Timestamp time.Time `json:"timestamp"`
+			UserID    string    `json:"userId"`
+			Method    string    `json:"method"`
+		}{time.Now(), userID, method}
+		err = d.eventService.Emit(userCreationEventType, userID, msg)
+		if err != nil {
+			d.log.Err(err).Msg("Failed sending user creation event")
+		}
 	}
 
 	return user, nil

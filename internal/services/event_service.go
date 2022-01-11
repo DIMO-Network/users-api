@@ -28,7 +28,7 @@ type cloudEventMessage struct {
 	Data        interface{} `json:"data"`
 }
 
-func (e *EventService) emit(eventType, subject string, data interface{}) error {
+func (e *EventService) Emit(eventType, subject string, data interface{}) error {
 	msgBytes, err := json.Marshal(cloudEventMessage{
 		ID:          ksuid.New().String(),
 		Source:      "users-api",

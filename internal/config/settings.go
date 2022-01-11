@@ -23,6 +23,8 @@ type Settings struct {
 	AdminPassword        string `yaml:"ADMIN_PASSWORD"`
 	CIOSiteID            string `yaml:"CIO_SITE_ID"`
 	CIOApiKey            string `yaml:"CIO_API_KEY"`
+	KafkaBrokers         string `yaml:"KAFKA_BROKERS"`
+	EventsTopic          string `yaml:"EVENTS_TOPIC"`
 }
 
 // GetWriterDSN builds the connection string to the db writer - for now same as reader

@@ -11,6 +11,7 @@ import (
 	"github.com/DIMO-INC/users-api/internal/config"
 	"github.com/DIMO-INC/users-api/internal/controllers"
 	"github.com/DIMO-INC/users-api/internal/database"
+	"github.com/DIMO-INC/users-api/internal/services"
 	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/fiber/v2"
@@ -92,7 +93,9 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
 	}))
 
-	userController := controllers.NewUserController(settings, pdb.DBS, &logger)
+	eventService := services.NewEventService(&logger, settings)
+
+	userController := controllers.NewUserController(settings, pdb.DBS, eventService, &logger)
 	v1.Get("/", userController.GetUser)
 	v1.Put("/", userController.UpdateUser)
 	v1.Delete("/", userController.DeleteUser)

@@ -215,8 +215,8 @@
         "controllers.UserResponse": {
             "type": "object",
             "properties": {
-                "agreedTOSAt": {
-                    "description": "AgreedTOSAt is the time at which the user last agreed to the terms of service.",
+                "agreedTosAt": {
+                    "description": "AgreedTosAt is the time at which the user last agreed to the terms of service.",
                     "type": "string",
                     "example": "2021-12-01T09:00:41Z"
                 },

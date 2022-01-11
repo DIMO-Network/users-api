@@ -102,8 +102,8 @@ type UserResponse struct {
 	ReferralCode string `json:"referralCode" example:"bUkZuSL7"`
 	// ReferredBy is the referral code of the person who referred this user to the site.
 	ReferredBy null.String `json:"referredBy" swaggertype:"string" example:"k9H7RoTG"`
-	// AgreedTOSAt is the time at which the user last agreed to the terms of service.
-	AgreedTOSAt null.Time `json:"agreedTOSAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
+	// AgreedTosAt is the time at which the user last agreed to the terms of service.
+	AgreedTOSAt null.Time `json:"agreedTosAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 }
 
 func formatUser(user *models.User) *UserResponse {

@@ -13,8 +13,8 @@ definitions:
     type: object
   controllers.UserResponse:
     properties:
-      agreedTOSAt:
-        description: AgreedTOSAt is the time at which the user last agreed to the
+      agreedTosAt:
+        description: AgreedTosAt is the time at which the user last agreed to the
           terms of service.
         example: "2021-12-01T09:00:41Z"
         type: string

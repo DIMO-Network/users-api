@@ -25,6 +25,7 @@ env:
   JWT_KEY_SET_URL: https://auth.dev.dimo.zone/keys
   EMAIL_FROM: hello@dimo.zone
   KAFKA_BROKERS: kafka-dev-dimo-kafka-kafka-brokers:9092
+  EVENTS_TOPIC: topic.event
 service:
   type: ClusterIP
   port: 8080

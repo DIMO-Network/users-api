@@ -24,7 +24,7 @@ go run ./cmd/users-api
 Check linting with
 
 ```
-golangci-lint run -E prealloc -E revive -E goimports -E deadcode -E errcheck -E gosimple -E govet -E ineffassign -E staticcheck -E structcheck -E typecheck -E unused -E varcheck --timeout=5m
+golangci-lint run
 ```
 
 Update OpenAPI documentation with 

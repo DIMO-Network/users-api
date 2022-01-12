@@ -23,6 +23,7 @@ env:
   EMAIL_PORT: 587
   SERVICE_NAME: users-api
   JWT_KEY_SET_URL: https://auth.dimo.zone/keys
+  KAFKA_BROKERS: kafka-prod-dimo-kafka-kafka-brokers:9092
   EMAIL_FROM: hello@dimo.zone
 service:
   type: ClusterIP

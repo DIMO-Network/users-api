@@ -20,7 +20,6 @@ type Settings struct {
 	EmailPassword        string `yaml:"EMAIL_PASSWORD"`
 	EmailFrom            string `yaml:"EMAIL_FROM"`
 	JWTKeySetURL         string `yaml:"JWT_KEY_SET_URL"`
-	AdminPassword        string `yaml:"ADMIN_PASSWORD"`
 	CIOSiteID            string `yaml:"CIO_SITE_ID"`
 	CIOApiKey            string `yaml:"CIO_API_KEY"`
 	KafkaBrokers         string `yaml:"KAFKA_BROKERS"`

@@ -232,55 +232,73 @@ var doc = `{
         "controllers.UserResponse": {
             "type": "object",
             "properties": {
-                "agreedTOSAt": {
-                    "description": "AgreedTOSAt is the time at which the user last agreed to the terms of service",
+                "agreedTosAt": {
+                    "description": "AgreedTosAt is the time at which the user last agreed to the terms of service.",
                     "type": "string",
                     "example": "2021-12-01T09:00:41Z"
                 },
                 "countryCode": {
-                    "description": "CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code",
+                    "description": "CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.",
                     "type": "string",
                     "example": "USA"
                 },
                 "createdAt": {
-                    "description": "CreatedAt is when the user first logged in",
+                    "description": "CreatedAt is when the user first logged in.",
                     "type": "string",
                     "example": "2021-12-01T09:00:00Z"
                 },
-                "emailAddress": {
-                    "description": "EmailAddress is the email address coming from a user's login or manual election",
-                    "type": "string",
-                    "example": "koblitz@dimo.zone"
-                },
-                "emailConfirmationSentAt": {
-                    "description": "EmailConfirmationSentAt is the time when we last sent the user an email\nconfirmation message, and is only present if such an email has been sent but\nconfirmation has not yet occurred",
-                    "type": "string",
-                    "example": "2021-12-01T09:01:12Z"
-                },
-                "emailVerified": {
-                    "description": "EmailConfirmed indicates whether DIMO has confirmed the user's ownership of\nEmailAddress",
-                    "type": "boolean",
-                    "example": false
-                },
-                "ethereumAddress": {
-                    "description": "EthereumAddress is the Ethereum address used to log in, if the user did use Web3",
-                    "type": "string",
-                    "example": "0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"
+                "email": {
+                    "description": "Email describes the user's email and the state of its confirmation.",
+                    "$ref": "#/definitions/controllers.UserResponseEmail"
                 },
                 "id": {
-                    "description": "ID is the user's DIMO-internal ID",
+                    "description": "ID is the user's DIMO-internal ID.",
                     "type": "string",
                     "example": "ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"
                 },
                 "referralCode": {
-                    "description": "ReferralCode is the short code used in a user's share link",
+                    "description": "ReferralCode is the short code used in a user's share link.",
                     "type": "string",
                     "example": "bUkZuSL7"
                 },
                 "referredBy": {
-                    "description": "ReferredBy is the referral code of the person who referred this user to the site",
+                    "description": "ReferredBy is the referral code of the person who referred this user to the site.",
                     "type": "string",
                     "example": "k9H7RoTG"
+                },
+                "web3": {
+                    "description": "Web3 describes the user's blockchain account.",
+                    "$ref": "#/definitions/controllers.UserResponseWeb3"
+                }
+            }
+        },
+        "controllers.UserResponseEmail": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "Address is the email address for the user.",
+                    "type": "string",
+                    "example": "koblitz@dimo.zone"
+                },
+                "confirmationSentAt": {
+                    "description": "ConfirmationSentAt is the time at which we last sent a confirmation email. This will only\nbe present if we've sent an email but the code has not been sent back to us.",
+                    "type": "string",
+                    "example": "2021-12-01T09:01:12Z"
+                },
+                "confirmed": {
+                    "description": "Confirmed indicates whether the user has confirmed the address by entering a code.",
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "controllers.UserResponseWeb3": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "Address is the Ethereum address associated with the user.",
+                    "type": "string",
+                    "example": "0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"
                 }
             }
         },
@@ -292,10 +310,15 @@ var doc = `{
                     "type": "string",
                     "example": "USA"
                 },
-                "emailAddress": {
-                    "description": "EmailAddress, if specified, should be a valid email address. Note when this field\nis modified the user's verification status will reset.",
-                    "type": "string",
-                    "example": "neal@dimo.zone"
+                "email": {
+                    "type": "object",
+                    "properties": {
+                        "address": {
+                            "description": "Address, if present, should be a valid email address. Note when this field\nis modified the user's verification status will reset.",
+                            "type": "string",
+                            "example": "neal@dimo.zone"
+                        }
+                    }
                 }
             }
         }

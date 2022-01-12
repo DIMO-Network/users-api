@@ -15,7 +15,6 @@ import (
 	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	jwtware "github.com/gofiber/jwt/v3"
@@ -102,18 +101,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	v1.Post("/agree-tos", userController.AgreeTOS)
 	v1.Post("/send-confirmation-email", userController.SendConfirmationEmail)
 	v1.Post("/confirm-email", userController.ConfirmEmail)
-
-	// Temporary endpoints for the migration from Django
-	if len(settings.AdminPassword) >= 8 {
-		admin := app.Group("/admin", basicauth.New(basicauth.Config{
-			Users: map[string]string{
-				"admin": settings.AdminPassword,
-			},
-		}))
-		admin.Post("/create-user", userController.AdminCreateUser)
-		admin.Get("/view-users", userController.AdminViewUsers)
-		admin.Post("/delete-user/:userID", userController.AdminDeleteUser)
-	}
 
 	customerIOController := controllers.NewCustomerIOController(settings, pdb.DBS, &logger)
 	v1.Post("/vitamins/known", customerIOController.Track)

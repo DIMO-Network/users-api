@@ -88,14 +88,14 @@ var ReferralWhere = struct {
 
 // ReferralRels is where relationship names are stored.
 var ReferralRels = struct {
-	ReferredUser string
+	User string
 }{
-	ReferredUser: "ReferredUser",
+	User: "User",
 }
 
 // referralR is where relationships are stored.
 type referralR struct {
-	ReferredUser *User `boil:"ReferredUser" json:"ReferredUser" toml:"ReferredUser" yaml:"ReferredUser"`
+	User *User `boil:"User" json:"User" toml:"User" yaml:"User"`
 }
 
 // NewStruct creates a new relationship struct
@@ -110,7 +110,7 @@ var (
 	referralAllColumns            = []string{"user_id", "referred_user_id", "vin"}
 	referralColumnsWithoutDefault = []string{"user_id", "referred_user_id", "vin"}
 	referralColumnsWithDefault    = []string{}
-	referralPrimaryKeyColumns     = []string{"user_id", "referred_user_id"}
+	referralPrimaryKeyColumns     = []string{"referred_user_id"}
 )
 
 type (
@@ -388,10 +388,10 @@ func (q referralQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (b
 	return count > 0, nil
 }
 
-// ReferredUser pointed to by the foreign key.
-func (o *Referral) ReferredUser(mods ...qm.QueryMod) userQuery {
+// User pointed to by the foreign key.
+func (o *Referral) User(mods ...qm.QueryMod) userQuery {
 	queryMods := []qm.QueryMod{
-		qm.Where("\"id\" = ?", o.ReferredUserID),
+		qm.Where("\"id\" = ?", o.UserID),
 	}
 
 	queryMods = append(queryMods, mods...)
@@ -402,9 +402,9 @@ func (o *Referral) ReferredUser(mods ...qm.QueryMod) userQuery {
 	return query
 }
 
-// LoadReferredUser allows an eager lookup of values, cached into the
+// LoadUser allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
-func (referralL) LoadReferredUser(ctx context.Context, e boil.ContextExecutor, singular bool, maybeReferral interface{}, mods queries.Applicator) error {
+func (referralL) LoadUser(ctx context.Context, e boil.ContextExecutor, singular bool, maybeReferral interface{}, mods queries.Applicator) error {
 	var slice []*Referral
 	var object *Referral
 
@@ -419,7 +419,7 @@ func (referralL) LoadReferredUser(ctx context.Context, e boil.ContextExecutor, s
 		if object.R == nil {
 			object.R = &referralR{}
 		}
-		args = append(args, object.ReferredUserID)
+		args = append(args, object.UserID)
 
 	} else {
 	Outer:
@@ -429,12 +429,12 @@ func (referralL) LoadReferredUser(ctx context.Context, e boil.ContextExecutor, s
 			}
 
 			for _, a := range args {
-				if a == obj.ReferredUserID {
+				if a == obj.UserID {
 					continue Outer
 				}
 			}
 
-			args = append(args, obj.ReferredUserID)
+			args = append(args, obj.UserID)
 
 		}
 	}
@@ -482,22 +482,22 @@ func (referralL) LoadReferredUser(ctx context.Context, e boil.ContextExecutor, s
 
 	if singular {
 		foreign := resultSlice[0]
-		object.R.ReferredUser = foreign
+		object.R.User = foreign
 		if foreign.R == nil {
 			foreign.R = &userR{}
 		}
-		foreign.R.ReferredUserReferral = object
+		foreign.R.Referrals = append(foreign.R.Referrals, object)
 		return nil
 	}
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
-			if local.ReferredUserID == foreign.ID {
-				local.R.ReferredUser = foreign
+			if local.UserID == foreign.ID {
+				local.R.User = foreign
 				if foreign.R == nil {
 					foreign.R = &userR{}
 				}
-				foreign.R.ReferredUserReferral = local
+				foreign.R.Referrals = append(foreign.R.Referrals, local)
 				break
 			}
 		}
@@ -506,10 +506,10 @@ func (referralL) LoadReferredUser(ctx context.Context, e boil.ContextExecutor, s
 	return nil
 }
 
-// SetReferredUser of the referral to the related item.
-// Sets o.R.ReferredUser to related.
-// Adds o to related.R.ReferredUserReferral.
-func (o *Referral) SetReferredUser(ctx context.Context, exec boil.ContextExecutor, insert bool, related *User) error {
+// SetUser of the referral to the related item.
+// Sets o.R.User to related.
+// Adds o to related.R.Referrals.
+func (o *Referral) SetUser(ctx context.Context, exec boil.ContextExecutor, insert bool, related *User) error {
 	var err error
 	if insert {
 		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
@@ -519,10 +519,10 @@ func (o *Referral) SetReferredUser(ctx context.Context, exec boil.ContextExecuto
 
 	updateQuery := fmt.Sprintf(
 		"UPDATE \"users_api\".\"referrals\" SET %s WHERE %s",
-		strmangle.SetParamNames("\"", "\"", 1, []string{"referred_user_id"}),
+		strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
 		strmangle.WhereClause("\"", "\"", 2, referralPrimaryKeyColumns),
 	)
-	values := []interface{}{related.ID, o.UserID, o.ReferredUserID}
+	values := []interface{}{related.ID, o.ReferredUserID}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -533,21 +533,21 @@ func (o *Referral) SetReferredUser(ctx context.Context, exec boil.ContextExecuto
 		return errors.Wrap(err, "failed to update local table")
 	}
 
-	o.ReferredUserID = related.ID
+	o.UserID = related.ID
 	if o.R == nil {
 		o.R = &referralR{
-			ReferredUser: related,
+			User: related,
 		}
 	} else {
-		o.R.ReferredUser = related
+		o.R.User = related
 	}
 
 	if related.R == nil {
 		related.R = &userR{
-			ReferredUserReferral: o,
+			Referrals: ReferralSlice{o},
 		}
 	} else {
-		related.R.ReferredUserReferral = o
+		related.R.Referrals = append(related.R.Referrals, o)
 	}
 
 	return nil
@@ -561,7 +561,7 @@ func Referrals(mods ...qm.QueryMod) referralQuery {
 
 // FindReferral retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindReferral(ctx context.Context, exec boil.ContextExecutor, userID string, referredUserID string, selectCols ...string) (*Referral, error) {
+func FindReferral(ctx context.Context, exec boil.ContextExecutor, referredUserID string, selectCols ...string) (*Referral, error) {
 	referralObj := &Referral{}
 
 	sel := "*"
@@ -569,10 +569,10 @@ func FindReferral(ctx context.Context, exec boil.ContextExecutor, userID string,
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"users_api\".\"referrals\" where \"user_id\"=$1 AND \"referred_user_id\"=$2", sel,
+		"select %s from \"users_api\".\"referrals\" where \"referred_user_id\"=$1", sel,
 	)
 
-	q := queries.Raw(query, userID, referredUserID)
+	q := queries.Raw(query, referredUserID)
 
 	err := q.Bind(ctx, exec, referralObj)
 	if err != nil {
@@ -923,7 +923,7 @@ func (o *Referral) Delete(ctx context.Context, exec boil.ContextExecutor) (int64
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), referralPrimaryKeyMapping)
-	sql := "DELETE FROM \"users_api\".\"referrals\" WHERE \"user_id\"=$1 AND \"referred_user_id\"=$2"
+	sql := "DELETE FROM \"users_api\".\"referrals\" WHERE \"referred_user_id\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1020,7 +1020,7 @@ func (o ReferralSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor)
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *Referral) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindReferral(ctx, exec, o.UserID, o.ReferredUserID)
+	ret, err := FindReferral(ctx, exec, o.ReferredUserID)
 	if err != nil {
 		return err
 	}
@@ -1059,16 +1059,16 @@ func (o *ReferralSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor
 }
 
 // ReferralExists checks if the Referral row exists.
-func ReferralExists(ctx context.Context, exec boil.ContextExecutor, userID string, referredUserID string) (bool, error) {
+func ReferralExists(ctx context.Context, exec boil.ContextExecutor, referredUserID string) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"users_api\".\"referrals\" where \"user_id\"=$1 AND \"referred_user_id\"=$2 limit 1)"
+	sql := "select exists(select 1 from \"users_api\".\"referrals\" where \"referred_user_id\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, userID, referredUserID)
+		fmt.Fprintln(writer, referredUserID)
 	}
-	row := exec.QueryRowContext(ctx, sql, userID, referredUserID)
+	row := exec.QueryRowContext(ctx, sql, referredUserID)
 
 	err := row.Scan(&exists)
 	if err != nil {

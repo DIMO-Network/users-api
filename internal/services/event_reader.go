@@ -2,13 +2,16 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/DIMO-INC/users-api/internal/database"
 	"github.com/DIMO-INC/users-api/models"
 	"github.com/ThreeDotsLabs/watermill/message"
+	"github.com/lib/pq"
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -83,6 +86,7 @@ func (e *EventReader) processEvent(msg *message.Message) error {
 
 	tx, err := e.db().Writer.BeginTx(context.Background(), nil)
 	if err != nil {
+		ack = false
 		return err
 	}
 	defer tx.Rollback() //nolint
@@ -93,6 +97,10 @@ func (e *EventReader) processEvent(msg *message.Message) error {
 		qm.Load(models.UserRels.Referrer),
 	).One(context.Background(), tx)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("Got an integration event for a user %s we don't have", data.UserID)
+		}
+		ack = false
 		return err
 	}
 
@@ -110,6 +118,11 @@ func (e *EventReader) processEvent(msg *message.Message) error {
 
 	err = referral.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
+		var pqErr *pq.Error
+		if !errors.As(err, &pqErr) || pqErr.Code != "23505" {
+			ack = false
+			return err
+		}
 		// Some errors are entirely expected here.
 		return err
 	}

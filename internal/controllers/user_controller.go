@@ -107,6 +107,8 @@ type UserResponse struct {
 	ReferredBy null.String `json:"referredBy" swaggertype:"string" example:"k9H7RoTG"`
 	// AgreedTosAt is the time at which the user last agreed to the terms of service.
 	AgreedTOSAt null.Time `json:"agreedTosAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
+	// ReferralsMade is the number of completed referrals made by the user
+	ReferralsMade int `json:"referralsMade" example:"1"`
 }
 
 func formatUser(user *models.User) *UserResponse {
@@ -115,6 +117,10 @@ func formatUser(user *models.User) *UserResponse {
 			return null.StringFrom(user.R.Referrer.ReferralCode)
 		}
 		return null.StringFromPtr(nil)
+	}
+	referralsMade := 0
+	if user.R != nil && user.R.Referrals != nil {
+		referralsMade = len(user.R.Referrals)
 	}
 	return &UserResponse{
 		ID: user.ID,
@@ -126,11 +132,12 @@ func formatUser(user *models.User) *UserResponse {
 		Web3: UserResponseWeb3{
 			Address: user.EthereumAddress,
 		},
-		CreatedAt:    user.CreatedAt,
-		CountryCode:  user.CountryCode,
-		ReferralCode: user.ReferralCode,
-		ReferredBy:   refferedBy(user),
-		AgreedTOSAt:  user.AgreedTosAt,
+		CreatedAt:     user.CreatedAt,
+		CountryCode:   user.CountryCode,
+		ReferralCode:  user.ReferralCode,
+		ReferredBy:    refferedBy(user),
+		AgreedTOSAt:   user.AgreedTosAt,
+		ReferralsMade: referralsMade,
 	}
 }
 
@@ -164,7 +171,10 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	newUser := false
 	method := ""
 
-	user, err = models.Users(qm.Where("id = ?", userID), qm.Load("Referrer")).One(c.Context(), tx)
+	user, err = models.Users(
+		models.UserWhere.ID.EQ(userID),
+		qm.Load(models.UserRels.Referrals),
+	).One(c.Context(), tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			newUser = true
@@ -212,7 +222,12 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			UserID    string    `json:"userId"`
 			Method    string    `json:"method"`
 		}{time.Now(), userID, method}
-		err = d.eventService.Emit(userCreationEventType, userID, msg)
+		err = d.eventService.Emit(&services.Event{
+			Type:    userCreationEventType,
+			Subject: userID,
+			Source:  "users-api",
+			Data:    msg,
+		})
 		if err != nil {
 			d.log.Err(err).Msg("Failed sending user creation event")
 		}

@@ -28,15 +28,22 @@ type cloudEventMessage struct {
 	Data        interface{} `json:"data"`
 }
 
-func (e *EventService) Emit(eventType, subject string, data interface{}) error {
+type Event struct {
+	Type    string
+	Subject string
+	Source  string
+	Data    interface{}
+}
+
+func (e *EventService) Emit(event *Event) error {
 	msgBytes, err := json.Marshal(cloudEventMessage{
 		ID:          ksuid.New().String(),
-		Source:      "users-api",
+		Source:      event.Source,
 		SpecVersion: "1.0",
-		Subject:     subject,
+		Subject:     event.Subject,
 		Time:        time.Now(),
-		Type:        eventType,
-		Data:        data,
+		Type:        event.Type,
+		Data:        event.Data,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to marshal CloudEvent: %w", err)

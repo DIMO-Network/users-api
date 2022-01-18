@@ -67,14 +67,15 @@ func startEventConsumer(logger zerolog.Logger, settings *config.Settings, pdb da
 		ClusterConfig:   clusterConfig,
 		BrokerAddresses: strings.Split(settings.KafkaBrokers, ","),
 		Topic:           settings.EventsTopic,
-		GroupID:         "user-devices",
+		GroupID:         "users-api",
 		MaxInFlight:     int64(5),
 	}
-	_, err := kafka.NewConsumer(cfg, &logger)
+	consumer, err := kafka.NewConsumer(cfg, &logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("could not start consumer")
 	}
-	services.NewEventReader(pdb.DBS, &logger, eventService)
+	eventReader := services.NewEventReader(pdb.DBS, &logger, eventService)
+	consumer.Start(context.Background(), eventReader.ProcessDeviceStatusMessages)
 
 	logger.Info().Msg("kafka consumer started")
 }

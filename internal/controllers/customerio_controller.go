@@ -46,7 +46,7 @@ func (d *CustomerIOController) Track(c *fiber.Ctx) error {
 	if !ok {
 		return errorResponseHandler(c, fmt.Errorf("params.name should be a string"), fiber.StatusBadRequest)
 	}
-	if name == "referral_user" {
+	if name == "referral_user" || name == "dev-referral_user" {
 		iCode, ok := req.Params["referralCode"]
 		if !ok {
 			return errorResponseHandler(c, fmt.Errorf("referral_user event without params.referralCode"), fiber.StatusBadRequest)

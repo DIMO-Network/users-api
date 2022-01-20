@@ -90,6 +90,7 @@ func (e *EventReader) processEvent(msg *message.Message) error {
 	}
 	defer tx.Rollback() //nolint
 
+	// The referred user may be deleted later, but at this time he should exist.
 	referredUser, err := models.FindUser(ctx, tx, data.UserID)
 	if err != nil {
 		return fmt.Errorf("failed to find user with id %s who created integration: %w", data.UserID, err)
@@ -106,7 +107,6 @@ func (e *EventReader) processEvent(msg *message.Message) error {
 		qm.Or2(models.ReferralWhere.Vin.EQ(data.Device.VIN)),
 	).One(ctx, tx)
 	if err == nil {
-		// We found an existing referral that precludes us from counting this one.
 		if conflictingReferral.Vin == data.Device.VIN {
 			e.log.Info().Msgf("VIN %s has already been used in a referral", data.Device.VIN)
 		} else {
@@ -117,7 +117,7 @@ func (e *EventReader) processEvent(msg *message.Message) error {
 		return fmt.Errorf("failed searching for conflicting referrals: %w", err)
 	}
 
-	// Should be able to create the referral without issue.
+	// Should be able to create the referral in the database without issue.
 	referral := models.Referral{
 		UserID:         referredUser.ReferrerID.String,
 		ReferredUserID: data.UserID,

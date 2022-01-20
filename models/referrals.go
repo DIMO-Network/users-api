@@ -23,9 +23,10 @@ import (
 
 // Referral is an object representing the database table.
 type Referral struct {
-	UserID         string `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
-	ReferredUserID string `boil:"referred_user_id" json:"referred_user_id" toml:"referred_user_id" yaml:"referred_user_id"`
-	Vin            string `boil:"vin" json:"vin" toml:"vin" yaml:"vin"`
+	UserID         string    `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
+	ReferredUserID string    `boil:"referred_user_id" json:"referred_user_id" toml:"referred_user_id" yaml:"referred_user_id"`
+	Vin            string    `boil:"vin" json:"vin" toml:"vin" yaml:"vin"`
+	CreatedAt      time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
 	R *referralR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L referralL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -35,20 +36,24 @@ var ReferralColumns = struct {
 	UserID         string
 	ReferredUserID string
 	Vin            string
+	CreatedAt      string
 }{
 	UserID:         "user_id",
 	ReferredUserID: "referred_user_id",
 	Vin:            "vin",
+	CreatedAt:      "created_at",
 }
 
 var ReferralTableColumns = struct {
 	UserID         string
 	ReferredUserID string
 	Vin            string
+	CreatedAt      string
 }{
 	UserID:         "referrals.user_id",
 	ReferredUserID: "referrals.referred_user_id",
 	Vin:            "referrals.vin",
+	CreatedAt:      "referrals.created_at",
 }
 
 // Generated where
@@ -76,14 +81,37 @@ func (w whereHelperstring) NIN(slice []string) qm.QueryMod {
 	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
 }
 
+type whereHelpertime_Time struct{ field string }
+
+func (w whereHelpertime_Time) EQ(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.EQ, x)
+}
+func (w whereHelpertime_Time) NEQ(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
+}
+func (w whereHelpertime_Time) LT(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpertime_Time) LTE(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpertime_Time) GT(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
 var ReferralWhere = struct {
 	UserID         whereHelperstring
 	ReferredUserID whereHelperstring
 	Vin            whereHelperstring
+	CreatedAt      whereHelpertime_Time
 }{
 	UserID:         whereHelperstring{field: "\"users_api\".\"referrals\".\"user_id\""},
 	ReferredUserID: whereHelperstring{field: "\"users_api\".\"referrals\".\"referred_user_id\""},
 	Vin:            whereHelperstring{field: "\"users_api\".\"referrals\".\"vin\""},
+	CreatedAt:      whereHelpertime_Time{field: "\"users_api\".\"referrals\".\"created_at\""},
 }
 
 // ReferralRels is where relationship names are stored.
@@ -107,10 +135,10 @@ func (*referralR) NewStruct() *referralR {
 type referralL struct{}
 
 var (
-	referralAllColumns            = []string{"user_id", "referred_user_id", "vin"}
-	referralColumnsWithoutDefault = []string{"user_id", "referred_user_id", "vin"}
+	referralAllColumns            = []string{"user_id", "referred_user_id", "vin", "created_at"}
+	referralColumnsWithoutDefault = []string{"user_id", "referred_user_id", "vin", "created_at"}
 	referralColumnsWithDefault    = []string{}
-	referralPrimaryKeyColumns     = []string{"referred_user_id"}
+	referralPrimaryKeyColumns     = []string{"vin"}
 )
 
 type (
@@ -522,7 +550,7 @@ func (o *Referral) SetUser(ctx context.Context, exec boil.ContextExecutor, inser
 		strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
 		strmangle.WhereClause("\"", "\"", 2, referralPrimaryKeyColumns),
 	)
-	values := []interface{}{related.ID, o.ReferredUserID}
+	values := []interface{}{related.ID, o.Vin}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -561,7 +589,7 @@ func Referrals(mods ...qm.QueryMod) referralQuery {
 
 // FindReferral retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindReferral(ctx context.Context, exec boil.ContextExecutor, referredUserID string, selectCols ...string) (*Referral, error) {
+func FindReferral(ctx context.Context, exec boil.ContextExecutor, vin string, selectCols ...string) (*Referral, error) {
 	referralObj := &Referral{}
 
 	sel := "*"
@@ -569,10 +597,10 @@ func FindReferral(ctx context.Context, exec boil.ContextExecutor, referredUserID
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"users_api\".\"referrals\" where \"referred_user_id\"=$1", sel,
+		"select %s from \"users_api\".\"referrals\" where \"vin\"=$1", sel,
 	)
 
-	q := queries.Raw(query, referredUserID)
+	q := queries.Raw(query, vin)
 
 	err := q.Bind(ctx, exec, referralObj)
 	if err != nil {
@@ -597,6 +625,13 @@ func (o *Referral) Insert(ctx context.Context, exec boil.ContextExecutor, column
 	}
 
 	var err error
+	if !boil.TimestampsAreSkipped(ctx) {
+		currTime := time.Now().In(boil.GetLocation())
+
+		if o.CreatedAt.IsZero() {
+			o.CreatedAt = currTime
+		}
+	}
 
 	if err := o.doBeforeInsertHooks(ctx, exec); err != nil {
 		return err
@@ -802,6 +837,13 @@ func (o *Referral) Upsert(ctx context.Context, exec boil.ContextExecutor, update
 	if o == nil {
 		return errors.New("models: no referrals provided for upsert")
 	}
+	if !boil.TimestampsAreSkipped(ctx) {
+		currTime := time.Now().In(boil.GetLocation())
+
+		if o.CreatedAt.IsZero() {
+			o.CreatedAt = currTime
+		}
+	}
 
 	if err := o.doBeforeUpsertHooks(ctx, exec); err != nil {
 		return err
@@ -923,7 +965,7 @@ func (o *Referral) Delete(ctx context.Context, exec boil.ContextExecutor) (int64
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), referralPrimaryKeyMapping)
-	sql := "DELETE FROM \"users_api\".\"referrals\" WHERE \"referred_user_id\"=$1"
+	sql := "DELETE FROM \"users_api\".\"referrals\" WHERE \"vin\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1020,7 +1062,7 @@ func (o ReferralSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor)
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *Referral) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindReferral(ctx, exec, o.ReferredUserID)
+	ret, err := FindReferral(ctx, exec, o.Vin)
 	if err != nil {
 		return err
 	}
@@ -1059,16 +1101,16 @@ func (o *ReferralSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor
 }
 
 // ReferralExists checks if the Referral row exists.
-func ReferralExists(ctx context.Context, exec boil.ContextExecutor, referredUserID string) (bool, error) {
+func ReferralExists(ctx context.Context, exec boil.ContextExecutor, vin string) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"users_api\".\"referrals\" where \"referred_user_id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"users_api\".\"referrals\" where \"vin\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, referredUserID)
+		fmt.Fprintln(writer, vin)
 	}
-	row := exec.QueryRowContext(ctx, sql, referredUserID)
+	row := exec.QueryRowContext(ctx, sql, vin)
 
 	err := row.Scan(&exists)
 	if err != nil {

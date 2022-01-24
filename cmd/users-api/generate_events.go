@@ -23,7 +23,7 @@ func generateEvents(logger zerolog.Logger, settings *config.Settings, pdb databa
 			// No other way to enter this at the moment
 			method = "web3"
 		}
-		eventService.Emit(
+		err = eventService.Emit(
 			&services.Event{
 				Type:    controllers.UserCreationEventType,
 				Subject: user.ID,
@@ -35,5 +35,8 @@ func generateEvents(logger zerolog.Logger, settings *config.Settings, pdb databa
 				},
 			},
 		)
+		if err != nil {
+			logger.Err(err).Msgf("Failed to emit creation event for user %s", user.ID)
+		}
 	}
 }

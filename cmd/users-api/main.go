@@ -51,6 +51,9 @@ func main() {
 	switch arg {
 	case "migrate":
 		migrateDatabase(logger, settings)
+	case "generate-events":
+		eventService := services.NewEventService(&logger, settings)
+		generateEvents(logger, settings)
 	default:
 		eventService := services.NewEventService(&logger, settings)
 		startEventConsumer(logger, settings, pdb, eventService)

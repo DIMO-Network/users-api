@@ -159,7 +159,13 @@ func getStringClaim(claims jwt.MapClaims, key string) (value string, ok bool) {
 	return "", false
 }
 
-const userCreationEventType = "com.dimo.zone.user.create"
+const UserCreationEventType = "com.dimo.zone.user.create"
+
+type UserCreationEventData struct {
+	Timestamp time.Time `json:"timestamp"`
+	UserID    string    `json:"userId"`
+	Method    string    `json:"method"`
+}
 
 func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *models.User, err error) {
 	tx, err := d.DBS().Writer.BeginTx(c.Context(), nil)
@@ -217,13 +223,13 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	}
 
 	if newUser {
-		msg := struct {
-			Timestamp time.Time `json:"timestamp"`
-			UserID    string    `json:"userId"`
-			Method    string    `json:"method"`
-		}{time.Now(), userID, method}
+		msg := UserCreationEventData{
+			Timestamp: time.Now(),
+			UserID:    userID,
+			Method:    method,
+		}
 		err = d.eventService.Emit(&services.Event{
-			Type:    userCreationEventType,
+			Type:    UserCreationEventType,
 			Subject: userID,
 			Source:  "users-api",
 			Data:    msg,

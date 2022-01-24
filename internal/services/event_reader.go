@@ -43,8 +43,9 @@ func (e *EventReader) ProcessDeviceStatusMessages(messages <-chan *message.Messa
 }
 
 type integrationCreationData struct {
-	UserID string `json:"userId"`
-	Device struct {
+	Timestamp time.Time
+	UserID    string `json:"userId"`
+	Device    struct {
 		VIN string `json:"vin"`
 	} `json:"device"`
 }
@@ -138,7 +139,7 @@ func (e *EventReader) processEvent(msg *message.Message) error {
 		Subject: data.UserID,
 		Source:  "users-api",
 		Data: referralEventData{
-			Timestamp: time.Now(),
+			Timestamp: data.Timestamp,
 			UserID:    data.UserID,
 		},
 	})

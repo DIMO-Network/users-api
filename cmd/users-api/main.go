@@ -42,7 +42,16 @@ func main() {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("could not load settings")
 	}
-	pdb := database.NewDbConnectionFromSettings(ctx, settings)
+	pdb := database.NewDbConnectionFromSettings(ctx, settings, true)
+	// check db ready, this is not ideal btw, the db connection handler would be nicer if it did this.
+	totalTime := 0
+	for !pdb.IsReady() {
+		if totalTime > 30 {
+			logger.Fatal().Msg("could not connect to postgres after 30 seconds")
+		}
+		time.Sleep(time.Second)
+		totalTime++
+	}
 
 	arg := ""
 	if len(os.Args) > 1 {

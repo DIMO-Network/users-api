@@ -11,9 +11,9 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func generateEvents(logger zerolog.Logger, settings *config.Settings, dbs func() *database.DBReaderWriter, eventService *services.EventService) {
+func generateEvents(logger *zerolog.Logger, settings *config.Settings, pdb database.DbStore, eventService *services.EventService) {
 	ctx := context.Background()
-	users, err := models.Users().All(ctx, dbs().Reader)
+	users, err := models.Users().All(ctx, pdb.DBS().Reader)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to retrieve all users for event generation")
 	}

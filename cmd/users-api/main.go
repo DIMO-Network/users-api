@@ -63,6 +63,9 @@ func main() {
 	case "generate-events":
 		eventService := services.NewEventService(&logger, settings)
 		generateEvents(&logger, settings, pdb, eventService)
+	case "generate-referrals":
+		eventService := services.NewEventService(&logger, settings)
+		generateReferrals(&logger, settings, pdb, eventService)
 	default:
 		eventService := services.NewEventService(&logger, settings)
 		startEventConsumer(logger, settings, pdb, eventService)

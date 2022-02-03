@@ -17,7 +17,7 @@ import (
 )
 
 const integrationCreationEventType = "com.dimo.zone.device.integration.create"
-const referralCompleteEventType = "com.dimo.zone.user.referral.complete"
+const ReferralCompleteEventType = "com.dimo.zone.user.referral.complete"
 
 type EventReader struct {
 	db           func() *database.DBReaderWriter
@@ -50,7 +50,7 @@ type integrationCreationData struct {
 	} `json:"device"`
 }
 
-type referralEventData struct {
+type ReferralEventData struct {
 	Timestamp time.Time `json:"timestamp"`
 	UserID    string    `json:"userId"`
 }
@@ -138,10 +138,10 @@ func (e *EventReader) processEvent(msg *message.Message) error {
 	}
 
 	err = e.eventService.Emit(&Event{
-		Type:    referralCompleteEventType,
+		Type:    ReferralCompleteEventType,
 		Subject: referringUserID,
 		Source:  "users-api",
-		Data: referralEventData{
+		Data: ReferralEventData{
 			Timestamp: data.Timestamp,
 			UserID:    referringUserID,
 		},

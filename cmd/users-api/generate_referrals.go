@@ -14,7 +14,7 @@ func generateReferrals(logger *zerolog.Logger, settings *config.Settings, pdb da
 	ctx := context.Background()
 	referrals, err := models.Referrals().All(ctx, pdb.DBS().Reader)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to retrieve all users for event generation")
+		logger.Fatal().Err(err).Msg("Failed to retrieve all referrals for event generation")
 	}
 	for _, referral := range referrals {
 		err = eventService.Emit(&services.Event{
@@ -27,7 +27,7 @@ func generateReferrals(logger *zerolog.Logger, settings *config.Settings, pdb da
 			},
 		})
 		if err != nil {
-			logger.Err(err).Msgf("Failed to emit referral for user %s referring user %s", referral.UserID, referral.ReferredUserID)
+			logger.Err(err).Msgf("Failed to emit referral for user %s referring user %s with VIN %s", referral.UserID, referral.ReferredUserID, referral.Vin)
 		}
 	}
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/customerio/go-customerio/v3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 type CustomerIOController struct {
@@ -75,9 +74,13 @@ func (d *CustomerIOController) setReferrer(c *fiber.Ctx, userID, code string) (e
 	}
 	defer tx.Rollback() //nolint
 
-	referrer, err := models.Users(qm.Where("referral_code = ?", code)).One(c.Context(), tx)
+	referrer, err := models.Users(models.UserWhere.ReferralCode.EQ(code)).One(c.Context(), tx)
 	if err != nil {
 		return
+	}
+
+	if referrer.ID == userID {
+		return fmt.Errorf("user %s sent a self-referral", userID)
 	}
 
 	user, err := models.FindUser(c.Context(), tx, userID)

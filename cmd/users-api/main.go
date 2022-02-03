@@ -116,7 +116,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	prometheus.RegisterAt(app, "/metrics")
 	app.Use(prometheus.Middleware)
 
-	app.Get("/swagger/*", swagger.Handler)
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	keyRefreshInterval := time.Hour
 	keyRefreshUnknownKID := true

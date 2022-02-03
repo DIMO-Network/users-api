@@ -107,7 +107,7 @@ func (e *EventReader) processEvent(msg *message.Message) error {
 
 	// See if this user or vehicle has already been used for a referral.
 	conflictingReferral, err := models.Referrals(
-		models.ReferralWhere.ReferredUserID.EQ(data.UserID),
+		models.ReferralWhere.ReferredUserID.EQ(referredUser.ID),
 		qm.Or2(models.ReferralWhere.Vin.EQ(data.Device.VIN)),
 	).One(ctx, tx)
 	if err == nil {

@@ -3,16 +3,7 @@ image:
   repository: dimozone/users-api
   pullPolicy: IfNotPresent
   tag: 0.1.11
-imagePullSecrets: []
-nameOverride: ''
-fullnameOverride: ''
-serviceAccount:
-  create: true
-  annotations: {}
-  name: ''
-podAnnotations: {}
-podSecurityContext: {}
-securityContext: {}
+
 env:
   PORT: '8080'
   LOG_LEVEL: info
@@ -25,9 +16,7 @@ env:
   JWT_KEY_SET_URL: https://auth.dimo.zone/keys
   KAFKA_BROKERS: kafka-prod-dimo-kafka-kafka-brokers:9092
   EMAIL_FROM: hello@dimo.zone
-service:
-  type: ClusterIP
-  port: 8080
+
 ingress:
   enabled: true
   className: nginx

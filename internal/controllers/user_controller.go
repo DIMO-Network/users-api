@@ -175,7 +175,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	defer tx.Rollback() //nolint
 
 	newUser := false
-	providerID := ""
+	var providerID string
 
 	user, err = models.Users(
 		models.UserWhere.ID.EQ(userID),
@@ -190,6 +190,8 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			token := c.Locals("user").(*jwt.Token)
 			claims := token.Claims.(jwt.MapClaims)
 
+			// Some outstanding tokens may not have this field set. In the future, we would like to
+			// reject such tokens.
 			var providerClaim bool
 			providerID, providerClaim = getStringClaim(claims, "provider_id")
 
@@ -198,8 +200,6 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 					user.EmailAddress = null.StringFrom(email)
 					user.EmailConfirmed = true
 					if !providerClaim {
-						// We didn't always send provider_id, so there may be old tokens out there.
-						// Can remove this later.
 						providerID = "google"
 					}
 				}
@@ -208,8 +208,6 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			if ethereumAddress, ok := getStringClaim(claims, "ethereum_address"); ok && ethereumAddress != "" {
 				user.EthereumAddress = null.StringFrom(ethereumAddress)
 				if !providerClaim {
-					// We didn't always send provider_id, so there may be old tokens out there.
-					// Can remove this later.
 					providerID = "web3"
 				}
 				if d.cioClient != nil {

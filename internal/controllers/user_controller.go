@@ -327,9 +327,6 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	if body.Email.Address.Defined && body.Email.Address.Value != user.EmailAddress {
-		if user.AuthProviderID == "google" || user.AuthProviderID == "apple" {
-			return errorResponseHandler(c, fmt.Errorf("cannot change email address for Google or Apple accounts"), fiber.StatusBadRequest)
-		}
 		if body.Email.Address.Value.Valid {
 			if !emailPattern.MatchString(body.Email.Address.Value.String) {
 				return errorResponseHandler(c, fmt.Errorf("invalid email"), fiber.StatusBadRequest)

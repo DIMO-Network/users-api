@@ -175,7 +175,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	defer tx.Rollback() //nolint
 
 	newUser := false
-	method := ""
+	var providerID string
 
 	user, err = models.Users(
 		models.UserWhere.ID.EQ(userID),
@@ -190,17 +190,26 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			token := c.Locals("user").(*jwt.Token)
 			claims := token.Claims.(jwt.MapClaims)
 
+			// Some outstanding tokens may not have this field set. In the future, we would like to
+			// reject such tokens.
+			var providerClaim bool
+			providerID, providerClaim = getStringClaim(claims, "provider_id")
+
 			if emailVerified, ok := getBooleanClaim(claims, "email_verified"); ok && emailVerified {
 				if email, ok := getStringClaim(claims, "email"); ok {
 					user.EmailAddress = null.StringFrom(email)
 					user.EmailConfirmed = true
-					method = "google"
+					if !providerClaim {
+						providerID = "google"
+					}
 				}
 			}
 
 			if ethereumAddress, ok := getStringClaim(claims, "ethereum_address"); ok && ethereumAddress != "" {
 				user.EthereumAddress = null.StringFrom(ethereumAddress)
-				method = "web3"
+				if !providerClaim {
+					providerID = "web3"
+				}
 				if d.cioClient != nil {
 					go func() {
 						if err := d.cioClient.Track(userID, "walletAdded", map[string]interface{}{}); err != nil {
@@ -209,6 +218,10 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 					}()
 				}
 			}
+
+			user.AuthProviderID = providerID
+
+			d.log.Info().Msgf("Creating new user with id %s, provider %s", userID, providerID)
 
 			if err := user.Insert(c.Context(), tx, boil.Infer()); err != nil {
 				return nil, err
@@ -226,7 +239,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 		msg := UserCreationEventData{
 			Timestamp: time.Now(),
 			UserID:    userID,
-			Method:    method,
+			Method:    providerID,
 		}
 		err = d.eventService.Emit(&services.Event{
 			Type:    UserCreationEventType,
@@ -314,6 +327,9 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	if body.Email.Address.Defined && body.Email.Address.Value != user.EmailAddress {
+		if user.AuthProviderID == "google" || user.AuthProviderID == "apple" {
+			return errorResponseHandler(c, fmt.Errorf("cannot change email address for Google or Apple accounts"), fiber.StatusBadRequest)
+		}
 		if body.Email.Address.Value.Valid {
 			if !emailPattern.MatchString(body.Email.Address.Value.String) {
 				return errorResponseHandler(c, fmt.Errorf("invalid email"), fiber.StatusBadRequest)

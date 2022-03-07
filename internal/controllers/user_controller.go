@@ -190,17 +190,14 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			token := c.Locals("user").(*jwt.Token)
 			claims := token.Claims.(jwt.MapClaims)
 
-			var ok bool
-			providerID, ok = getStringClaim(claims, "provider_id")
-			if !ok {
-				providerID = ""
-			}
+			var providerClaim bool
+			providerID, providerClaim = getStringClaim(claims, "provider_id")
 
 			if emailVerified, ok := getBooleanClaim(claims, "email_verified"); ok && emailVerified {
 				if email, ok := getStringClaim(claims, "email"); ok {
 					user.EmailAddress = null.StringFrom(email)
 					user.EmailConfirmed = true
-					if providerID == "" {
+					if !providerClaim {
 						// We didn't always send provider_id, so there may be old tokens out there.
 						// Can remove this later.
 						providerID = "google"
@@ -210,7 +207,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 
 			if ethereumAddress, ok := getStringClaim(claims, "ethereum_address"); ok && ethereumAddress != "" {
 				user.EthereumAddress = null.StringFrom(ethereumAddress)
-				if providerID == "" {
+				if !providerClaim {
 					// We didn't always send provider_id, so there may be old tokens out there.
 					// Can remove this later.
 					providerID = "web3"

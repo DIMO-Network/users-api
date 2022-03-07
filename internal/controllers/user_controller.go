@@ -175,7 +175,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	defer tx.Rollback() //nolint
 
 	newUser := false
-	method := ""
+	providerID := ""
 
 	user, err = models.Users(
 		models.UserWhere.ID.EQ(userID),
@@ -190,17 +190,31 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			token := c.Locals("user").(*jwt.Token)
 			claims := token.Claims.(jwt.MapClaims)
 
+			var ok bool
+			providerID, ok = getStringClaim(claims, "provider_id")
+			if !ok {
+				providerID = ""
+			}
+
 			if emailVerified, ok := getBooleanClaim(claims, "email_verified"); ok && emailVerified {
 				if email, ok := getStringClaim(claims, "email"); ok {
 					user.EmailAddress = null.StringFrom(email)
 					user.EmailConfirmed = true
-					method = "google"
+					if providerID == "" {
+						// We didn't always send provider_id, so there may be old tokens out there.
+						// Can remove this later.
+						providerID = "google"
+					}
 				}
 			}
 
 			if ethereumAddress, ok := getStringClaim(claims, "ethereum_address"); ok && ethereumAddress != "" {
 				user.EthereumAddress = null.StringFrom(ethereumAddress)
-				method = "web3"
+				if providerID == "" {
+					// We didn't always send provider_id, so there may be old tokens out there.
+					// Can remove this later.
+					providerID = "web3"
+				}
 				if d.cioClient != nil {
 					go func() {
 						if err := d.cioClient.Track(userID, "walletAdded", map[string]interface{}{}); err != nil {
@@ -209,6 +223,11 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 					}()
 				}
 			}
+
+			if providerID == "" {
+				d.log.Error().Msg("Ended up with an empty provider ID, how?")
+			}
+			user.AuthProviderID = providerID
 
 			if err := user.Insert(c.Context(), tx, boil.Infer()); err != nil {
 				return nil, err
@@ -226,7 +245,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 		msg := UserCreationEventData{
 			Timestamp: time.Now(),
 			UserID:    userID,
-			Method:    method,
+			Method:    providerID,
 		}
 		err = d.eventService.Emit(&services.Event{
 			Type:    UserCreationEventType,

@@ -2,8 +2,7 @@ replicaCount: 2
 image:
   repository: dimozone/users-api
   pullPolicy: IfNotPresent
-  tag: 0.1.11
-
+  tag: 0.1.12
 env:
   PORT: '8080'
   LOG_LEVEL: info
@@ -16,7 +15,6 @@ env:
   JWT_KEY_SET_URL: https://auth.dimo.zone/keys
   KAFKA_BROKERS: kafka-prod-dimo-kafka-kafka-brokers:9092
   EMAIL_FROM: hello@dimo.zone
-
 ingress:
   enabled: true
   className: nginx

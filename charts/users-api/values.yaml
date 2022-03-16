@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   repository: dimozone/users-api
   pullPolicy: IfNotPresent
-  tag: fd7bd28
+  tag: 4455a95
 imagePullSecrets: []
 nameOverride: ''
 fullnameOverride: ''
@@ -44,7 +44,7 @@ ingress:
     nginx.ingress.kubernetes.io/auth-tls-verify-client: 'on'
     nginx.ingress.kubernetes.io/enable-cors: 'true'
     nginx.ingress.kubernetes.io/cors-allow-origin: https://users-api.dev.dimo.zone, https://app.dev.dimo.zone
-    nginx.ingress.kubernetes.io/limit-rps: "3"
+    nginx.ingress.kubernetes.io/limit-rps: '3'
     external-dns.alpha.kubernetes.io/hostname: users-api.dev.dimo.zone
   hosts:
     - host: users-api.dev.dimo.zone

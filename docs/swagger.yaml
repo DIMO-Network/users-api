@@ -235,7 +235,7 @@ paths:
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
       summary: Submit an email confirmation key
-  /v1/user/generate-ethereum-challenge:
+  /v1/user/generate-web3-challenge:
     post:
       responses:
         "200":
@@ -269,7 +269,7 @@ paths:
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
       summary: Send a confirmation email to the authenticated user
-  /v1/user/submit-ethereum-challenge:
+  /v1/user/submit-web3-challenge:
     post:
       parameters:
       - description: Signed challenge message

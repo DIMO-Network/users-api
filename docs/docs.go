@@ -174,7 +174,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/user/generate-ethereum-challenge": {
+        "/v1/user/generate-web3-challenge": {
             "post": {
                 "summary": "Generate a challenge message for the user to sign.",
                 "responses": {
@@ -227,7 +227,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/user/submit-ethereum-challenge": {
+        "/v1/user/submit-web3-challenge": {
             "post": {
                 "summary": "Confirm ownership of an ethereum address by submitting a signature",
                 "parameters": [

@@ -538,7 +538,7 @@ type ChallengeResponse struct {
 // @Success 200 {object} controllers.ChallengeResponse
 // @Failure 400 {object} controllers.ErrorResponse
 // @Failure 500 {object} controllers.ErrorResponse
-// @Router /v1/user/generate-ethereum-challenge [post]
+// @Router /v1/user/generate-web3-challenge [post]
 func (d *UserController) GenerateEthereumChallenge(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
@@ -588,7 +588,7 @@ type ConfirmEthereumRequest struct {
 // @Success 204
 // @Failure 400 {object} controllers.ErrorResponse
 // @Failure 500 {object} controllers.ErrorResponse
-// @Router /v1/user/submit-ethereum-challenge [post]
+// @Router /v1/user/submit-web3-challenge [post]
 func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 	userID := getUserID(c)
 

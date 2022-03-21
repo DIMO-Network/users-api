@@ -141,8 +141,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	v1.Post("/agree-tos", userController.AgreeTOS)
 	v1.Post("/send-confirmation-email", userController.SendConfirmationEmail)
 	v1.Post("/confirm-email", userController.ConfirmEmail)
-	v1.Post("/web3/generate-challenge", userController.GenerateEthereumChallenge)
-	v1.Post("/web3/submit-challenge", userController.SubmitEthereumChallenge)
+	v1.Post("/web3/generate-web3-challenge", userController.GenerateEthereumChallenge)
+	v1.Post("/web3/submit-web3-challenge", userController.SubmitEthereumChallenge)
 
 	customerIOController := controllers.NewCustomerIOController(settings, pdb.DBS, &logger)
 	v1.Post("/vitamins/known", customerIOController.Track)

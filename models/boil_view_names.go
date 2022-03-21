@@ -3,10 +3,5 @@
 
 package models
 
-var TableNames = struct {
-	Referrals string
-	Users     string
-}{
-	Referrals: "referrals",
-	Users:     "users",
-}
+var ViewNames = struct {
+}{}

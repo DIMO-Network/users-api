@@ -1,9 +1,21 @@
 definitions:
+  controllers.ChallengeResponse:
+    properties:
+      challenge:
+        type: string
+      expiresAt:
+        type: string
+    type: object
   controllers.ConfirmEmailRequest:
     properties:
       key:
         description: Key is the 6-digit number from the confirmation email
         example: "010990"
+        type: string
+    type: object
+  controllers.ConfirmEthereumRequest:
+    properties:
+      signature:
         type: string
     type: object
   controllers.ErrorResponse:
@@ -38,6 +50,11 @@ definitions:
         description: ReferralCode is the short code used in a user's share link.
         example: bUkZuSL7
         type: string
+      referralsMade:
+        description: ReferralsMade is the number of completed referrals made by the
+          user
+        example: 1
+        type: integer
       referredBy:
         description: ReferredBy is the referral code of the person who referred this
           user to the site.
@@ -71,6 +88,19 @@ definitions:
         description: Address is the Ethereum address associated with the user.
         example: 0x142e0C7A098622Ea98E5D67034251C4dFA746B5d
         type: string
+      challengeSentAt:
+        description: |-
+          ChallengeSentAt is the time at which we last generated a challenge message for the user to
+          sign. This will only be present if we've generated such a message but a signature has not
+          been sent back to us.
+        example: "2021-12-01T09:01:12Z"
+        type: string
+      confirmed:
+        description: |-
+          Confirmed indicates whether the user has confirmed the address by signing a challenge
+          message.
+        example: false
+        type: boolean
     type: object
   controllers.UserUpdateRequest:
     properties:
@@ -86,6 +116,15 @@ definitions:
               Address, if present, should be a valid email address. Note when this field
               is modified the user's verification status will reset.
             example: neal@dimo.zone
+            type: string
+        type: object
+      web3:
+        properties:
+          address:
+            description: |-
+              Address, if present, should be a valid ethereum address. Note when this field
+              is modified the user's address verification status will reset.
+            example: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F
             type: string
         type: object
     type: object
@@ -196,6 +235,22 @@ paths:
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
       summary: Submit an email confirmation key
+  /v1/user/generate-ethereum-challenge:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.ChallengeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Generate a challenge message for the user to sign.
   /v1/user/send-confirmation-email:
     post:
       responses:
@@ -214,6 +269,27 @@ paths:
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
       summary: Send a confirmation email to the authenticated user
+  /v1/user/submit-ethereum-challenge:
+    post:
+      parameters:
+      - description: Signed challenge message
+        in: body
+        name: confirmEthereumRequest
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.ConfirmEthereumRequest'
+      responses:
+        "204":
+          description: ""
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Confirm ownership of an ethereum address by submitting a signature
 securityDefinitions:
   BearerAuth:
     in: header

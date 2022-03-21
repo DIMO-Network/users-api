@@ -141,6 +141,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	v1.Post("/agree-tos", userController.AgreeTOS)
 	v1.Post("/send-confirmation-email", userController.SendConfirmationEmail)
 	v1.Post("/confirm-email", userController.ConfirmEmail)
+	v1.Post("/web3/generate-challenge", userController.GenerateEthereumChallenge)
+	v1.Post("/web3/submit-challenge", userController.SubmitEthereumChallenge)
 
 	customerIOController := controllers.NewCustomerIOController(settings, pdb.DBS, &logger)
 	v1.Post("/vitamins/known", customerIOController.Track)
@@ -181,10 +183,9 @@ func ErrorHandler(c *fiber.Ctx, err error, logger zerolog.Logger) error {
 		// Override status code if fiber.Error type
 		code = e.Code
 	}
-	logger.Err(err).Msg("caught a panic")
 
 	return c.Status(code).JSON(fiber.Map{
-		"error": true,
-		"msg":   err.Error(),
+		"code":    code,
+		"message": err.Error(),
 	})
 }

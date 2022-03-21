@@ -73,6 +73,7 @@ require (
 	github.com/ThreeDotsLabs/watermill-kafka/v2 v2.2.1
 	github.com/andybalholm/brotli v1.0.2 // indirect
 	github.com/customerio/go-customerio/v3 v3.3.0
+	github.com/ethereum/go-ethereum v1.10.16
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/klauspost/compress v1.14.2 // indirect
 	github.com/pkg/errors v0.9.1

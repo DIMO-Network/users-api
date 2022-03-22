@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/ansrivas/fiberprometheus/v2 v2.1.2
-	github.com/arsmn/fiber-swagger/v2 v2.24.0
+	github.com/arsmn/fiber-swagger/v2 v2.20.0
 	github.com/friendsofgo/errors v0.9.2
 	github.com/gofiber/fiber/v2 v2.26.0
 	github.com/gofiber/jwt/v3 v3.2.3
@@ -12,7 +12,7 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/pressly/goose/v3 v3.5.1
 	github.com/segmentio/ksuid v1.0.4
-	github.com/swaggo/swag v1.7.8
+	github.com/swaggo/swag v1.8.0
 	github.com/volatiletech/null/v8 v8.1.2
 	github.com/volatiletech/sqlboiler/v4 v4.8.6
 	github.com/volatiletech/strmangle v0.0.1
@@ -26,6 +26,7 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/btcsuite/btcd v0.20.1-beta // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eapache/go-resiliency v1.2.0 // indirect

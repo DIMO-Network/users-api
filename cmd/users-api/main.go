@@ -120,7 +120,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 
 	keyRefreshInterval := time.Hour
 	keyRefreshUnknownKID := true
-	v1 := app.Group("/v1/user", jwtware.New(jwtware.Config{
+	v1User := app.Group("/v1/user", jwtware.New(jwtware.Config{
 		KeySetURL: settings.JWTKeySetURL,
 		KeyRefreshErrorHandler: func(j *jwtware.KeySet, err error) {
 			logger.Error().Err(err).Msg("Key refresh error")
@@ -135,17 +135,17 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	}))
 
 	userController := controllers.NewUserController(settings, pdb.DBS, eventService, &logger)
-	v1.Get("/", userController.GetUser)
-	v1.Put("/", userController.UpdateUser)
-	v1.Delete("/", userController.DeleteUser)
-	v1.Post("/agree-tos", userController.AgreeTOS)
-	v1.Post("/send-confirmation-email", userController.SendConfirmationEmail)
-	v1.Post("/confirm-email", userController.ConfirmEmail)
-	v1.Post("/generate-web3-challenge", userController.GenerateEthereumChallenge)
-	v1.Post("/submit-web3-challenge", userController.SubmitEthereumChallenge)
+	v1User.Get("/", userController.GetUser)
+	v1User.Put("/", userController.UpdateUser)
+	v1User.Delete("/", userController.DeleteUser)
+	v1User.Post("/agree-tos", userController.AgreeTOS)
+	v1User.Post("/send-confirmation-email", userController.SendConfirmationEmail)
+	v1User.Post("/confirm-email", userController.ConfirmEmail)
+	v1User.Post("/generate-web3-challenge", userController.GenerateEthereumChallenge)
+	v1User.Post("/submit-web3-challenge", userController.SubmitEthereumChallenge)
 
 	customerIOController := controllers.NewCustomerIOController(settings, pdb.DBS, &logger)
-	v1.Post("/vitamins/known", customerIOController.Track)
+	v1User.Post("/vitamins/known", customerIOController.Track)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 
@@ -178,14 +178,16 @@ func HealthCheck(c *fiber.Ctx) error {
 // ErrorHandler custom handler to log recovered errors using our logger and return json instead of string
 func ErrorHandler(c *fiber.Ctx, err error, logger zerolog.Logger) error {
 	code := fiber.StatusInternalServerError // Default 500 statuscode
+	message := "Internal error."
 
 	if e, ok := err.(*fiber.Error); ok {
 		// Override status code if fiber.Error type
 		code = e.Code
+		message = err.Error()
 	}
 
 	return c.Status(code).JSON(fiber.Map{
 		"code":    code,
-		"message": err.Error(),
+		"message": message,
 	})
 }

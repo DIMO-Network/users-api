@@ -348,11 +348,11 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		if ethereum.Valid {
 			mixAddr, err := common.NewMixedcaseAddressFromString(ethereum.String)
 			if err != nil {
-				return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid Ethereum address %s", mixAddr))
+				return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Invalid Ethereum address %s.", mixAddr))
 			}
 			ethereum = null.StringFrom(mixAddr.Address().Hex())
 		}
-		user.EthereumAddress = body.Web3.Address.Value
+		user.EthereumAddress = ethereum
 		user.EthereumConfirmed = false
 		user.EthereumChallengeSent = null.Time{}
 		user.EthereumChallenge = null.String{}
@@ -533,6 +533,8 @@ type ChallengeResponse struct {
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
+var opaqueInternalError = fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+
 // GenerateEthereumChallenge godoc
 // @Summary Generate a challenge message for the user to sign.
 // @Success 200 {object} controllers.ChallengeResponse
@@ -544,20 +546,23 @@ func (d *UserController) GenerateEthereumChallenge(c *fiber.Ctx) error {
 
 	user, err := d.getOrCreateUser(c, userID)
 	if err != nil {
-		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+		// TODO: Distinguish between bad tokens and server faults.
+		d.log.Err(err).Str("userId", userID).Msg("Failed to get or create user.")
+		return opaqueInternalError
 	}
 
 	nonce, err := generateNonce()
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "internal error")
+		d.log.Err(err).Str("userId", userID).Msg("Failed to generate nonce.")
+		return opaqueInternalError
 	}
 
 	if user.EthereumConfirmed {
-		return fiber.NewError(fiber.StatusBadRequest, "ethereum address already confirmed")
+		return fiber.NewError(fiber.StatusBadRequest, "Ethereum address already confirmed.")
 	}
 
 	if !user.EthereumAddress.Valid {
-		return fiber.NewError(fiber.StatusBadRequest, "no ethereum address to confirm")
+		return fiber.NewError(fiber.StatusBadRequest, "No ethereum address to confirm.")
 	}
 
 	challenge := fmt.Sprintf("%s is asking you to please verify ownership of the address %s by signing this random string: %s", c.Hostname(), user.EthereumAddress.String, nonce)
@@ -567,7 +572,8 @@ func (d *UserController) GenerateEthereumChallenge(c *fiber.Ctx) error {
 	user.EthereumChallenge = null.StringFrom(challenge)
 
 	if _, err := user.Update(c.Context(), d.DBS().Reader, boil.Infer()); err != nil {
-		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+		d.log.Err(err).Str("userId", userID).Msg("Failed to update database record with new challenge.")
+		return opaqueInternalError
 	}
 
 	return c.JSON(

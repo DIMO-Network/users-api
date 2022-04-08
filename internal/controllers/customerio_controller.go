@@ -67,16 +67,16 @@ func (d *CustomerIOController) Track(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"success": true})
 }
 
-func (d *CustomerIOController) setReferrer(c *fiber.Ctx, userID, code string) (err error) {
+func (d *CustomerIOController) setReferrer(c *fiber.Ctx, userID, code string) error {
 	tx, err := d.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
-		return
+		return err
 	}
 	defer tx.Rollback() //nolint
 
 	referrer, err := models.Users(models.UserWhere.ReferralCode.EQ(code)).One(c.Context(), tx)
 	if err != nil {
-		return
+		return err
 	}
 
 	if referrer.ID == userID {
@@ -85,14 +85,23 @@ func (d *CustomerIOController) setReferrer(c *fiber.Ctx, userID, code string) (e
 
 	user, err := models.FindUser(c.Context(), tx, userID)
 	if err != nil {
-		return
+		return err
 	}
 
-	err = user.SetReferrer(c.Context(), tx, false, referrer)
-	if err != nil {
-		return
+	if user.ReferrerID.Valid && user.ReferrerID.String == referrer.ID {
+		// Nothing to do.
+		return nil
 	}
 
-	err = tx.Commit()
-	return
+	if err := user.SetReferrer(c.Context(), tx, false, referrer); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	d.log.Info().Str("userId", userID).Str("referrerId", referrer.ID).Msgf("Set referrer.")
+
+	return nil
 }

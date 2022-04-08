@@ -37,7 +37,7 @@ func (e *EventReader) ProcessDeviceStatusMessages(messages <-chan *message.Messa
 	for msg := range messages {
 		err := e.processEvent(msg)
 		if err != nil {
-			e.log.Err(err).Msg("error processing event")
+			e.log.Err(err).Msg("Error processing event.")
 		}
 	}
 }
@@ -66,8 +66,7 @@ func (e *EventReader) processEvent(msg *message.Message) error {
 		Type string          `json:"type"`
 		Data json.RawMessage `json:"data"`
 	}
-	err := json.Unmarshal(msg.Payload, &msgParts)
-	if err != nil {
+	if err := json.Unmarshal(msg.Payload, &msgParts); err != nil {
 		return fmt.Errorf("could not parse event: %w", err)
 	}
 
@@ -75,14 +74,13 @@ func (e *EventReader) processEvent(msg *message.Message) error {
 		return nil
 	}
 
-	var data integrationCreationData
-	err = json.Unmarshal(msgParts.Data, &data)
-	if err != nil {
+	data := new(integrationCreationData)
+	if err := json.Unmarshal(msgParts.Data, data); err != nil {
 		return fmt.Errorf("could not parse integration creation event data: %w", err)
 	}
 
 	if len(data.Device.VIN) != 17 {
-		return fmt.Errorf("received integration creation event with invalid VIN %s", data.Device.VIN)
+		return fmt.Errorf("received integration creation event with invalid VIN: %s", data.Device.VIN)
 	}
 
 	tx, err := e.db().Writer.BeginTx(context.Background(), nil)

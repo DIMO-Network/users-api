@@ -80,7 +80,7 @@ func (e *EventReader) processEvent(msg *message.Message) error {
 	}
 
 	if len(data.Device.VIN) != 17 {
-		return fmt.Errorf("received integration creation event with invalid VIN: %s", data.Device.VIN)
+		return fmt.Errorf("invalid VIN %s", data.Device.VIN)
 	}
 
 	tx, err := e.db().Writer.BeginTx(context.Background(), nil)

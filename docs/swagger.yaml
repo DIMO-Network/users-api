@@ -2,8 +2,11 @@ definitions:
   controllers.ChallengeResponse:
     properties:
       challenge:
+        description: Challenge is the message to be signed.
         type: string
       expiresAt:
+        description: ExpiresAt is the time at which the signed challenge will no longer
+          be accepted.
         type: string
     type: object
   controllers.ConfirmEmailRequest:
@@ -16,6 +19,9 @@ definitions:
   controllers.ConfirmEthereumRequest:
     properties:
       signature:
+        description: |-
+          Signature is the result of signing the provided challenge message using the address in
+          question.
         type: string
     type: object
   controllers.ErrorResponse:

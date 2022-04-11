@@ -529,7 +529,9 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 }
 
 type ChallengeResponse struct {
-	Challenge string    `json:"challenge"`
+	// Challenge is the message to be signed.
+	Challenge string `json:"challenge"`
+	// ExpiresAt is the time at which the signed challenge will no longer be accepted.
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
@@ -585,6 +587,8 @@ func (d *UserController) GenerateEthereumChallenge(c *fiber.Ctx) error {
 }
 
 type ConfirmEthereumRequest struct {
+	// Signature is the result of signing the provided challenge message using the address in
+	// question.
 	Signature string `json:"signature"`
 }
 

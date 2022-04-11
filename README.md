@@ -29,7 +29,7 @@ golangci-lint run
 
 Update OpenAPI documentation with 
 ```
-swag init --generalInfo cmd/users-api/main.go --parseInternal true --generatedTime true
+swag init --generalInfo cmd/users-api/main.go --generatedTime true
 ```
 
 ## Database modifications

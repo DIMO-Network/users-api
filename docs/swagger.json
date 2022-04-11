@@ -192,7 +192,7 @@
                 }
             }
         },
-        "/v1/user/web3/generate-challenge": {
+        "/v1/user/web3/challenge/generate": {
             "post": {
                 "summary": "Generate a challenge message for the user to sign.",
                 "responses": {
@@ -217,7 +217,7 @@
                 }
             }
         },
-        "/v1/user/web3/submit-challenge": {
+        "/v1/user/web3/challenge/submit": {
             "post": {
                 "summary": "Confirm ownership of an ethereum address by submitting a signature",
                 "parameters": [

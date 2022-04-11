@@ -253,7 +253,7 @@ paths:
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
       summary: Send a confirmation email to the authenticated user
-  /v1/user/web3/generate-challenge:
+  /v1/user/web3/challenge/generate:
     post:
       responses:
         "200":
@@ -269,7 +269,7 @@ paths:
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
       summary: Generate a challenge message for the user to sign.
-  /v1/user/web3/submit-challenge:
+  /v1/user/web3/challenge/submit:
     post:
       parameters:
       - description: Signed challenge message

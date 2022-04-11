@@ -116,7 +116,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	prometheus.RegisterAt(app, "/metrics")
 	app.Use(prometheus.Middleware)
 
-	app.Get("/v1/swagger/*", swagger.Handler)
+	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
 	keyRefreshInterval := time.Hour
 	keyRefreshUnknownKID := true
@@ -141,8 +141,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	v1User.Post("/agree-tos", userController.AgreeTOS)
 	v1User.Post("/send-confirmation-email", userController.SendConfirmationEmail)
 	v1User.Post("/confirm-email", userController.ConfirmEmail)
-	v1User.Post("/generate-web3-challenge", userController.GenerateEthereumChallenge)
-	v1User.Post("/submit-web3-challenge", userController.SubmitEthereumChallenge)
+	v1User.Post("/web3/generate-challenge", userController.GenerateEthereumChallenge)
+	v1User.Post("/web3/submit-challenge", userController.SubmitEthereumChallenge)
 
 	customerIOController := controllers.NewCustomerIOController(settings, pdb.DBS, &logger)
 	v1User.Post("/vitamins/known", customerIOController.Track)

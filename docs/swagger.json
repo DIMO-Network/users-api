@@ -164,31 +164,6 @@
                 }
             }
         },
-        "/v1/user/generate-web3-challenge": {
-            "post": {
-                "summary": "Generate a challenge message for the user to sign.",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.ChallengeResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/user/send-confirmation-email": {
             "post": {
                 "summary": "Send a confirmation email to the authenticated user",
@@ -217,7 +192,32 @@
                 }
             }
         },
-        "/v1/user/submit-web3-challenge": {
+        "/v1/user/web3/generate-challenge": {
+            "post": {
+                "summary": "Generate a challenge message for the user to sign.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ChallengeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user/web3/submit-challenge": {
             "post": {
                 "summary": "Confirm ownership of an ethereum address by submitting a signature",
                 "parameters": [

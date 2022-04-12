@@ -2,12 +2,14 @@ package controllers
 
 import (
 	"bytes"
+	crypto_rand "crypto/rand"
 	"database/sql"
 	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
+	"math/big"
 	"math/rand"
 	"mime/multipart"
 	"mime/quotedprintable"
@@ -22,6 +24,9 @@ import (
 	"github.com/DIMO-INC/users-api/internal/services"
 	"github.com/DIMO-INC/users-api/models"
 	"github.com/customerio/go-customerio/v3"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
@@ -88,6 +93,13 @@ type UserResponseEmail struct {
 type UserResponseWeb3 struct {
 	// Address is the Ethereum address associated with the user.
 	Address null.String `json:"address" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
+	// Confirmed indicates whether the user has confirmed the address by signing a challenge
+	// message.
+	Confirmed bool `json:"confirmed" example:"false"`
+	// ChallengeSentAt is the time at which we last generated a challenge message for the user to
+	// sign. This will only be present if we've generated such a message but a signature has not
+	// been sent back to us.
+	ChallengeSentAt null.Time `json:"challengeSentAt" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
 }
 
 type UserResponse struct {
@@ -141,15 +153,6 @@ func formatUser(user *models.User) *UserResponse {
 	}
 }
 
-func getBooleanClaim(claims jwt.MapClaims, key string) (value, ok bool) {
-	if rawValue, ok := claims[key]; ok {
-		if value, ok := rawValue.(bool); ok {
-			return value, true
-		}
-	}
-	return false, false
-}
-
 func getStringClaim(claims jwt.MapClaims, key string) (value string, ok bool) {
 	if rawValue, ok := claims[key]; ok {
 		if value, ok := rawValue.(string); ok {
@@ -174,68 +177,61 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	}
 	defer tx.Rollback() //nolint
 
-	newUser := false
-	var providerID string
-
 	user, err = models.Users(
 		models.UserWhere.ID.EQ(userID),
 		qm.Load(models.UserRels.Referrals),
 	).One(c.Context(), tx)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			newUser = true
-			user = &models.User{ID: userID, ReferralCode: generateReferralCode()}
-			// New user, insert a mostly-empty record
-
-			token := c.Locals("user").(*jwt.Token)
-			claims := token.Claims.(jwt.MapClaims)
-
-			// Some outstanding tokens may not have this field set. In the future, we would like to
-			// reject such tokens.
-			var providerClaim bool
-			providerID, providerClaim = getStringClaim(claims, "provider_id")
-
-			if emailVerified, ok := getBooleanClaim(claims, "email_verified"); ok && emailVerified {
-				if email, ok := getStringClaim(claims, "email"); ok {
-					user.EmailAddress = null.StringFrom(email)
-					user.EmailConfirmed = true
-					if !providerClaim {
-						providerID = "google"
-					}
-				}
-			}
-
-			if ethereumAddress, ok := getStringClaim(claims, "ethereum_address"); ok && ethereumAddress != "" {
-				user.EthereumAddress = null.StringFrom(ethereumAddress)
-				if !providerClaim {
-					providerID = "web3"
-				}
-				if d.cioClient != nil {
-					go func() {
-						if err := d.cioClient.Track(userID, "walletAdded", map[string]interface{}{}); err != nil {
-							d.log.Error().Err(err).Msg("")
-						}
-					}()
-				}
-			}
-
-			user.AuthProviderID = providerID
-
-			d.log.Info().Msgf("Creating new user with id %s, provider %s", userID, providerID)
-
-			if err := user.Insert(c.Context(), tx, boil.Infer()); err != nil {
-				return nil, err
-			}
-		} else {
+		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
 		}
-	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
+		// New user, generate a record
+		token := c.Locals("user").(*jwt.Token)
+		claims := token.Claims.(jwt.MapClaims)
 
-	if newUser {
+		providerID, ok := getStringClaim(claims, "provider_id")
+		if !ok {
+			return nil, errors.New("no provider_id claim in ID token")
+		}
+
+		user = &models.User{ID: userID, ReferralCode: generateReferralCode(), AuthProviderID: providerID}
+
+		switch providerID {
+		case "apple", "google":
+			email, ok := getStringClaim(claims, "email")
+			if !ok {
+				return nil, fmt.Errorf("provider %s but no email claim in ID token", providerID)
+			}
+			if !emailPattern.MatchString(email) {
+				return nil, fmt.Errorf("invalid email address %s", email)
+			}
+			user.EmailAddress = null.StringFrom(email)
+			user.EmailConfirmed = true
+		case "web3":
+			ethereum, ok := getStringClaim(claims, "ethereum_address")
+			if !ok {
+				return nil, fmt.Errorf("provider %s but no ethereum_address claim in ID token", providerID)
+			}
+			mixAddr, err := common.NewMixedcaseAddressFromString(ethereum)
+			if err != nil {
+				return nil, fmt.Errorf("invalid ethereum_address %s", ethereum)
+			}
+			if !mixAddr.ValidChecksum() {
+				d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", ethereum)
+			}
+			user.EthereumAddress = null.StringFrom(mixAddr.Address().Hex())
+			user.EthereumConfirmed = true
+		default:
+			return nil, fmt.Errorf("unrecognized provider_id %s", providerID)
+		}
+
+		d.log.Info().Msgf("Creating new user with id %s, provider %s", userID, providerID)
+
+		if err := user.Insert(c.Context(), tx, boil.Infer()); err != nil {
+			return nil, err
+		}
+
 		msg := UserCreationEventData{
 			Timestamp: time.Now(),
 			UserID:    userID,
@@ -250,6 +246,10 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 		if err != nil {
 			d.log.Err(err).Msg("Failed sending user creation event")
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 
 	return user, nil
@@ -293,6 +293,11 @@ type UserUpdateRequest struct {
 		// is modified the user's verification status will reset.
 		Address optionalString `json:"address" swaggertype:"string" example:"neal@dimo.zone"`
 	} `json:"email"`
+	Web3 struct {
+		// Address, if present, should be a valid ethereum address. Note when this field
+		// is modified the user's address verification status will reset.
+		Address optionalString `json:"address" swaggertype:"string" example:"0x71C7656EC7ab88b098defB751B7401B5f6d8976F"`
+	} `json:"web3"`
 	// CountryCode, if specified, should be a valid ISO 3166-1 alpha-3 country code
 	CountryCode optionalString `json:"countryCode" swaggertype:"string" example:"USA"`
 }
@@ -336,6 +341,21 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		user.EmailConfirmed = false
 		user.EmailConfirmationKey = null.StringFromPtr(nil)
 		user.EmailConfirmationSentAt = null.TimeFromPtr(nil)
+	}
+
+	if body.Web3.Address.Defined && body.Web3.Address.Value != user.EthereumAddress {
+		ethereum := body.Web3.Address.Value
+		if ethereum.Valid {
+			mixAddr, err := common.NewMixedcaseAddressFromString(ethereum.String)
+			if err != nil {
+				return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Invalid Ethereum address %s.", mixAddr))
+			}
+			ethereum = null.StringFrom(mixAddr.Address().Hex())
+		}
+		user.EthereumAddress = ethereum
+		user.EthereumConfirmed = false
+		user.EthereumChallengeSent = null.Time{}
+		user.EthereumChallenge = null.String{}
 	}
 
 	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
@@ -387,6 +407,20 @@ func generateConfirmationKey() string {
 		o[i] = digits[rand.Intn(10)]
 	}
 	return string(o)
+}
+
+func generateNonce() (string, error) {
+	const alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	alphabetSize := big.NewInt(int64(len(alphabet)))
+	b := make([]byte, 30)
+	for i := range b {
+		c, err := crypto_rand.Int(crypto_rand.Reader, alphabetSize)
+		if err != nil {
+			return "", err
+		}
+		b[i] = alphabet[c.Int64()]
+	}
+	return string(b), nil
 }
 
 var validChars = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -494,6 +528,143 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
+type ChallengeResponse struct {
+	// Challenge is the message to be signed.
+	Challenge string `json:"challenge"`
+	// ExpiresAt is the time at which the signed challenge will no longer be accepted.
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+
+var opaqueInternalError = fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+
+// GenerateEthereumChallenge godoc
+// @Summary Generate a challenge message for the user to sign.
+// @Success 200 {object} controllers.ChallengeResponse
+// @Failure 400 {object} controllers.ErrorResponse
+// @Failure 500 {object} controllers.ErrorResponse
+// @Router /v1/user/web3/challenge/generate [post]
+func (d *UserController) GenerateEthereumChallenge(c *fiber.Ctx) error {
+	userID := getUserID(c)
+
+	user, err := d.getOrCreateUser(c, userID)
+	if err != nil {
+		// TODO: Distinguish between bad tokens and server faults.
+		d.log.Err(err).Str("userId", userID).Msg("Failed to get or create user.")
+		return opaqueInternalError
+	}
+
+	nonce, err := generateNonce()
+	if err != nil {
+		d.log.Err(err).Str("userId", userID).Msg("Failed to generate nonce.")
+		return opaqueInternalError
+	}
+
+	if user.EthereumConfirmed {
+		return fiber.NewError(fiber.StatusBadRequest, "Ethereum address already confirmed.")
+	}
+
+	if !user.EthereumAddress.Valid {
+		return fiber.NewError(fiber.StatusBadRequest, "No ethereum address to confirm.")
+	}
+
+	challenge := fmt.Sprintf("%s is asking you to please verify ownership of the address %s by signing this random string: %s", c.Hostname(), user.EthereumAddress.String, nonce)
+
+	now := time.Now()
+	user.EthereumChallengeSent = null.TimeFrom(now)
+	user.EthereumChallenge = null.StringFrom(challenge)
+
+	if _, err := user.Update(c.Context(), d.DBS().Reader, boil.Infer()); err != nil {
+		d.log.Err(err).Str("userId", userID).Msg("Failed to update database record with new challenge.")
+		return opaqueInternalError
+	}
+
+	return c.JSON(
+		ChallengeResponse{
+			Challenge: challenge,
+			ExpiresAt: now.Add(d.allowedLateness),
+		},
+	)
+}
+
+type ConfirmEthereumRequest struct {
+	// Signature is the result of signing the provided challenge message using the address in
+	// question.
+	Signature string `json:"signature"`
+}
+
+// SubmitEthereumChallenge godoc
+// @Summary Confirm ownership of an ethereum address by submitting a signature
+// @Param confirmEthereumRequest body controllers.ConfirmEthereumRequest true "Signed challenge message"
+// @Success 204
+// @Failure 400 {object} controllers.ErrorResponse
+// @Failure 500 {object} controllers.ErrorResponse
+// @Router /v1/user/web3/challenge/submit [post]
+func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
+	userID := getUserID(c)
+
+	user, err := d.getOrCreateUser(c, userID)
+	if err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	if user.EthereumConfirmed {
+		return fiber.NewError(fiber.StatusBadRequest, "ethereum address already confirmed")
+	}
+
+	if !user.EthereumChallengeSent.Valid || !user.EthereumChallenge.Valid {
+		return fiber.NewError(fiber.StatusBadRequest, "ethereum challenge never generated")
+	}
+
+	if time.Since(user.EthereumChallengeSent.Time) > d.allowedLateness {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("ethereum challenge expired at %s", user.EthereumChallengeSent.Time))
+	}
+
+	submitBody := new(ConfirmEthereumRequest)
+
+	if err := c.BodyParser(submitBody); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+
+	addrb := common.HexToAddress(user.EthereumAddress.String)
+
+	signb, err := hexutil.Decode(submitBody.Signature)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "could not decode hex signature")
+	}
+
+	// This is the v parameter in the signature. Per the yellow paper, 27 means even and 28
+	// means odd.
+	if signb[64] != 27 && signb[64] != 28 {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid v parameter %d", signb[64]))
+	}
+	signb[64] -= 27
+
+	pubKey, err := crypto.SigToPub(signHash([]byte(user.EthereumChallenge.String)), signb)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "could not recover public key from signature")
+	}
+
+	recoveredAddr := crypto.PubkeyToAddress(*pubKey)
+	// These are byte arrays, so this is okay to do.
+	if recoveredAddr != addrb {
+		return fiber.NewError(fiber.StatusBadRequest, "given address and recovered address do not match")
+	}
+
+	user.EthereumConfirmed = true
+	user.EthereumChallengeSent = null.Time{}
+	user.EthereumChallenge = null.String{}
+	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "internal error")
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func signHash(data []byte) []byte {
+	msg := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(data), data)
+	return crypto.Keccak256([]byte(msg))
+}
+
 // https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
 var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
@@ -527,10 +698,8 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 		return errorResponseHandler(c, fmt.Errorf("email confirmation message expired"), fiber.StatusBadRequest)
 	}
 
-	var confirmationBody struct {
-		Key string `json:"key"`
-	}
-	if err := c.BodyParser(&confirmationBody); err != nil {
+	confirmationBody := new(ConfirmEmailRequest)
+	if err := c.BodyParser(confirmationBody); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)
 	}
 

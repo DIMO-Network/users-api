@@ -29,14 +29,14 @@ golangci-lint run
 
 Update OpenAPI documentation with 
 ```
-swag init --generalInfo cmd/users-api/main.go --parseInternal true --generatedTime true
+swag init --generalInfo cmd/users-api/main.go --generatedTime true
 ```
 
 ## Database modifications
 
 Create a new Goose migration file:
 ```
-goose -dir migrations postgres "host=localhost port=5432 user=dimo password=dimo dbname=users_api sslmode=disable" create MIGRATION_TITLE sql
+goose -dir migrations create MIGRATION_TITLE sql
 ```
 This will create a file in the `migrations` folder named something like `TIMESTAMP_MIGRATION_TITLE.sql`. Edit this with your new innovations. To run the migrations:
 ```

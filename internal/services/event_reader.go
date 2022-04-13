@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/DIMO-INC/users-api/internal/database"
-	"github.com/DIMO-INC/users-api/models"
+	"github.com/DIMO-Network/users-api/internal/database"
+	"github.com/DIMO-Network/users-api/models"
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/sqlboiler/v4/boil"

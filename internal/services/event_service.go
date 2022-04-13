@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DIMO-INC/users-api/internal/config"
+	"github.com/DIMO-Network/users-api/internal/config"
 	"github.com/Shopify/sarama"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"

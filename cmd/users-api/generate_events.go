@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 
-	"github.com/DIMO-INC/users-api/internal/config"
-	"github.com/DIMO-INC/users-api/internal/controllers"
-	"github.com/DIMO-INC/users-api/internal/database"
-	"github.com/DIMO-INC/users-api/internal/services"
-	"github.com/DIMO-INC/users-api/models"
+	"github.com/DIMO-Network/users-api/internal/config"
+	"github.com/DIMO-Network/users-api/internal/controllers"
+	"github.com/DIMO-Network/users-api/internal/database"
+	"github.com/DIMO-Network/users-api/internal/services"
+	"github.com/DIMO-Network/users-api/models"
 	"github.com/rs/zerolog"
 )
 

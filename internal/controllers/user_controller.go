@@ -142,7 +142,9 @@ func formatUser(user *models.User) *UserResponse {
 			ConfirmationSentAt: user.EmailConfirmationSentAt,
 		},
 		Web3: UserResponseWeb3{
-			Address: user.EthereumAddress,
+			Address:         user.EthereumAddress,
+			Confirmed:       user.EthereumConfirmed,
+			ChallengeSentAt: user.EthereumChallengeSent,
 		},
 		CreatedAt:     user.CreatedAt,
 		CountryCode:   user.CountryCode,

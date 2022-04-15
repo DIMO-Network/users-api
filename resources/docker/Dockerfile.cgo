@@ -1,7 +1,7 @@
-FROM golang:1.17 AS build
+FROM golang:1.18 AS build
 
-WORKDIR /go/src/github.com/DIMO-INC/users-api/
-COPY . /go/src/github.com/DIMO-INC/users-api/
+WORKDIR /go/src/github.com/DIMO-Network/users-api/
+COPY . /go/src/github.com/DIMO-Network/users-api/
 
 RUN apt-get update && apt-get install -y --no-install-recommends libzmq3-dev
 
@@ -18,7 +18,7 @@ WORKDIR /
 
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /etc/passwd /etc/passwd
-COPY --from=build /go/src/github.com/DIMO-INC/users-api/target/bin/users-api .
+COPY --from=build /go/src/github.com/DIMO-Network/users-api/target/bin/users-api .
 COPY ./config/default.yaml /default.yaml
 
 USER dimo

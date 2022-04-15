@@ -3,9 +3,9 @@ package controllers
 import (
 	"fmt"
 
-	"github.com/DIMO-INC/users-api/internal/config"
-	"github.com/DIMO-INC/users-api/internal/database"
-	"github.com/DIMO-INC/users-api/models"
+	"github.com/DIMO-Network/users-api/internal/config"
+	"github.com/DIMO-Network/users-api/internal/database"
+	"github.com/DIMO-Network/users-api/models"
 	"github.com/customerio/go-customerio/v3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"

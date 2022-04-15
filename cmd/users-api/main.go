@@ -8,12 +8,13 @@ import (
 
 	_ "go.uber.org/automaxprocs"
 
-	_ "github.com/DIMO-INC/users-api/docs"
-	"github.com/DIMO-INC/users-api/internal/config"
-	"github.com/DIMO-INC/users-api/internal/controllers"
-	"github.com/DIMO-INC/users-api/internal/database"
-	"github.com/DIMO-INC/users-api/internal/services"
-	"github.com/DIMO-INC/users-api/internal/services/kafka"
+	"github.com/DIMO-Network/shared"
+	_ "github.com/DIMO-Network/users-api/docs"
+	"github.com/DIMO-Network/users-api/internal/config"
+	"github.com/DIMO-Network/users-api/internal/controllers"
+	"github.com/DIMO-Network/users-api/internal/database"
+	"github.com/DIMO-Network/users-api/internal/services"
+	"github.com/DIMO-Network/users-api/internal/services/kafka"
 	"github.com/Shopify/sarama"
 	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
@@ -38,11 +39,11 @@ func main() {
 		Str("git-sha1", gitSha1).
 		Logger()
 
-	settings, err := config.LoadConfig("settings.yaml")
+	settings, err := shared.LoadConfig[config.Settings]("settings.yaml")
 	if err != nil {
 		logger.Fatal().Err(err).Msg("could not load settings")
 	}
-	pdb := database.NewDbConnectionFromSettings(ctx, settings, true)
+	pdb := database.NewDbConnectionFromSettings(ctx, &settings, true)
 	// check db ready, this is not ideal btw, the db connection handler would be nicer if it did this.
 	totalTime := 0
 	for !pdb.IsReady() {
@@ -59,17 +60,17 @@ func main() {
 	}
 	switch arg {
 	case "migrate":
-		migrateDatabase(logger, settings)
+		migrateDatabase(logger, &settings)
 	case "generate-events":
-		eventService := services.NewEventService(&logger, settings)
-		generateEvents(&logger, settings, pdb, eventService)
+		eventService := services.NewEventService(&logger, &settings)
+		generateEvents(&logger, &settings, pdb, eventService)
 	case "generate-referrals":
-		eventService := services.NewEventService(&logger, settings)
-		generateReferrals(&logger, settings, pdb, eventService)
+		eventService := services.NewEventService(&logger, &settings)
+		generateReferrals(&logger, &settings, pdb, eventService)
 	default:
-		eventService := services.NewEventService(&logger, settings)
-		startEventConsumer(logger, settings, pdb, eventService)
-		startWebAPI(logger, settings, pdb, eventService)
+		eventService := services.NewEventService(&logger, &settings)
+		startEventConsumer(logger, &settings, pdb, eventService)
+		startWebAPI(logger, &settings, pdb, eventService)
 	}
 }
 

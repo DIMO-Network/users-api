@@ -210,6 +210,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			}
 			user.EmailAddress = null.StringFrom(email)
 			user.EmailConfirmed = true
+			user.EthereumConfirmed = false
 		case "web3":
 			ethereum, ok := getStringClaim(claims, "ethereum_address")
 			if !ok {

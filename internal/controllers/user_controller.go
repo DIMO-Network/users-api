@@ -636,19 +636,25 @@ func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 	}
 
 	// This is the v parameter in the signature. Per the yellow paper, 27 means even and 28
-	// means odd.
-	if signb[64] != 27 && signb[64] != 28 {
+	// means odd; it is our responsibility to shift it before passing it to crypto functions.
+	switch signb[64] {
+	case 0, 1:
+		// This is not standard, but it seems to be what Ledger does.
+		break
+	case 27, 28:
+		signb[64] -= 27
+	default:
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid v parameter %d", signb[64]))
 	}
-	signb[64] -= 27
 
 	pubKey, err := crypto.SigToPub(signHash([]byte(user.EthereumChallenge.String)), signb)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "could not recover public key from signature")
 	}
 
+	// TODO(elffjs): Why can't we just use crypto.Ecrecover?
 	recoveredAddr := crypto.PubkeyToAddress(*pubKey)
-	// These are byte arrays, so this is okay to do.
+	// These are byte arrays, not slices, so this is okay to do.
 	if recoveredAddr != addrb {
 		return fiber.NewError(fiber.StatusBadRequest, "given address and recovered address do not match")
 	}

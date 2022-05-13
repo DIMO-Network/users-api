@@ -172,6 +172,12 @@ type UserCreationEventData struct {
 	Method    string    `json:"method"`
 }
 
+func (d *UserController) emitWalletEvent(userID string) {
+	if err := d.cioClient.Track(userID, "walletAdded", map[string]interface{}{}); err != nil {
+		d.log.Err(err).Str("userId", userID).Msg("Failed to emit walletAdded Customer.io event.")
+	}
+}
+
 func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *models.User, err error) {
 	tx, err := d.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
@@ -225,6 +231,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			}
 			user.EthereumAddress = null.StringFrom(mixAddr.Address().Hex())
 			user.EthereumConfirmed = true
+			d.emitWalletEvent(userID)
 		default:
 			return nil, fmt.Errorf("unrecognized provider_id %s", providerID)
 		}
@@ -665,6 +672,8 @@ func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "internal error")
 	}
+
+	d.emitWalletEvent(userID)
 
 	return c.SendStatus(fiber.StatusNoContent)
 }

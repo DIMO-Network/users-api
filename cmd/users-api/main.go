@@ -154,6 +154,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 
+	go startGRPCServer(settings, pdb.DBS, &logger)
+
 	// Start Server
 	if err := app.Listen(":" + settings.Port); err != nil {
 		logger.Fatal().Err(err)

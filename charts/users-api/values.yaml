@@ -22,6 +22,7 @@ securityContext:
       - all
 env:
   PORT: '8080'
+  GRPC_PORT: '8086'
   LOG_LEVEL: info
   DB_PORT: '5432'
   DB_NAME: users_api
@@ -35,7 +36,29 @@ env:
   EVENTS_TOPIC: topic.event
 service:
   type: ClusterIP
-  port: 8080
+  ports:
+    mon-http:
+      port: 8888
+      targetPort: mon-http
+      protocol: TCP
+    http:
+      port: 8080
+      targetPort: http
+      protocol: TCP
+    grpc:
+      port: 8086
+      targetPort: grpc
+      protocol: TCP
+ports:
+  - name: mon-http
+    containerPort: 8888
+    protocol: TCP
+  - name: http
+    containerPort: 8080
+    protocol: TCP
+  - name: grpc
+    containerPort: 8086
+    protocol: TCP
 ingress:
   enabled: true
   className: nginx

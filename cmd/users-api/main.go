@@ -2,14 +2,18 @@ package main
 
 import (
 	"context"
+	"net"
 	"os"
 	"strings"
 	"time"
 
 	_ "go.uber.org/automaxprocs"
+	"google.golang.org/grpc"
 
 	"github.com/DIMO-Network/shared"
+	pb "github.com/DIMO-Network/shared/api/users"
 	_ "github.com/DIMO-Network/users-api/docs"
+	"github.com/DIMO-Network/users-api/internal/api"
 	"github.com/DIMO-Network/users-api/internal/config"
 	"github.com/DIMO-Network/users-api/internal/controllers"
 	"github.com/DIMO-Network/users-api/internal/database"
@@ -153,6 +157,21 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	// Start Server
 	if err := app.Listen(":" + settings.Port); err != nil {
 		logger.Fatal().Err(err)
+	}
+}
+
+func startGRPCServer(settings *config.Settings, dbs func() *database.DBReaderWriter, logger *zerolog.Logger) {
+	lis, err := net.Listen("tcp", ":"+settings.GRPCPort)
+	if err != nil {
+		logger.Fatal().Err(err).Msgf("Couldn't listen on gRPC port %s", settings.GRPCPort)
+	}
+
+	logger.Info().Msgf("Starting gRPC server on port %s", settings.GRPCPort)
+	server := grpc.NewServer()
+	pb.RegisterUserServiceServer(server, api.NewUserService(dbs, logger))
+
+	if err := server.Serve(lis); err != nil {
+		logger.Fatal().Err(err).Msg("gRPC server terminated unexpectedly")
 	}
 }
 

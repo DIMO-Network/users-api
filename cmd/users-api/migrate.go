@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/DIMO-Network/users-api/internal/config"
 	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"

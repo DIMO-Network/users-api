@@ -95,5 +95,5 @@ podDisruptionBudget:
 serviceMonitor:
   enabled: true
   path: /metrics
-  port: http
+  port: mon-http
   interval: 30s

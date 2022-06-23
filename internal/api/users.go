@@ -23,7 +23,7 @@ type userService struct {
 	logger *zerolog.Logger
 }
 
-func (s *userService) GetUserDevice(ctx context.Context, req *pb.GetUserRequest) (*pb.User, error) {
+func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.User, error) {
 	dbUser, err := models.FindUser(ctx, s.dbs().Reader, req.Id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

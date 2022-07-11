@@ -125,7 +125,17 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	app.Get("/", HealthCheck)
 
 	prometheus := fiberprometheus.New("users-api")
-	prometheus.RegisterAt(app, "/metrics")
+
+	go func() {
+		monApp := fiber.New(fiber.Config{DisableStartupMessage: true})
+
+		prometheus.RegisterAt(monApp, "/metrics")
+
+		if err := monApp.Listen(":" + settings.MonitoringPort); err != nil {
+			logger.Fatal().Err(err).Str("port", settings.MonitoringPort).Msg("Failed to start monitoring web server.")
+		}
+	}()
+
 	app.Use(prometheus.Middleware)
 
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)

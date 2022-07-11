@@ -34,6 +34,7 @@ env:
   EMAIL_FROM: hello@dimo.zone
   KAFKA_BROKERS: kafka-dev-dimo-kafka-kafka-brokers:9092
   EVENTS_TOPIC: topic.event
+  MON_PORT: '8888'
 service:
   type: ClusterIP
   ports:

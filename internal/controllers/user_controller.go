@@ -485,6 +485,9 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	if user.EmailConfirmed {
 		return errorResponseHandler(c, fmt.Errorf("email already confirmed"), fiber.StatusBadRequest)
 	}
+	if user.EmailConfirmationSentAt.Valid && time.Since(user.EmailConfirmationSentAt.Time) < d.allowedLateness {
+		return errorResponseHandler(c, errors.New("email confirmation sent recently, please wait"), fiber.StatusConflict)
+	}
 
 	key := generateConfirmationKey()
 	user.EmailConfirmationKey = null.StringFrom(key)

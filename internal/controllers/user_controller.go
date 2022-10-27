@@ -746,7 +746,6 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 // @Failure 500 {object} controllers.ErrorResponse
 // @Router /v1/user/check-accounts [get]
 func (d *UserController) CheckAccount(c *fiber.Ctx) error {
-	// New user, generate a record
 	token := c.Locals("user").(*jwt.Token)
 	claims := token.Claims.(jwt.MapClaims)
 

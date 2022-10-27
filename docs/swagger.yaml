@@ -1,4 +1,26 @@
 definitions:
+  controllers.AltAccount:
+    properties:
+      login:
+        description: |-
+          Login is the login username for the provider, either an email address
+          or an EIP-55-compliant ethereum address.
+        type: string
+      type:
+        description: Type is the authentication provider, one of "web3", "apple",
+          "google".
+        type: string
+    type: object
+  controllers.AlternateAccountsResponse:
+    properties:
+      otherAccounts:
+        description: |-
+          OtherAccounts is a list of any other accounts that share email or
+          ethereum address with the provided token.
+        items:
+          $ref: '#/definitions/controllers.AltAccount'
+        type: array
+    type: object
   controllers.ChallengeResponse:
     properties:
       challenge:
@@ -159,7 +181,7 @@ paths:
     delete:
       responses:
         "204":
-          description: ""
+          description: No Content
         "400":
           description: Bad Request
           schema:
@@ -212,12 +234,29 @@ paths:
     post:
       responses:
         "204":
-          description: ""
+          description: No Content
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
       summary: Agree to the current terms of service
+  /v1/user/check-accounts:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.AlternateAccountsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Suggests to a user with an identity token other accounts that may also
+        be theirs.
   /v1/user/confirm-email:
     post:
       consumes:
@@ -231,7 +270,7 @@ paths:
           $ref: '#/definitions/controllers.ConfirmEmailRequest'
       responses:
         "204":
-          description: ""
+          description: No Content
         "400":
           description: Bad Request
           schema:
@@ -245,7 +284,7 @@ paths:
     post:
       responses:
         "204":
-          description: ""
+          description: No Content
         "400":
           description: Bad Request
           schema:
@@ -286,7 +325,7 @@ paths:
           $ref: '#/definitions/controllers.ConfirmEthereumRequest'
       responses:
         "204":
-          description: ""
+          description: No Content
         "400":
           description: Bad Request
           schema:

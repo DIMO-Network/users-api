@@ -95,7 +95,7 @@
                 "summary": "Delete the authenticated user",
                 "responses": {
                     "204": {
-                        "description": ""
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -117,10 +117,35 @@
                 "summary": "Agree to the current terms of service",
                 "responses": {
                     "204": {
-                        "description": ""
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user/check-accounts": {
+            "get": {
+                "summary": "Suggests to a user with an identity token other accounts that may also be theirs.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.AlternateAccountsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/controllers.ErrorResponse"
                         }
@@ -147,7 +172,7 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": ""
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -169,7 +194,7 @@
                 "summary": "Send a confirmation email to the authenticated user",
                 "responses": {
                     "204": {
-                        "description": ""
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -233,7 +258,7 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": ""
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -252,6 +277,31 @@
         }
     },
     "definitions": {
+        "controllers.AltAccount": {
+            "type": "object",
+            "properties": {
+                "login": {
+                    "description": "Login is the login username for the provider, either an email address\nor an EIP-55-compliant ethereum address.",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Type is the authentication provider, one of \"web3\", \"apple\", \"google\".",
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.AlternateAccountsResponse": {
+            "type": "object",
+            "properties": {
+                "otherAccounts": {
+                    "description": "OtherAccounts is a list of any other accounts that share email or\nethereum address with the provided token.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controllers.AltAccount"
+                    }
+                }
+            }
+        },
         "controllers.ChallengeResponse": {
             "type": "object",
             "properties": {

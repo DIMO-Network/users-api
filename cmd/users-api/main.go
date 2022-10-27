@@ -160,6 +160,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	v1User.Get("/", userController.GetUser)
 	v1User.Put("/", userController.UpdateUser)
 	v1User.Delete("/", userController.DeleteUser)
+	v1User.Get("/check-accounts", userController.CheckAccount)
 	v1User.Post("/agree-tos", userController.AgreeTOS)
 	v1User.Post("/send-confirmation-email", userController.SendConfirmationEmail)
 	v1User.Post("/confirm-email", userController.ConfirmEmail)

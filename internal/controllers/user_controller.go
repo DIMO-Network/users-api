@@ -804,7 +804,7 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 		return c.JSON(formatAlternateAccounts(otherAccounts))
 	}
 
-	return nil
+	return fiber.NewError(fiber.StatusBadRequest, "Unrecognized authentication provider.")
 }
 
 type AltAccount struct {

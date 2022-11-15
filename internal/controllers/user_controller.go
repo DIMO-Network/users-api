@@ -35,6 +35,7 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Sorted JSON array of valid ISO 3116-1 apha-3 codes
@@ -73,7 +74,7 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 		)
 	}
 
-	gc, err := grpc.Dial(settings.DevicesAPIGRPCAddr)
+	gc, err := grpc.Dial(settings.DevicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}

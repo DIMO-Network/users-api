@@ -15,8 +15,8 @@ require (
 	github.com/segmentio/ksuid v1.0.4
 	github.com/swaggo/swag v1.8.1
 	github.com/volatiletech/null/v8 v8.1.2
-	github.com/volatiletech/sqlboiler/v4 v4.10.2
-	github.com/volatiletech/strmangle v0.0.3
+	github.com/volatiletech/sqlboiler/v4 v4.13.0
+	github.com/volatiletech/strmangle v0.0.4
 	go.uber.org/automaxprocs v1.4.0
 	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.28.0

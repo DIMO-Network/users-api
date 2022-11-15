@@ -15,6 +15,7 @@ env:
   JWT_KEY_SET_URL: https://auth.dimo.zone/keys
   KAFKA_BROKERS: kafka-prod-dimo-kafka-kafka-brokers:9092
   EMAIL_FROM: hello@dimo.zone
+  DEVICES_API_GRPC_ADDR: devices-api-prod:8086
 ingress:
   enabled: true
   className: nginx

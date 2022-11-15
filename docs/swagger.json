@@ -92,7 +92,7 @@
                 }
             },
             "delete": {
-                "summary": "Delete the authenticated user",
+                "summary": "Delete the authenticated user. Fails if the user has any devices.",
                 "responses": {
                     "204": {
                         "description": "No Content"
@@ -105,6 +105,12 @@
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Returned if the user still has devices.",
                         "schema": {
                             "$ref": "#/definitions/controllers.ErrorResponse"
                         }

@@ -19,6 +19,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/DIMO-Network/shared/api/devices"
 	"github.com/DIMO-Network/users-api/internal/config"
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
@@ -33,6 +34,7 @@ import (
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"google.golang.org/grpc"
 )
 
 // Sorted JSON array of valid ISO 3116-1 apha-3 codes
@@ -52,6 +54,7 @@ type UserController struct {
 	emailTemplate   *template.Template
 	cioClient       *customerio.CustomerIO
 	eventService    *services.EventService
+	devicesClient   devices.UserDeviceServiceClient
 }
 
 func NewUserController(settings *config.Settings, dbs func() *database.DBReaderWriter, eventService *services.EventService, logger *zerolog.Logger) UserController {
@@ -69,6 +72,14 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 			customerio.WithRegion(customerio.RegionUS),
 		)
 	}
+
+	gc, err := grpc.Dial(settings.DevicesAPIGRPCAddr)
+	if err != nil {
+		panic(err)
+	}
+
+	dc := devices.NewUserDeviceServiceClient(gc)
+
 	return UserController{
 		Settings:        settings,
 		DBS:             dbs,
@@ -78,6 +89,7 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 		emailTemplate:   t,
 		cioClient:       cioClient,
 		eventService:    eventService,
+		devicesClient:   dc,
 	}
 }
 
@@ -377,10 +389,11 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 }
 
 // DeleteUser godoc
-// @Summary Delete the authenticated user
+// @Summary Delete the authenticated user. Fails if the user has any devices.
 // @Success 204
 // @Failure 400 {object} controllers.ErrorResponse
 // @Failure 403 {object} controllers.ErrorResponse
+// @Failure 409 {object} controllers.ErrorResponse "Returned if the user still has devices."
 // @Router /v1/user [delete]
 func (d *UserController) DeleteUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
@@ -397,6 +410,15 @@ func (d *UserController) DeleteUser(c *fiber.Ctx) error {
 			return errorResponseHandler(c, err, fiber.StatusBadRequest)
 		}
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	dr, err := d.devicesClient.ListUserDevicesForUser(c.Context(), &devices.ListUserDevicesForUserRequest{UserId: userID})
+	if err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	if l := len(dr.UserDevices); l > 0 {
+		return errorResponseHandler(c, fmt.Errorf("user must delete %d devices first", l), fiber.StatusConflict)
 	}
 
 	if _, err := user.Delete(c.Context(), d.DBS().Writer); err != nil {

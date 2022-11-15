@@ -190,7 +190,11 @@ paths:
           description: Forbidden
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
-      summary: Delete the authenticated user
+        "409":
+          description: Returned if the user still has devices.
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Delete the authenticated user. Fails if the user has any devices.
     get:
       produces:
       - application/json

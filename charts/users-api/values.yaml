@@ -35,6 +35,7 @@ env:
   KAFKA_BROKERS: kafka-dev-dimo-kafka-kafka-brokers:9092
   EVENTS_TOPIC: topic.event
   MON_PORT: '8888'
+  DEVICES_API_GRPC_ADDR: devices-api-dev:8086
 service:
   type: ClusterIP
   ports:

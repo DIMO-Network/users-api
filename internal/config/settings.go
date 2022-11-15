@@ -26,6 +26,7 @@ type Settings struct {
 	KafkaBrokers         string `yaml:"KAFKA_BROKERS"`
 	EventsTopic          string `yaml:"EVENTS_TOPIC"`
 	MonitoringPort       string `yaml:"MON_PORT"`
+	DevicesAPIGRPCAddr   string `yaml:"DEVICES_API_GRPC_ADDR"`
 }
 
 // GetWriterDSN builds the connection string to the db writer - for now same as reader

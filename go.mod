@@ -3,14 +3,14 @@ module github.com/DIMO-Network/users-api
 go 1.18
 
 require (
-	github.com/DIMO-Network/shared v0.2.3
+	github.com/DIMO-Network/shared v0.5.6
 	github.com/ansrivas/fiberprometheus/v2 v2.1.2
 	github.com/arsmn/fiber-swagger/v2 v2.31.1
 	github.com/friendsofgo/errors v0.9.2
 	github.com/gofiber/fiber/v2 v2.31.0
 	github.com/gofiber/jwt/v3 v3.2.3
 	github.com/golang-jwt/jwt/v4 v4.2.0
-	github.com/lib/pq v1.10.4
+	github.com/lib/pq v1.10.7
 	github.com/pressly/goose/v3 v3.5.1
 	github.com/segmentio/ksuid v1.0.4
 	github.com/swaggo/swag v1.8.1
@@ -34,7 +34,7 @@ require (
 	github.com/aws/smithy-go v1.11.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta // indirect
-	github.com/cespare/xxhash/v2 v2.1.1 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
@@ -59,6 +59,8 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/lithammer/shortuuid/v3 v3.0.4 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
+	github.com/mattn/go-colorable v0.1.12 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
@@ -87,7 +89,7 @@ require (
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/klauspost/compress v1.15.0 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/rs/zerolog v1.26.1
+	github.com/rs/zerolog v1.28.0
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.34.0 // indirect

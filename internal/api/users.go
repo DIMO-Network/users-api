@@ -38,5 +38,8 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 	if dbUser.EthereumConfirmed {
 		pbDevice.EthereumAddress = dbUser.EthereumAddress.Ptr()
 	}
+	if dbUser.EmailConfirmed {
+		pbDevice.EmailAddress = dbUser.EmailAddress.Ptr()
+	}
 	return pbDevice, nil
 }

@@ -68,7 +68,8 @@ definitions:
         example: "2021-12-01T09:00:00Z"
         type: string
       email:
-        $ref: '#/definitions/controllers.UserResponseEmail'
+        allOf:
+        - $ref: '#/definitions/controllers.UserResponseEmail'
         description: Email describes the user's email and the state of its confirmation.
       id:
         description: ID is the user's DIMO-internal ID.
@@ -89,7 +90,8 @@ definitions:
         example: k9H7RoTG
         type: string
       web3:
-        $ref: '#/definitions/controllers.UserResponseWeb3'
+        allOf:
+        - $ref: '#/definitions/controllers.UserResponseWeb3'
         description: Web3 describes the user's blockchain account.
     type: object
   controllers.UserResponseEmail:
@@ -127,6 +129,12 @@ definitions:
         description: |-
           Confirmed indicates whether the user has confirmed the address by signing a challenge
           message.
+        example: false
+        type: boolean
+      used:
+        description: |-
+          Used indicates whether the user has used this address to perform any on-chain
+          actions like minting, claiming, or pairing.
         example: false
         type: boolean
     type: object

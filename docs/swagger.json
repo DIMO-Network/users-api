@@ -368,7 +368,11 @@
                 },
                 "email": {
                     "description": "Email describes the user's email and the state of its confirmation.",
-                    "$ref": "#/definitions/controllers.UserResponseEmail"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/controllers.UserResponseEmail"
+                        }
+                    ]
                 },
                 "id": {
                     "description": "ID is the user's DIMO-internal ID.",
@@ -392,7 +396,11 @@
                 },
                 "web3": {
                     "description": "Web3 describes the user's blockchain account.",
-                    "$ref": "#/definitions/controllers.UserResponseWeb3"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/controllers.UserResponseWeb3"
+                        }
+                    ]
                 }
             }
         },
@@ -431,6 +439,11 @@
                 },
                 "confirmed": {
                     "description": "Confirmed indicates whether the user has confirmed the address by signing a challenge\nmessage.",
+                    "type": "boolean",
+                    "example": false
+                },
+                "used": {
+                    "description": "Used indicates whether the user has used this address to perform any on-chain\nactions like minting, claiming, or pairing.",
                     "type": "boolean",
                     "example": false
                 }

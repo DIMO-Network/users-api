@@ -3,7 +3,7 @@ module github.com/DIMO-Network/users-api
 go 1.18
 
 require (
-	github.com/DIMO-Network/shared v0.5.6
+	github.com/DIMO-Network/shared v0.6.6
 	github.com/ansrivas/fiberprometheus/v2 v2.1.2
 	github.com/arsmn/fiber-swagger/v2 v2.31.1
 	github.com/friendsofgo/errors v0.9.2

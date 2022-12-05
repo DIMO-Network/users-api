@@ -306,7 +306,6 @@ func (d *UserController) GetUser(c *fiber.Ctx) error {
 	out.Web3.Used, err = d.computeWeb3Used(c.Context(), user)
 	if err != nil {
 		d.log.Err(err).Msg("WEEU")
-		return err
 	}
 
 	return c.JSON(out)

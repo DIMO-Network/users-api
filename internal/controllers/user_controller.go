@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"bytes"
+	"context"
 	crypto_rand "crypto/rand"
 	"database/sql"
 	_ "embed"
@@ -19,7 +20,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/DIMO-Network/shared/api/devices"
+	pb "github.com/DIMO-Network/shared/api/devices"
 	"github.com/DIMO-Network/users-api/internal/config"
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
@@ -55,7 +56,8 @@ type UserController struct {
 	emailTemplate   *template.Template
 	cioClient       *customerio.CustomerIO
 	eventService    *services.EventService
-	devicesClient   devices.UserDeviceServiceClient
+	devicesClient   pb.UserDeviceServiceClient
+	amClient        pb.AftermarketDeviceServiceClient
 }
 
 func NewUserController(settings *config.Settings, dbs func() *database.DBReaderWriter, eventService *services.EventService, logger *zerolog.Logger) UserController {
@@ -79,7 +81,9 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 		panic(err)
 	}
 
-	dc := devices.NewUserDeviceServiceClient(gc)
+	dc := pb.NewUserDeviceServiceClient(gc)
+
+	amc := pb.NewAftermarketDeviceServiceClient(gc)
 
 	return UserController{
 		Settings:        settings,
@@ -91,6 +95,7 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 		cioClient:       cioClient,
 		eventService:    eventService,
 		devicesClient:   dc,
+		amClient:        amc,
 	}
 }
 
@@ -110,6 +115,9 @@ type UserResponseWeb3 struct {
 	// Confirmed indicates whether the user has confirmed the address by signing a challenge
 	// message.
 	Confirmed bool `json:"confirmed" example:"false"`
+	// Used indicates whether the user has used this address to perform any on-chain
+	// actions like minting, claiming, or pairing.
+	Used bool `json:"used" example:"false"`
 	// ChallengeSentAt is the time at which we last generated a challenge message for the user to
 	// sign. This will only be present if we've generated such a message but a signature has not
 	// been sent back to us.
@@ -290,9 +298,51 @@ func (d *UserController) GetUser(c *fiber.Ctx) error {
 
 	user, err := d.getOrCreateUser(c, userID)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	return c.JSON(formatUser(user))
+
+	out := formatUser(user)
+
+	out.Web3.Used, err = d.computeWeb3Used(c.Context(), user)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(out)
+}
+
+func (d *UserController) computeWeb3Used(ctx context.Context, user *models.User) (bool, error) {
+	if user.AuthProviderID == "web3" {
+		return true, nil
+	}
+
+	if !user.EthereumConfirmed {
+		return false, nil
+	}
+
+	devices, err := d.devicesClient.ListUserDevicesForUser(ctx, &pb.ListUserDevicesForUserRequest{UserId: user.ID})
+	if err != nil {
+		return false, err
+	}
+
+	for _, amd := range devices.UserDevices {
+		if amd.TokenId != nil {
+			return true, nil
+		}
+	}
+
+	ams, err := d.amClient.ListAftermarketDevicesForUser(ctx, &pb.ListAftermarketDevicesForUserRequest{UserId: user.ID})
+	if err != nil {
+		return false, err
+	}
+
+	for _, am := range ams.AftermarketDevices {
+		if len(am.OwnerAddress) == 20 {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func inSorted(v []string, x string) bool {
@@ -413,7 +463,7 @@ func (d *UserController) DeleteUser(c *fiber.Ctx) error {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
-	dr, err := d.devicesClient.ListUserDevicesForUser(c.Context(), &devices.ListUserDevicesForUserRequest{UserId: userID})
+	dr, err := d.devicesClient.ListUserDevicesForUser(c.Context(), &pb.ListUserDevicesForUserRequest{UserId: userID})
 	if err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}

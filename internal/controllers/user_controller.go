@@ -118,6 +118,8 @@ type UserResponseWeb3 struct {
 	// Used indicates whether the user has used this address to perform any on-chain
 	// actions like minting, claiming, or pairing.
 	Used bool `json:"used" example:"false"`
+	// InApp indicates whether this is an in-app wallet, managed by the DIMO app.
+	InApp bool `json:"inApp" example:"false"`
 	// ChallengeSentAt is the time at which we last generated a challenge message for the user to
 	// sign. This will only be present if we've generated such a message but a signature has not
 	// been sent back to us.
@@ -167,6 +169,7 @@ func formatUser(user *models.User) *UserResponse {
 			Address:         user.EthereumAddress,
 			Confirmed:       user.EthereumConfirmed,
 			ChallengeSentAt: user.EthereumChallengeSent,
+			InApp:           user.InAppWallet,
 		},
 		CreatedAt:     user.CreatedAt,
 		CountryCode:   user.CountryCode,

@@ -442,6 +442,11 @@
                     "type": "boolean",
                     "example": false
                 },
+                "inApp": {
+                    "description": "InApp indicates whether this is an in-app wallet, managed by the DIMO app.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "used": {
                     "description": "Used indicates whether the user has used this address to perform any on-chain\nactions like minting, claiming, or pairing.",
                     "type": "boolean",

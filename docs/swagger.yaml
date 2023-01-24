@@ -131,6 +131,11 @@ definitions:
           message.
         example: false
         type: boolean
+      inApp:
+        description: InApp indicates whether this is an in-app wallet, managed by
+          the DIMO app.
+        example: false
+        type: boolean
       used:
         description: |-
           Used indicates whether the user has used this address to perform any on-chain

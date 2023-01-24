@@ -39,6 +39,7 @@ type User struct {
 	EthereumChallenge       null.String `boil:"ethereum_challenge" json:"ethereum_challenge,omitempty" toml:"ethereum_challenge" yaml:"ethereum_challenge,omitempty"`
 	EthereumChallengeSent   null.Time   `boil:"ethereum_challenge_sent" json:"ethereum_challenge_sent,omitempty" toml:"ethereum_challenge_sent" yaml:"ethereum_challenge_sent,omitempty"`
 	EthereumConfirmed       bool        `boil:"ethereum_confirmed" json:"ethereum_confirmed" toml:"ethereum_confirmed" yaml:"ethereum_confirmed"`
+	InAppWallet             bool        `boil:"in_app_wallet" json:"in_app_wallet" toml:"in_app_wallet" yaml:"in_app_wallet"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -60,6 +61,7 @@ var UserColumns = struct {
 	EthereumChallenge       string
 	EthereumChallengeSent   string
 	EthereumConfirmed       string
+	InAppWallet             string
 }{
 	ID:                      "id",
 	EmailAddress:            "email_address",
@@ -76,6 +78,7 @@ var UserColumns = struct {
 	EthereumChallenge:       "ethereum_challenge",
 	EthereumChallengeSent:   "ethereum_challenge_sent",
 	EthereumConfirmed:       "ethereum_confirmed",
+	InAppWallet:             "in_app_wallet",
 }
 
 var UserTableColumns = struct {
@@ -94,6 +97,7 @@ var UserTableColumns = struct {
 	EthereumChallenge       string
 	EthereumChallengeSent   string
 	EthereumConfirmed       string
+	InAppWallet             string
 }{
 	ID:                      "users.id",
 	EmailAddress:            "users.email_address",
@@ -110,6 +114,7 @@ var UserTableColumns = struct {
 	EthereumChallenge:       "users.ethereum_challenge",
 	EthereumChallengeSent:   "users.ethereum_challenge_sent",
 	EthereumConfirmed:       "users.ethereum_confirmed",
+	InAppWallet:             "users.in_app_wallet",
 }
 
 // Generated where
@@ -201,6 +206,7 @@ var UserWhere = struct {
 	EthereumChallenge       whereHelpernull_String
 	EthereumChallengeSent   whereHelpernull_Time
 	EthereumConfirmed       whereHelperbool
+	InAppWallet             whereHelperbool
 }{
 	ID:                      whereHelperstring{field: "\"users_api\".\"users\".\"id\""},
 	EmailAddress:            whereHelpernull_String{field: "\"users_api\".\"users\".\"email_address\""},
@@ -217,6 +223,7 @@ var UserWhere = struct {
 	EthereumChallenge:       whereHelpernull_String{field: "\"users_api\".\"users\".\"ethereum_challenge\""},
 	EthereumChallengeSent:   whereHelpernull_Time{field: "\"users_api\".\"users\".\"ethereum_challenge_sent\""},
 	EthereumConfirmed:       whereHelperbool{field: "\"users_api\".\"users\".\"ethereum_confirmed\""},
+	InAppWallet:             whereHelperbool{field: "\"users_api\".\"users\".\"in_app_wallet\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -267,9 +274,9 @@ func (r *userR) GetReferrerUsers() UserSlice {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code", "agreed_tos_at", "referrer_id", "auth_provider_id", "ethereum_challenge", "ethereum_challenge_sent", "ethereum_confirmed"}
+	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "referral_code", "agreed_tos_at", "referrer_id", "auth_provider_id", "ethereum_challenge", "ethereum_challenge_sent", "ethereum_confirmed", "in_app_wallet"}
 	userColumnsWithoutDefault = []string{"id", "email_confirmed", "created_at", "referral_code", "auth_provider_id", "ethereum_confirmed"}
-	userColumnsWithDefault    = []string{"email_address", "email_confirmation_sent_at", "email_confirmation_key", "country_code", "ethereum_address", "agreed_tos_at", "referrer_id", "ethereum_challenge", "ethereum_challenge_sent"}
+	userColumnsWithDefault    = []string{"email_address", "email_confirmation_sent_at", "email_confirmation_key", "country_code", "ethereum_address", "agreed_tos_at", "referrer_id", "ethereum_challenge", "ethereum_challenge_sent", "in_app_wallet"}
 	userPrimaryKeyColumns     = []string{"id"}
 	userGeneratedColumns      = []string{}
 )

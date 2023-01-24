@@ -371,6 +371,9 @@ type UserUpdateRequest struct {
 		// Address, if present, should be a valid ethereum address. Note when this field
 		// is modified the user's address verification status will reset.
 		Address optionalString `json:"address" swaggertype:"string" example:"0x71C7656EC7ab88b098defB751B7401B5f6d8976F"`
+		// InApp, if true, indicates that the address above corresponds to an in-app wallet.
+		// You can only set this when setting a new wallet. It defaults to false.
+		InApp bool `json:"inApp" example:"true"`
 	} `json:"web3"`
 	// CountryCode, if specified, should be a valid ISO 3166-1 alpha-3 country code
 	CountryCode optionalString `json:"countryCode" swaggertype:"string" example:"USA"`
@@ -428,6 +431,7 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		}
 		user.EthereumAddress = ethereum
 		user.EthereumConfirmed = false
+		user.InAppWallet = body.Web3.InApp
 		user.EthereumChallengeSent = null.Time{}
 		user.EthereumChallenge = null.String{}
 	}

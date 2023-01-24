@@ -474,6 +474,11 @@
                             "description": "Address, if present, should be a valid ethereum address. Note when this field\nis modified the user's address verification status will reset.",
                             "type": "string",
                             "example": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F"
+                        },
+                        "inApp": {
+                            "description": "InApp, if true, indicates that the address above corresponds to an in-app wallet.\nYou can only set this when setting a new wallet. It defaults to false.",
+                            "type": "boolean",
+                            "example": true
                         }
                     }
                 }

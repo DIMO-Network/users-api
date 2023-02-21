@@ -138,9 +138,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	v1User.Post("/web3/challenge/generate", userController.GenerateEthereumChallenge)
 	v1User.Post("/web3/challenge/submit", userController.SubmitEthereumChallenge)
 
-	customerIOController := controllers.NewCustomerIOController(settings, pdb.DBS, &logger)
-	v1User.Post("/vitamins/known", customerIOController.Track)
-
 	logger.Info().Msg("Server started on port " + settings.Port)
 
 	go startGRPCServer(settings, pdb.DBS, &logger)

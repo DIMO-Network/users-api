@@ -25,7 +25,6 @@ import (
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
 	"github.com/DIMO-Network/users-api/models"
-	"github.com/customerio/go-customerio/v3"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -53,7 +52,6 @@ type UserController struct {
 	allowedLateness time.Duration
 	countryCodes    []string
 	emailTemplate   *template.Template
-	cioClient       *customerio.CustomerIO
 	eventService    *services.EventService
 	devicesClient   pb.UserDeviceServiceClient
 	amClient        pb.AftermarketDeviceServiceClient
@@ -66,14 +64,6 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 		panic(err)
 	}
 	t := template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail))
-	var cioClient *customerio.CustomerIO
-	if settings.CIOSiteID != "" && settings.CIOApiKey != "" {
-		cioClient = customerio.NewTrackClient(
-			settings.CIOSiteID,
-			settings.CIOApiKey,
-			customerio.WithRegion(customerio.RegionUS),
-		)
-	}
 
 	gc, err := grpc.Dial(settings.DevicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -91,7 +81,6 @@ func NewUserController(settings *config.Settings, dbs func() *database.DBReaderW
 		allowedLateness: 5 * time.Minute,
 		countryCodes:    countryCodes,
 		emailTemplate:   t,
-		cioClient:       cioClient,
 		eventService:    eventService,
 		devicesClient:   dc,
 		amClient:        amc,
@@ -177,12 +166,6 @@ type UserCreationEventData struct {
 	Method    string    `json:"method"`
 }
 
-func (d *UserController) emitWalletEvent(userID string) {
-	if err := d.cioClient.Track(userID, "walletAdded", map[string]interface{}{}); err != nil {
-		d.log.Err(err).Str("userId", userID).Msg("Failed to emit walletAdded Customer.io event.")
-	}
-}
-
 func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *models.User, err error) {
 	tx, err := d.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
@@ -235,7 +218,6 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			}
 			user.EthereumAddress = null.StringFrom(mixAddr.Address().Hex())
 			user.EthereumConfirmed = true
-			d.emitWalletEvent(userID)
 		default:
 			return nil, fmt.Errorf("unrecognized provider_id %s", providerID)
 		}
@@ -725,8 +707,6 @@ func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "internal error")
 	}
-
-	d.emitWalletEvent(userID)
 
 	return c.SendStatus(fiber.StatusNoContent)
 }

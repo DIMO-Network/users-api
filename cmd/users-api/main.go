@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 	"os"
-	"strings"
 	"time"
 
 	_ "go.uber.org/automaxprocs"
@@ -18,8 +17,6 @@ import (
 	"github.com/DIMO-Network/users-api/internal/controllers"
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
-	"github.com/DIMO-Network/users-api/internal/services/kafka"
-	"github.com/Shopify/sarama"
 	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/fiber/v2"
@@ -75,36 +72,10 @@ func main() {
 	case "generate-events":
 		eventService := services.NewEventService(&logger, &settings)
 		generateEvents(&logger, &settings, pdb, eventService)
-	case "generate-referrals":
-		eventService := services.NewEventService(&logger, &settings)
-		generateReferrals(&logger, &settings, pdb, eventService)
 	default:
 		eventService := services.NewEventService(&logger, &settings)
-		startEventConsumer(logger, &settings, pdb, eventService)
 		startWebAPI(logger, &settings, pdb, eventService)
 	}
-}
-
-func startEventConsumer(logger zerolog.Logger, settings *config.Settings, pdb database.DbStore, eventService *services.EventService) {
-	clusterConfig := sarama.NewConfig()
-	clusterConfig.Version = sarama.V2_6_0_0
-	clusterConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
-
-	cfg := &kafka.Config{
-		ClusterConfig:   clusterConfig,
-		BrokerAddresses: strings.Split(settings.KafkaBrokers, ","),
-		Topic:           settings.EventsTopic,
-		GroupID:         "users-api",
-		MaxInFlight:     int64(5),
-	}
-	consumer, err := kafka.NewConsumer(cfg, &logger)
-	if err != nil {
-		logger.Fatal().Err(err).Msg("could not start consumer")
-	}
-	eventReader := services.NewEventReader(pdb.DBS, &logger, eventService)
-	consumer.Start(context.Background(), eventReader.ProcessDeviceStatusMessages)
-
-	logger.Info().Msg("kafka consumer started")
 }
 
 func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.DbStore, eventService *services.EventService) {

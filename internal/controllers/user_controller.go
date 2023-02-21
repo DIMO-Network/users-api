@@ -33,7 +33,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -126,27 +125,11 @@ type UserResponse struct {
 	CreatedAt time.Time `json:"createdAt" swaggertype:"string" example:"2021-12-01T09:00:00Z"`
 	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.
 	CountryCode null.String `json:"countryCode" swaggertype:"string" example:"USA"`
-	// ReferralCode is the short code used in a user's share link.
-	ReferralCode string `json:"referralCode" example:"bUkZuSL7"`
-	// ReferredBy is the referral code of the person who referred this user to the site.
-	ReferredBy null.String `json:"referredBy" swaggertype:"string" example:"k9H7RoTG"`
 	// AgreedTosAt is the time at which the user last agreed to the terms of service.
 	AgreedTOSAt null.Time `json:"agreedTosAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
-	// ReferralsMade is the number of completed referrals made by the user
-	ReferralsMade int `json:"referralsMade" example:"1"`
 }
 
 func formatUser(user *models.User) *UserResponse {
-	refferedBy := func(user *models.User) null.String {
-		if user.R != nil && user.R.Referrer != nil {
-			return null.StringFrom(user.R.Referrer.ReferralCode)
-		}
-		return null.StringFromPtr(nil)
-	}
-	referralsMade := 0
-	if user.R != nil && user.R.Referrals != nil {
-		referralsMade = len(user.R.Referrals)
-	}
 	return &UserResponse{
 		ID: user.ID,
 		Email: UserResponseEmail{
@@ -160,12 +143,9 @@ func formatUser(user *models.User) *UserResponse {
 			ChallengeSentAt: user.EthereumChallengeSent,
 			InApp:           user.InAppWallet,
 		},
-		CreatedAt:     user.CreatedAt,
-		CountryCode:   user.CountryCode,
-		ReferralCode:  user.ReferralCode,
-		ReferredBy:    refferedBy(user),
-		AgreedTOSAt:   user.AgreedTosAt,
-		ReferralsMade: referralsMade,
+		CreatedAt:   user.CreatedAt,
+		CountryCode: user.CountryCode,
+		AgreedTOSAt: user.AgreedTosAt,
 	}
 }
 
@@ -193,10 +173,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	}
 	defer tx.Rollback() //nolint
 
-	user, err = models.Users(
-		models.UserWhere.ID.EQ(userID),
-		qm.Load(models.UserRels.Referrals),
-	).One(c.Context(), tx)
+	user, err = models.FindUser(c.Context(), tx, userID)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
@@ -211,7 +188,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			return nil, errors.New("no provider_id claim in ID token")
 		}
 
-		user = &models.User{ID: userID, ReferralCode: generateReferralCode(), AuthProviderID: providerID}
+		user = &models.User{ID: userID, AuthProviderID: providerID}
 
 		switch providerID {
 		case "apple", "google":
@@ -494,16 +471,6 @@ func generateNonce() (string, error) {
 		b[i] = alphabet[c.Int64()]
 	}
 	return string(b), nil
-}
-
-var validChars = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func generateReferralCode() string {
-	o := make([]rune, 8)
-	for i := range o {
-		o[i] = validChars[rand.Intn(len(validChars))]
-	}
-	return string(o)
 }
 
 // AgreeTOS godoc

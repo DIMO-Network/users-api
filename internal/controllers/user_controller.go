@@ -173,9 +173,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	}
 	defer tx.Rollback() //nolint
 
-	user, err = models.Users(
-		models.UserWhere.ID.EQ(userID),
-	).One(c.Context(), tx)
+	user, err = models.FindUser(c.Context(), tx, userID)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, err

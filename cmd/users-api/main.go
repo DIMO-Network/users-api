@@ -11,11 +11,11 @@ import (
 
 	"github.com/DIMO-Network/shared"
 	pb "github.com/DIMO-Network/shared/api/users"
+	"github.com/DIMO-Network/shared/db"
 	_ "github.com/DIMO-Network/users-api/docs"
 	"github.com/DIMO-Network/users-api/internal/api"
 	"github.com/DIMO-Network/users-api/internal/config"
 	"github.com/DIMO-Network/users-api/internal/controllers"
-	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
 	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
@@ -44,16 +44,9 @@ func main() {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("could not load settings")
 	}
-	pdb := database.NewDbConnectionFromSettings(ctx, &settings, true)
-	// check db ready, this is not ideal btw, the db connection handler would be nicer if it did this.
-	totalTime := 0
-	for !pdb.IsReady() {
-		if totalTime > 30 {
-			logger.Fatal().Msg("could not connect to postgres after 30 seconds")
-		}
-		time.Sleep(time.Second)
-		totalTime++
-	}
+
+	dbs := db.NewDbConnectionFromSettings(ctx, &settings.DB, true)
+	dbs.WaitForDB(logger)
 
 	arg := ""
 	if len(os.Args) > 1 {
@@ -68,17 +61,17 @@ func main() {
 				command = command + " " + os.Args[3]
 			}
 		}
-		migrateDatabase(logger, &settings, command, "users_api")
+		migrateDatabase(logger, &settings.DB, command, "users_api")
 	case "generate-events":
 		eventService := services.NewEventService(&logger, &settings)
-		generateEvents(&logger, &settings, pdb, eventService)
+		generateEvents(&logger, &settings, dbs, eventService)
 	default:
 		eventService := services.NewEventService(&logger, &settings)
-		startWebAPI(logger, &settings, pdb, eventService)
+		startWebAPI(logger, &settings, dbs, eventService)
 	}
 }
 
-func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.DbStore, eventService *services.EventService) {
+func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store, eventService *services.EventService) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return ErrorHandler(c, err, logger)
@@ -127,7 +120,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
 	}))
 
-	userController := controllers.NewUserController(settings, pdb.DBS, eventService, &logger)
+	userController := controllers.NewUserController(settings, dbs, eventService, &logger)
 	v1User.Get("/", userController.GetUser)
 	v1User.Put("/", userController.UpdateUser)
 	v1User.Delete("/", userController.DeleteUser)
@@ -140,7 +133,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 
-	go startGRPCServer(settings, pdb.DBS, &logger)
+	go startGRPCServer(settings, dbs, &logger)
 
 	// Start Server
 	if err := app.Listen(":" + settings.Port); err != nil {
@@ -148,7 +141,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, pdb database.
 	}
 }
 
-func startGRPCServer(settings *config.Settings, dbs func() *database.DBReaderWriter, logger *zerolog.Logger) {
+func startGRPCServer(settings *config.Settings, dbs db.Store, logger *zerolog.Logger) {
 	lis, err := net.Listen("tcp", ":"+settings.GRPCPort)
 	if err != nil {
 		logger.Fatal().Err(err).Msgf("Couldn't listen on gRPC port %s", settings.GRPCPort)

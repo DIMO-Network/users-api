@@ -6,25 +6,25 @@ import (
 	"errors"
 
 	pb "github.com/DIMO-Network/shared/api/users"
-	"github.com/DIMO-Network/users-api/internal/database"
+	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/models"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func NewUserService(dbs func() *database.DBReaderWriter, logger *zerolog.Logger) pb.UserServiceServer {
+func NewUserService(dbs db.Store, logger *zerolog.Logger) pb.UserServiceServer {
 	return &userService{dbs: dbs, logger: logger}
 }
 
 type userService struct {
 	pb.UnimplementedUserServiceServer
-	dbs    func() *database.DBReaderWriter
+	dbs    db.Store
 	logger *zerolog.Logger
 }
 
 func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.User, error) {
-	dbUser, err := models.FindUser(ctx, s.dbs().Reader, req.Id)
+	dbUser, err := models.FindUser(ctx, s.dbs.DBS().Reader, req.Id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, status.Error(codes.NotFound, "No user with that ID found.")

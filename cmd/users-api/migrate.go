@@ -4,17 +4,17 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/DIMO-Network/users-api/internal/config"
+	"github.com/DIMO-Network/shared/db"
 	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
 
 	_ "github.com/lib/pq"
 )
 
-func migrateDatabase(logger zerolog.Logger, settings *config.Settings, command, schemaName string) {
+func migrateDatabase(logger zerolog.Logger, settings *db.Settings, command, schemaName string) {
 	var db *sql.DB
 	// setup database
-	db, err := sql.Open("postgres", settings.GetWriterDSN(true))
+	db, err := sql.Open("postgres", settings.BuildConnectionString(true))
 	defer func() {
 		if err := db.Close(); err != nil {
 			logger.Fatal().Msgf("goose: failed to close DB: %v\n", err)

@@ -47,7 +47,7 @@ var rawConfirmationEmail string
 
 type UserController struct {
 	Settings        *config.Settings
-	DBS             db.Store
+	dbs             db.Store
 	log             *zerolog.Logger
 	allowedLateness time.Duration
 	countryCodes    []string
@@ -76,7 +76,7 @@ func NewUserController(settings *config.Settings, dbs db.Store, eventService *se
 
 	return UserController{
 		Settings:        settings,
-		DBS:             dbs,
+		dbs:             dbs,
 		log:             logger,
 		allowedLateness: 5 * time.Minute,
 		countryCodes:    countryCodes,
@@ -167,7 +167,7 @@ type UserCreationEventData struct {
 }
 
 func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *models.User, err error) {
-	tx, err := d.DBS.DBS().Writer.BeginTx(c.Context(), nil)
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +398,7 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		user.EthereumChallenge = null.String{}
 	}
 
-	if _, err := user.Update(c.Context(), d.DBS.DBS().Writer, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
@@ -415,7 +415,7 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 func (d *UserController) DeleteUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
-	tx, err := d.DBS.DBS().Writer.BeginTx(c.Context(), nil)
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
@@ -438,7 +438,7 @@ func (d *UserController) DeleteUser(c *fiber.Ctx) error {
 		return errorResponseHandler(c, fmt.Errorf("user must delete %d devices first", l), fiber.StatusConflict)
 	}
 
-	if _, err := user.Delete(c.Context(), d.DBS.DBS().Writer); err != nil {
+	if _, err := user.Delete(c.Context(), d.dbs.DBS().Writer); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
@@ -488,7 +488,7 @@ func (d *UserController) AgreeTOS(c *fiber.Ctx) error {
 
 	user.AgreedTosAt = null.TimeFrom(time.Now())
 
-	if _, err := user.Update(c.Context(), d.DBS.DBS().Writer, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
@@ -564,7 +564,7 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
-	if _, err := user.Update(c.Context(), d.DBS.DBS().Writer, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
@@ -616,7 +616,7 @@ func (d *UserController) GenerateEthereumChallenge(c *fiber.Ctx) error {
 	user.EthereumChallengeSent = null.TimeFrom(now)
 	user.EthereumChallenge = null.StringFrom(challenge)
 
-	if _, err := user.Update(c.Context(), d.DBS.DBS().Reader, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Reader, boil.Infer()); err != nil {
 		d.log.Err(err).Str("userId", userID).Msg("Failed to update database record with new challenge.")
 		return opaqueInternalError
 	}
@@ -702,7 +702,7 @@ func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 	user.EthereumConfirmed = true
 	user.EthereumChallengeSent = null.Time{}
 	user.EthereumChallenge = null.String{}
-	if _, err := user.Update(c.Context(), d.DBS.DBS().Writer, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "internal error")
 	}
 
@@ -759,7 +759,7 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	user.EmailConfirmed = true
 	user.EmailConfirmationKey = null.StringFromPtr(nil)
 	user.EmailConfirmationSentAt = null.TimeFromPtr(nil)
-	if _, err := user.Update(c.Context(), d.DBS.DBS().Writer, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
@@ -800,7 +800,7 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 			models.UserWhere.ID.NEQ(userID),
 			models.UserWhere.EmailAddress.EQ(null.StringFrom(email)),
 			models.UserWhere.EmailConfirmed.EQ(true),
-		).All(c.Context(), d.DBS.DBS().Reader)
+		).All(c.Context(), d.dbs.DBS().Reader)
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 		}
@@ -823,7 +823,7 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 			models.UserWhere.ID.NEQ(userID),
 			models.UserWhere.EthereumAddress.EQ(null.StringFrom(mixAddr.Address().Hex())),
 			models.UserWhere.EthereumConfirmed.EQ(true),
-		).All(c.Context(), d.DBS.DBS().Reader)
+		).All(c.Context(), d.dbs.DBS().Reader)
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 		}

@@ -694,6 +694,7 @@ func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 
 	// TODO(elffjs): Why can't we just use crypto.Ecrecover?
 	recoveredAddr := crypto.PubkeyToAddress(*pubKey)
+
 	// These are byte arrays, not slices, so this is okay to do.
 	if recoveredAddr != addrb {
 		return fiber.NewError(fiber.StatusBadRequest, "given address and recovered address do not match")

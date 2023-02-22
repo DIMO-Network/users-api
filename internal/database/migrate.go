@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/pressly/goose/v3"
@@ -11,7 +10,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func MigrateDatabase(logger zerolog.Logger, settings *db.Settings, command, schemaName string) error {
+func MigrateDatabase(logger zerolog.Logger, settings *db.Settings, command, migrationsDir string) error {
 	db, err := sql.Open("postgres", settings.BuildConnectionString(true))
 	if err != nil {
 		return err
@@ -26,10 +25,10 @@ func MigrateDatabase(logger zerolog.Logger, settings *db.Settings, command, sche
 		command = "up"
 	}
 
-	_, err = db.Exec(fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s;", schemaName))
+	_, err = db.Exec("CREATE SCHEMA IF NOT EXISTS users_api;")
 	if err != nil {
 		return err
 	}
-	goose.SetTableName(fmt.Sprintf("%s.migrations", schemaName))
-	return goose.Run(command, db, "migrations")
+	goose.SetTableName("users_api.migrations")
+	return goose.Run(command, db, migrationsDir)
 }

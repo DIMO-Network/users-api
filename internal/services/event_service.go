@@ -12,7 +12,11 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-type EventService struct {
+type EventService interface {
+	Emit(*Event) error
+}
+
+type eventService struct {
 	Settings *config.Settings
 	Logger   *zerolog.Logger
 	Producer sarama.SyncProducer
@@ -35,7 +39,7 @@ type Event struct {
 	Data    interface{}
 }
 
-func (e *EventService) Emit(event *Event) error {
+func (e *eventService) Emit(event *Event) error {
 	msgBytes, err := json.Marshal(cloudEventMessage{
 		ID:          ksuid.New().String(),
 		Source:      event.Source,
@@ -59,14 +63,14 @@ func (e *EventService) Emit(event *Event) error {
 	return nil
 }
 
-func NewEventService(logger *zerolog.Logger, settings *config.Settings) *EventService {
+func NewEventService(logger *zerolog.Logger, settings *config.Settings) EventService {
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Producer.Return.Successes = true
 	producer, err := sarama.NewSyncProducer(strings.Split(settings.KafkaBrokers, ","), kafkaConfig)
 	if err != nil {
 		panic(err)
 	}
-	return &EventService{
+	return &eventService{
 		Settings: settings,
 		Logger:   logger,
 		Producer: producer,

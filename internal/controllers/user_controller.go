@@ -52,12 +52,12 @@ type UserController struct {
 	allowedLateness time.Duration
 	countryCodes    []string
 	emailTemplate   *template.Template
-	eventService    *services.EventService
+	eventService    services.EventService
 	devicesClient   pb.UserDeviceServiceClient
 	amClient        pb.AftermarketDeviceServiceClient
 }
 
-func NewUserController(settings *config.Settings, dbs db.Store, eventService *services.EventService, logger *zerolog.Logger) UserController {
+func NewUserController(settings *config.Settings, dbs db.Store, eventService services.EventService, logger *zerolog.Logger) UserController {
 	rand.Seed(time.Now().UnixNano())
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {

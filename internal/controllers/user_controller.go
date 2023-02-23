@@ -31,6 +31,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
+	"github.com/valyala/fasthttp"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"google.golang.org/grpc"
@@ -214,6 +215,14 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			if !mixAddr.ValidChecksum() {
 				d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", ethereum)
 			}
+
+			referralCode, err := d.generateReferralCode(c.Context())
+			if err != nil {
+				d.log.Error().Err(err).Msg("error occurred creating referral code for user")
+				return nil, errors.New("internal error")
+			}
+
+			user.ReferralCode = null.StringFrom(referralCode)
 			user.EthereumAddress = null.StringFrom(mixAddr.Address().Hex())
 			user.EthereumConfirmed = true
 		default:
@@ -635,26 +644,31 @@ type ConfirmEthereumRequest struct {
 	Signature string `json:"signature"`
 }
 
-func (s *UserController) generateReferralCode() string {
-	/*
-	* -- Algo --
-	* Generate code in batch of 100
-	* Use a SELECT statment for db to filter out which ones already exist i.e. SELECT Where not in list
-	* Then pick any from the list as the winner to be used as referral code
-	 */
-
-	res := ""
-
-	for i := 0; i < 6; i++ {
-		d, err := crypto_rand.Int(crypto_rand.Reader, big.NewInt(10))
-		if err != nil {
-			panic(err)
+func (s *UserController) generateReferralCode(ctx *fasthttp.RequestCtx) (string, error) {
+	getCode := func() string {
+		res := ""
+		for i := 0; i < 6; i++ {
+			d, err := crypto_rand.Int(crypto_rand.Reader, big.NewInt(10))
+			if err != nil {
+				panic(err)
+			}
+			d.Uint64()
+			res += d.String()
 		}
-		d.Uint64()
-		res += d.String()
+		return res
 	}
 
-	return res
+	for {
+		code := getCode()
+
+		exists, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(code))).Count(ctx, s.dbs.DBS().Reader)
+		if err != nil {
+			return "", err
+		}
+		if exists < 1 {
+			return code, nil
+		}
+	}
 }
 
 // SubmitEthereumChallenge godoc

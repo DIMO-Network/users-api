@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"bytes"
+	"context"
 	crypto_rand "crypto/rand"
 	"database/sql"
 	_ "embed"
@@ -19,12 +20,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/DIMO-Network/shared/api/devices"
+	pb "github.com/DIMO-Network/shared/api/devices"
+	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/internal/config"
-	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
 	"github.com/DIMO-Network/users-api/models"
-	"github.com/customerio/go-customerio/v3"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -33,7 +33,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -48,49 +47,43 @@ var rawConfirmationEmail string
 
 type UserController struct {
 	Settings        *config.Settings
-	DBS             func() *database.DBReaderWriter
+	dbs             db.Store
 	log             *zerolog.Logger
 	allowedLateness time.Duration
 	countryCodes    []string
 	emailTemplate   *template.Template
-	cioClient       *customerio.CustomerIO
 	eventService    *services.EventService
-	devicesClient   devices.UserDeviceServiceClient
+	devicesClient   pb.UserDeviceServiceClient
+	amClient        pb.AftermarketDeviceServiceClient
 }
 
-func NewUserController(settings *config.Settings, dbs func() *database.DBReaderWriter, eventService *services.EventService, logger *zerolog.Logger) UserController {
+func NewUserController(settings *config.Settings, dbs db.Store, eventService *services.EventService, logger *zerolog.Logger) UserController {
 	rand.Seed(time.Now().UnixNano())
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
 		panic(err)
 	}
 	t := template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail))
-	var cioClient *customerio.CustomerIO
-	if settings.CIOSiteID != "" && settings.CIOApiKey != "" {
-		cioClient = customerio.NewTrackClient(
-			settings.CIOSiteID,
-			settings.CIOApiKey,
-			customerio.WithRegion(customerio.RegionUS),
-		)
-	}
 
 	gc, err := grpc.Dial(settings.DevicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
 
-	dc := devices.NewUserDeviceServiceClient(gc)
+	dc := pb.NewUserDeviceServiceClient(gc)
+
+	amc := pb.NewAftermarketDeviceServiceClient(gc)
 
 	return UserController{
 		Settings:        settings,
-		DBS:             dbs,
+		dbs:             dbs,
 		log:             logger,
 		allowedLateness: 5 * time.Minute,
 		countryCodes:    countryCodes,
 		emailTemplate:   t,
-		cioClient:       cioClient,
 		eventService:    eventService,
 		devicesClient:   dc,
+		amClient:        amc,
 	}
 }
 
@@ -110,6 +103,11 @@ type UserResponseWeb3 struct {
 	// Confirmed indicates whether the user has confirmed the address by signing a challenge
 	// message.
 	Confirmed bool `json:"confirmed" example:"false"`
+	// Used indicates whether the user has used this address to perform any on-chain
+	// actions like minting, claiming, or pairing.
+	Used bool `json:"used" example:"false"`
+	// InApp indicates whether this is an in-app wallet, managed by the DIMO app.
+	InApp bool `json:"inApp" example:"false"`
 	// ChallengeSentAt is the time at which we last generated a challenge message for the user to
 	// sign. This will only be present if we've generated such a message but a signature has not
 	// been sent back to us.
@@ -127,27 +125,11 @@ type UserResponse struct {
 	CreatedAt time.Time `json:"createdAt" swaggertype:"string" example:"2021-12-01T09:00:00Z"`
 	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.
 	CountryCode null.String `json:"countryCode" swaggertype:"string" example:"USA"`
-	// ReferralCode is the short code used in a user's share link.
-	ReferralCode string `json:"referralCode" example:"bUkZuSL7"`
-	// ReferredBy is the referral code of the person who referred this user to the site.
-	ReferredBy null.String `json:"referredBy" swaggertype:"string" example:"k9H7RoTG"`
 	// AgreedTosAt is the time at which the user last agreed to the terms of service.
 	AgreedTOSAt null.Time `json:"agreedTosAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
-	// ReferralsMade is the number of completed referrals made by the user
-	ReferralsMade int `json:"referralsMade" example:"1"`
 }
 
 func formatUser(user *models.User) *UserResponse {
-	refferedBy := func(user *models.User) null.String {
-		if user.R != nil && user.R.Referrer != nil {
-			return null.StringFrom(user.R.Referrer.ReferralCode)
-		}
-		return null.StringFromPtr(nil)
-	}
-	referralsMade := 0
-	if user.R != nil && user.R.Referrals != nil {
-		referralsMade = len(user.R.Referrals)
-	}
 	return &UserResponse{
 		ID: user.ID,
 		Email: UserResponseEmail{
@@ -159,13 +141,11 @@ func formatUser(user *models.User) *UserResponse {
 			Address:         user.EthereumAddress,
 			Confirmed:       user.EthereumConfirmed,
 			ChallengeSentAt: user.EthereumChallengeSent,
+			InApp:           user.InAppWallet,
 		},
-		CreatedAt:     user.CreatedAt,
-		CountryCode:   user.CountryCode,
-		ReferralCode:  user.ReferralCode,
-		ReferredBy:    refferedBy(user),
-		AgreedTOSAt:   user.AgreedTosAt,
-		ReferralsMade: referralsMade,
+		CreatedAt:   user.CreatedAt,
+		CountryCode: user.CountryCode,
+		AgreedTOSAt: user.AgreedTosAt,
 	}
 }
 
@@ -186,23 +166,14 @@ type UserCreationEventData struct {
 	Method    string    `json:"method"`
 }
 
-func (d *UserController) emitWalletEvent(userID string) {
-	if err := d.cioClient.Track(userID, "walletAdded", map[string]interface{}{}); err != nil {
-		d.log.Err(err).Str("userId", userID).Msg("Failed to emit walletAdded Customer.io event.")
-	}
-}
-
 func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *models.User, err error) {
-	tx, err := d.DBS().Writer.BeginTx(c.Context(), nil)
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback() //nolint
 
-	user, err = models.Users(
-		models.UserWhere.ID.EQ(userID),
-		qm.Load(models.UserRels.Referrals),
-	).One(c.Context(), tx)
+	user, err = models.FindUser(c.Context(), tx, userID)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
@@ -217,7 +188,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			return nil, errors.New("no provider_id claim in ID token")
 		}
 
-		user = &models.User{ID: userID, ReferralCode: generateReferralCode(), AuthProviderID: providerID}
+		user = &models.User{ID: userID, AuthProviderID: providerID}
 
 		switch providerID {
 		case "apple", "google":
@@ -245,7 +216,6 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			}
 			user.EthereumAddress = null.StringFrom(mixAddr.Address().Hex())
 			user.EthereumConfirmed = true
-			d.emitWalletEvent(userID)
 		default:
 			return nil, fmt.Errorf("unrecognized provider_id %s", providerID)
 		}
@@ -290,9 +260,51 @@ func (d *UserController) GetUser(c *fiber.Ctx) error {
 
 	user, err := d.getOrCreateUser(c, userID)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	return c.JSON(formatUser(user))
+
+	out := formatUser(user)
+
+	out.Web3.Used, err = d.computeWeb3Used(c.Context(), user)
+	if err != nil {
+		d.log.Err(err).Msg("WEEU")
+	}
+
+	return c.JSON(out)
+}
+
+func (d *UserController) computeWeb3Used(ctx context.Context, user *models.User) (bool, error) {
+	if user.AuthProviderID == "web3" {
+		return true, nil
+	}
+
+	if !user.EthereumConfirmed {
+		return false, nil
+	}
+
+	devices, err := d.devicesClient.ListUserDevicesForUser(ctx, &pb.ListUserDevicesForUserRequest{UserId: user.ID})
+	if err != nil {
+		return false, err
+	}
+
+	for _, amd := range devices.UserDevices {
+		if amd.TokenId != nil {
+			return true, nil
+		}
+	}
+
+	ams, err := d.amClient.ListAftermarketDevicesForUser(ctx, &pb.ListAftermarketDevicesForUserRequest{UserId: user.ID})
+	if err != nil {
+		return false, err
+	}
+
+	for _, am := range ams.AftermarketDevices {
+		if len(am.OwnerAddress) == 20 {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func inSorted(v []string, x string) bool {
@@ -321,6 +333,9 @@ type UserUpdateRequest struct {
 		// Address, if present, should be a valid ethereum address. Note when this field
 		// is modified the user's address verification status will reset.
 		Address optionalString `json:"address" swaggertype:"string" example:"0x71C7656EC7ab88b098defB751B7401B5f6d8976F"`
+		// InApp, if true, indicates that the address above corresponds to an in-app wallet.
+		// You can only set this when setting a new wallet. It defaults to false.
+		InApp bool `json:"inApp" example:"true"`
 	} `json:"web3"`
 	// CountryCode, if specified, should be a valid ISO 3166-1 alpha-3 country code
 	CountryCode optionalString `json:"countryCode" swaggertype:"string" example:"USA"`
@@ -378,11 +393,12 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		}
 		user.EthereumAddress = ethereum
 		user.EthereumConfirmed = false
+		user.InAppWallet = body.Web3.InApp
 		user.EthereumChallengeSent = null.Time{}
 		user.EthereumChallenge = null.String{}
 	}
 
-	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
@@ -399,7 +415,7 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 func (d *UserController) DeleteUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
-	tx, err := d.DBS().Writer.BeginTx(c.Context(), nil)
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
@@ -413,7 +429,7 @@ func (d *UserController) DeleteUser(c *fiber.Ctx) error {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
-	dr, err := d.devicesClient.ListUserDevicesForUser(c.Context(), &devices.ListUserDevicesForUserRequest{UserId: userID})
+	dr, err := d.devicesClient.ListUserDevicesForUser(c.Context(), &pb.ListUserDevicesForUserRequest{UserId: userID})
 	if err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
@@ -422,7 +438,7 @@ func (d *UserController) DeleteUser(c *fiber.Ctx) error {
 		return errorResponseHandler(c, fmt.Errorf("user must delete %d devices first", l), fiber.StatusConflict)
 	}
 
-	if _, err := user.Delete(c.Context(), d.DBS().Writer); err != nil {
+	if _, err := user.Delete(c.Context(), d.dbs.DBS().Writer); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
@@ -457,16 +473,6 @@ func generateNonce() (string, error) {
 	return string(b), nil
 }
 
-var validChars = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func generateReferralCode() string {
-	o := make([]rune, 8)
-	for i := range o {
-		o[i] = validChars[rand.Intn(len(validChars))]
-	}
-	return string(o)
-}
-
 // AgreeTOS godoc
 // @Summary Agree to the current terms of service
 // @Success 204
@@ -482,7 +488,7 @@ func (d *UserController) AgreeTOS(c *fiber.Ctx) error {
 
 	user.AgreedTosAt = null.TimeFrom(time.Now())
 
-	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
@@ -558,7 +564,7 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
-	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
@@ -610,7 +616,7 @@ func (d *UserController) GenerateEthereumChallenge(c *fiber.Ctx) error {
 	user.EthereumChallengeSent = null.TimeFrom(now)
 	user.EthereumChallenge = null.StringFrom(challenge)
 
-	if _, err := user.Update(c.Context(), d.DBS().Reader, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Reader, boil.Infer()); err != nil {
 		d.log.Err(err).Str("userId", userID).Msg("Failed to update database record with new challenge.")
 		return opaqueInternalError
 	}
@@ -718,11 +724,9 @@ func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 	user.EthereumConfirmed = true
 	user.EthereumChallengeSent = null.Time{}
 	user.EthereumChallenge = null.String{}
-	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "internal error")
 	}
-
-	d.emitWalletEvent(userID)
 
 	return c.SendStatus(fiber.StatusNoContent)
 }
@@ -777,7 +781,7 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	user.EmailConfirmed = true
 	user.EmailConfirmationKey = null.StringFromPtr(nil)
 	user.EmailConfirmationSentAt = null.TimeFromPtr(nil)
-	if _, err := user.Update(c.Context(), d.DBS().Writer, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
@@ -818,7 +822,7 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 			models.UserWhere.ID.NEQ(userID),
 			models.UserWhere.EmailAddress.EQ(null.StringFrom(email)),
 			models.UserWhere.EmailConfirmed.EQ(true),
-		).All(c.Context(), d.DBS().Reader)
+		).All(c.Context(), d.dbs.DBS().Reader)
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 		}
@@ -841,7 +845,7 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 			models.UserWhere.ID.NEQ(userID),
 			models.UserWhere.EthereumAddress.EQ(null.StringFrom(mixAddr.Address().Hex())),
 			models.UserWhere.EthereumConfirmed.EQ(true),
-		).All(c.Context(), d.DBS().Reader)
+		).All(c.Context(), d.dbs.DBS().Reader)
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 		}

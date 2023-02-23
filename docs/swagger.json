@@ -368,31 +368,24 @@
                 },
                 "email": {
                     "description": "Email describes the user's email and the state of its confirmation.",
-                    "$ref": "#/definitions/controllers.UserResponseEmail"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/controllers.UserResponseEmail"
+                        }
+                    ]
                 },
                 "id": {
                     "description": "ID is the user's DIMO-internal ID.",
                     "type": "string",
                     "example": "ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"
                 },
-                "referralCode": {
-                    "description": "ReferralCode is the short code used in a user's share link.",
-                    "type": "string",
-                    "example": "bUkZuSL7"
-                },
-                "referralsMade": {
-                    "description": "ReferralsMade is the number of completed referrals made by the user",
-                    "type": "integer",
-                    "example": 1
-                },
-                "referredBy": {
-                    "description": "ReferredBy is the referral code of the person who referred this user to the site.",
-                    "type": "string",
-                    "example": "k9H7RoTG"
-                },
                 "web3": {
                     "description": "Web3 describes the user's blockchain account.",
-                    "$ref": "#/definitions/controllers.UserResponseWeb3"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/controllers.UserResponseWeb3"
+                        }
+                    ]
                 }
             }
         },
@@ -433,6 +426,16 @@
                     "description": "Confirmed indicates whether the user has confirmed the address by signing a challenge\nmessage.",
                     "type": "boolean",
                     "example": false
+                },
+                "inApp": {
+                    "description": "InApp indicates whether this is an in-app wallet, managed by the DIMO app.",
+                    "type": "boolean",
+                    "example": false
+                },
+                "used": {
+                    "description": "Used indicates whether the user has used this address to perform any on-chain\nactions like minting, claiming, or pairing.",
+                    "type": "boolean",
+                    "example": false
                 }
             }
         },
@@ -461,6 +464,11 @@
                             "description": "Address, if present, should be a valid ethereum address. Note when this field\nis modified the user's address verification status will reset.",
                             "type": "string",
                             "example": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F"
+                        },
+                        "inApp": {
+                            "description": "InApp, if true, indicates that the address above corresponds to an in-app wallet.\nYou can only set this when setting a new wallet. It defaults to false.",
+                            "type": "boolean",
+                            "example": true
                         }
                     }
                 }

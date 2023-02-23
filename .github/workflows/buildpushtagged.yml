@@ -8,7 +8,7 @@ jobs:
   build_test:
     # The type of runner that the job will run on
     name: buildpush
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
@@ -26,7 +26,7 @@ jobs:
           strip_v: true
 
       - name: Build and push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: ./resources/docker/Dockerfile
@@ -34,7 +34,7 @@ jobs:
           tags: dimozone/users-api:${{steps.tag.outputs.tag}}
 
       - name: Update Image Version in the related HelmChart values.yaml
-        uses: fjogeleit/yaml-update-action@master
+        uses: fjogeleit/yaml-update-action@v0.11.1
         with:
           valueFile: 'charts/users-api/values-prod.yaml'
           propertyPath: 'image.tag'

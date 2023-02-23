@@ -68,28 +68,16 @@ definitions:
         example: "2021-12-01T09:00:00Z"
         type: string
       email:
-        $ref: '#/definitions/controllers.UserResponseEmail'
+        allOf:
+        - $ref: '#/definitions/controllers.UserResponseEmail'
         description: Email describes the user's email and the state of its confirmation.
       id:
         description: ID is the user's DIMO-internal ID.
         example: ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl
         type: string
-      referralCode:
-        description: ReferralCode is the short code used in a user's share link.
-        example: bUkZuSL7
-        type: string
-      referralsMade:
-        description: ReferralsMade is the number of completed referrals made by the
-          user
-        example: 1
-        type: integer
-      referredBy:
-        description: ReferredBy is the referral code of the person who referred this
-          user to the site.
-        example: k9H7RoTG
-        type: string
       web3:
-        $ref: '#/definitions/controllers.UserResponseWeb3'
+        allOf:
+        - $ref: '#/definitions/controllers.UserResponseWeb3'
         description: Web3 describes the user's blockchain account.
     type: object
   controllers.UserResponseEmail:
@@ -129,6 +117,17 @@ definitions:
           message.
         example: false
         type: boolean
+      inApp:
+        description: InApp indicates whether this is an in-app wallet, managed by
+          the DIMO app.
+        example: false
+        type: boolean
+      used:
+        description: |-
+          Used indicates whether the user has used this address to perform any on-chain
+          actions like minting, claiming, or pairing.
+        example: false
+        type: boolean
     type: object
   controllers.UserUpdateRequest:
     properties:
@@ -154,6 +153,12 @@ definitions:
               is modified the user's address verification status will reset.
             example: 0x71C7656EC7ab88b098defB751B7401B5f6d8976F
             type: string
+          inApp:
+            description: |-
+              InApp, if true, indicates that the address above corresponds to an in-app wallet.
+              You can only set this when setting a new wallet. It defaults to false.
+            example: true
+            type: boolean
         type: object
     type: object
 info:

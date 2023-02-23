@@ -3,17 +3,17 @@ package main
 import (
 	"context"
 
+	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/internal/config"
 	"github.com/DIMO-Network/users-api/internal/controllers"
-	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
 	"github.com/DIMO-Network/users-api/models"
 	"github.com/rs/zerolog"
 )
 
-func generateEvents(logger *zerolog.Logger, settings *config.Settings, pdb database.DbStore, eventService *services.EventService) {
+func generateEvents(logger *zerolog.Logger, settings *config.Settings, dbs db.Store, eventService *services.EventService) {
 	ctx := context.Background()
-	users, err := models.Users().All(ctx, pdb.DBS().Reader)
+	users, err := models.Users().All(ctx, dbs.DBS().Reader)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to retrieve all users for event generation")
 	}

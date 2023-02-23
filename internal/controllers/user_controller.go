@@ -629,6 +629,29 @@ type ConfirmEthereumRequest struct {
 	Signature string `json:"signature"`
 }
 
+type referralCode [6]uint8
+
+/* func (r referralCode) String() string {
+	return r.String()
+} */
+
+func (s *UserController) generateReferralCode() referralCode {
+
+	var digMax = big.NewInt(10)
+	var c referralCode
+
+	for i := 0; i < 6; i++ {
+		d, err := crypto_rand.Int(crypto_rand.Reader, digMax)
+		if err != nil {
+			panic(err)
+		}
+		d.Uint64()
+		c[i] = uint8(d.Int64())
+	}
+
+	return c
+}
+
 // SubmitEthereumChallenge godoc
 // @Summary Confirm ownership of an ethereum address by submitting a signature
 // @Param confirmEthereumRequest body controllers.ConfirmEthereumRequest true "Signed challenge message"

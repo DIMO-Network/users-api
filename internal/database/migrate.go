@@ -6,8 +6,6 @@ import (
 	"github.com/DIMO-Network/shared/db"
 	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
-
-	_ "github.com/lib/pq"
 )
 
 func MigrateDatabase(logger zerolog.Logger, settings *db.Settings, command, migrationsDir string) error {

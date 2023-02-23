@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	_ "github.com/lib/pq"
 	_ "go.uber.org/automaxprocs"
 	"google.golang.org/grpc"
 

@@ -69,7 +69,7 @@ func TestSubmitChallenge(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer cont.Terminate(ctx)
+	defer cont.Terminate(ctx) //nolint
 
 	logger := zerolog.Nop()
 

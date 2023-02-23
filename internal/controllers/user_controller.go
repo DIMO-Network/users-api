@@ -31,7 +31,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
-	"github.com/valyala/fasthttp"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"google.golang.org/grpc"
@@ -644,7 +643,7 @@ type ConfirmEthereumRequest struct {
 	Signature string `json:"signature"`
 }
 
-func (d *UserController) generateReferralCode(ctx *fasthttp.RequestCtx) (string, error) {
+func (d *UserController) generateReferralCode(ctx context.Context) (string, error) {
 	getCode := func() (string, error) {
 		res := ""
 		for i := 0; i < 6; i++ {
@@ -664,11 +663,11 @@ func (d *UserController) generateReferralCode(ctx *fasthttp.RequestCtx) (string,
 			return "", err
 		}
 
-		exists, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(code))).Count(ctx, d.dbs.DBS().Reader)
+		count, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(code))).Count(ctx, d.dbs.DBS().Reader)
 		if err != nil {
 			return "", err
 		}
-		if exists < 1 {
+		if count < 1 {
 			return code, nil
 		}
 	}

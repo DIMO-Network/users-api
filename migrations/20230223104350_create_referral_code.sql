@@ -13,7 +13,6 @@ ALTER TABLE users_api.users ADD CONSTRAINT users_referral_code_key UNIQUE (refer
 -- +goose StatementBegin
 SELECT 'down SQL query';
 
-ALTER TABLE users_api.users DROP CONSTRAINT users_referral_code_key;
 ALTER TABLE users_api.users 
     DROP COLUMN referral_code,
     DROP COLUMN referred_by;

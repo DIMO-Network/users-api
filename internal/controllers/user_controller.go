@@ -629,27 +629,26 @@ type ConfirmEthereumRequest struct {
 	Signature string `json:"signature"`
 }
 
-type referralCode [6]uint8
+func (s *UserController) generateReferralCode() string {
+	/*
+	* -- Algo --
+	* Generate code in batch of 100
+	* Use a SELECT statment for db to filter out which ones already exist i.e. SELECT Where not in list
+	* Then pick any from the list as the winner to be used as referral code
+	 */
 
-/* func (r referralCode) String() string {
-	return r.String()
-} */
-
-func (s *UserController) generateReferralCode() referralCode {
-
-	var digMax = big.NewInt(10)
-	var c referralCode
+	res := ""
 
 	for i := 0; i < 6; i++ {
-		d, err := crypto_rand.Int(crypto_rand.Reader, digMax)
+		d, err := crypto_rand.Int(crypto_rand.Reader, big.NewInt(10))
 		if err != nil {
 			panic(err)
 		}
 		d.Uint64()
-		c[i] = uint8(d.Int64())
+		res += d.String()
 	}
 
-	return c
+	return res
 }
 
 // SubmitEthereumChallenge godoc

@@ -644,7 +644,7 @@ type ConfirmEthereumRequest struct {
 	Signature string `json:"signature"`
 }
 
-func (s *UserController) generateReferralCode(ctx *fasthttp.RequestCtx) (string, error) {
+func (d *UserController) generateReferralCode(ctx *fasthttp.RequestCtx) (string, error) {
 	getCode := func() string {
 		res := ""
 		for i := 0; i < 6; i++ {

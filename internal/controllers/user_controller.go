@@ -645,23 +645,26 @@ type ConfirmEthereumRequest struct {
 }
 
 func (d *UserController) generateReferralCode(ctx *fasthttp.RequestCtx) (string, error) {
-	getCode := func() string {
+	getCode := func() (string, error) {
 		res := ""
 		for i := 0; i < 6; i++ {
 			d, err := crypto_rand.Int(crypto_rand.Reader, big.NewInt(10))
 			if err != nil {
-				panic(err)
+				return "", err
 			}
 			d.Uint64()
 			res += d.String()
 		}
-		return res
+		return res, nil
 	}
 
 	for {
-		code := getCode()
+		code, err := getCode()
+		if err != nil {
+			return "", err
+		}
 
-		exists, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(code))).Count(ctx, s.dbs.DBS().Reader)
+		exists, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(code))).Count(ctx, d.dbs.DBS().Reader)
 		if err != nil {
 			return "", err
 		}

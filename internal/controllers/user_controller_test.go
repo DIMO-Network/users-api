@@ -213,7 +213,7 @@ type testDependencies struct {
 func TestReferralCodeIsGenerated(t *testing.T) {
 	ctx := context.Background()
 
-	c := prepareTestDependencies(t, ctx)
+	c := prepareTestDependencies(ctx, t)
 
 	defer c.container.Terminate(ctx) //nolint
 
@@ -240,7 +240,7 @@ func TestReferralCodeIsGenerated(t *testing.T) {
 	// and save all other combinations except 1, then check if that 1 is generated
 } */
 
-func prepareTestDependencies(t *testing.T, ctx context.Context) testDependencies {
+func prepareTestDependencies(ctx context.Context, t *testing.T) testDependencies {
 	port := 5432
 	nport := fmt.Sprintf("%d/tcp", port)
 

@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"log"
 	"math/big"
 	"math/rand"
 	"mime/multipart"
@@ -891,7 +890,6 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 	}{}
 
 	if err := c.BodyParser(body); err != nil {
-		log.Println(err)
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
 	}
 

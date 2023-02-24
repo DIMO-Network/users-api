@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"log"
 	"math/big"
 	"math/rand"
 	"mime/multipart"
@@ -874,6 +875,54 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 	}
 
 	return fiber.NewError(fiber.StatusBadRequest, "Unrecognized authentication provider.")
+}
+
+// SubmitReferralCode godoc
+// @Summary Takes the referral code, validates and stores it
+// @Success 200 {object} controllers.AlternateAccountsResponse
+// @Failure 400 {object} controllers.ErrorResponse
+// @Failure 500 {object} controllers.ErrorResponse
+// @Router /v1/user/use-referral-code [post]
+func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
+	userID := getUserID(c)
+
+	body := &struct {
+		ReferredBy string `json:"referredBy"`
+	}{}
+
+	if err := c.BodyParser(body); err != nil {
+		log.Println(err)
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+
+	if body.ReferredBy == "" || len(body.ReferredBy) != 6 {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
+	}
+
+	referrer, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(body.ReferredBy))).All(c.Context(), d.dbs.DBS().Reader)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+	}
+
+	if len(referrer) < 1 {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
+	}
+
+	user, err := d.getOrCreateUser(c, userID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+	}
+
+	if user.ReferredBy.String != "" {
+		return fiber.NewError(fiber.StatusInternalServerError, "user has been referred already")
+	}
+
+	user.ReferredBy = null.StringFrom(body.ReferredBy)
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	return c.JSON("Referrer code saved")
 }
 
 type AltAccount struct {

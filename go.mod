@@ -14,6 +14,7 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/pressly/goose/v3 v3.5.1
 	github.com/segmentio/ksuid v1.0.4
+	github.com/stretchr/testify v1.8.1
 	github.com/swaggo/swag v1.8.1
 	github.com/testcontainers/testcontainers-go v0.18.0
 	github.com/volatiletech/null/v8 v8.1.2
@@ -78,6 +79,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/opencontainers/runc v1.1.3 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.11.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.30.0 // indirect

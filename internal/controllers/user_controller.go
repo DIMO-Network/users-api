@@ -215,7 +215,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 				d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", ethereum)
 			}
 
-			referralCode, err := d.generateReferralCode(c.Context())
+			referralCode, err := d.generateReferralCode(c.Context(), nil)
 			if err != nil {
 				d.log.Error().Err(err).Msg("error occurred creating referral code for user")
 				return nil, errors.New("internal error")
@@ -643,11 +643,14 @@ type ConfirmEthereumRequest struct {
 	Signature string `json:"signature"`
 }
 
-func (d *UserController) generateReferralCode(ctx context.Context) (string, error) {
+func (d *UserController) generateReferralCode(ctx context.Context, maxDigit *big.Int) (string, error) {
+	if maxDigit == nil {
+		maxDigit = big.NewInt(10)
+	}
 	getCode := func() (string, error) {
 		res := ""
 		for i := 0; i < 6; i++ {
-			d, err := crypto_rand.Int(crypto_rand.Reader, big.NewInt(10))
+			d, err := crypto_rand.Int(crypto_rand.Reader, maxDigit)
 			if err != nil {
 				return "", err
 			}

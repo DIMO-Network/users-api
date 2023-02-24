@@ -19,6 +19,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/grpc"
@@ -199,4 +200,106 @@ func TestSubmitChallenge(t *testing.T) {
 	defer resp.Body.Close()
 
 	// Assert things about the body.
+}
+
+type testDependencies struct {
+	dbs       db.Store
+	logger    *zerolog.Logger
+	ctx       context.Context
+	assert    *assert.Assertions
+	container testcontainers.Container
+}
+
+func TestReferralCodeIsGenerated(t *testing.T) {
+	ctx := context.Background()
+
+	c := prepareTestDependencies(t, ctx)
+
+	defer c.container.Terminate(ctx) //nolint
+
+	uc := UserController{
+		dbs:             c.dbs,
+		log:             c.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	code, err := uc.generateReferralCode(ctx, nil)
+	c.assert.NoError(err)
+
+	c.assert.NotEmpty(code)
+}
+
+func TestReferralCodeIsGeneratedCorrectlyOnConstraint(t *testing.T) {
+	// We can limit max to 2
+	// Which will only generate btw 1 and 2
+	// and save all other combinations except 1, then check if that 1 is generated
+}
+
+func prepareTestDependencies(t *testing.T, ctx context.Context) testDependencies {
+	port := 5432
+	nport := fmt.Sprintf("%d/tcp", port)
+
+	req := testcontainers.ContainerRequest{
+		Image:        "postgres:12.11-alpine",
+		ExposedPorts: []string{nport},
+		AutoRemove:   true,
+		Env: map[string]string{
+			"POSTGRES_DB":       "users_api",
+			"POSTGRES_PASSWORD": "postgres",
+		},
+		WaitingFor: wait.ForListeningPort(nat.Port(nport)),
+	}
+	cont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// defer cont.Terminate(ctx) //nolint
+
+	logger := zerolog.Nop()
+
+	host, err := cont.Host(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mport, err := cont.MappedPort(ctx, nat.Port(nport))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dbset := db.Settings{
+		User:               "postgres",
+		Password:           "postgres",
+		Port:               mport.Port(),
+		Host:               host,
+		Name:               "users_api",
+		MaxOpenConnections: 10,
+		MaxIdleConnections: 10,
+	}
+
+	if err := database.MigrateDatabase(logger, &dbset, "", "../../migrations"); err != nil {
+		t.Fatal(err)
+	}
+
+	dbs := db.NewDbConnectionFromSettings(ctx, &dbset, true)
+	dbs.WaitForDB(logger)
+
+	assert := assert.New(t)
+
+	return testDependencies{
+		dbs:       dbs,
+		logger:    &logger,
+		ctx:       ctx,
+		assert:    assert,
+		container: cont,
+	}
 }

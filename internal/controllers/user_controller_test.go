@@ -236,6 +236,165 @@ func TestReferralCodeIsGenerated(t *testing.T) {
 	c.assert.Regexp(regexp.MustCompile(`^\d{6}$`), code)
 }
 
+func TestReferralCodeIsGeneratedForBlockchainUser(t *testing.T) {
+	ctx := context.Background()
+
+	c := prepareTestDependencies(t, ctx)
+
+	defer c.container.Terminate(ctx) //nolint
+
+	uc := UserController{
+		dbs:             c.dbs,
+		log:             c.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	app := fiber.New()
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id": "apple",
+			"sub":         "Cwbs",
+			"email":       "steve@apple.com",
+		}})
+		return c.Next()
+	})
+
+	privateKey, err := crypto.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	address := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	app.Get("/", uc.GetUser)
+	app.Put("/", uc.UpdateUser)
+	app.Post("/generate-challenge", uc.GenerateEthereumChallenge)
+	app.Post("/submit-challenge", uc.SubmitEthereumChallenge)
+
+	s := fmt.Sprintf(`{"web3": {"address": %q}}`, address)
+
+	r := httptest.NewRequest("PUT", "/", strings.NewReader(s))
+	r.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(r, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		t.Fatal(err)
+	}
+
+	r = httptest.NewRequest("POST", "/generate-challenge", nil)
+
+	resp, err = app.Test(r, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		t.Fatalf("Got status code %d when generating challenge", resp.StatusCode)
+	}
+
+	var chall struct{ Challenge string }
+	if err := json.NewDecoder(resp.Body).Decode(&chall); err != nil {
+		t.Fatal(err)
+	}
+
+	toSign := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(chall.Challenge), chall.Challenge)
+
+	hash := crypto.Keccak256([]byte(toSign))
+	sig, err := crypto.Sign(hash, privateKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sig[64] += 27
+
+	s = fmt.Sprintf(`{"signature": %q}`, hexutil.Encode(sig))
+
+	r = httptest.NewRequest("POST", "/submit-challenge", strings.NewReader(s))
+	r.Header.Set("Content-Type", "application/json")
+
+	resp, err = app.Test(r, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 204 {
+		t.Fatal("BAD")
+	}
+
+	r = httptest.NewRequest("GET", "/", nil)
+	resp, err = app.Test(r, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	var user UserResponse
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		t.Fatal(err)
+	}
+
+	c.assert.NotEmpty(user.ReferralCode)
+}
+
+func TestNoReferralCodeForNonBlockchainUser(t *testing.T) {
+	ctx := context.Background()
+
+	c := prepareTestDependencies(t, ctx)
+
+	defer c.container.Terminate(ctx) //nolint
+
+	uc := UserController{
+		dbs:             c.dbs,
+		log:             c.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	app := fiber.New()
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id": "google",
+			"sub":         "Cwbs",
+			"email":       "steve@gmail.com",
+		}})
+		return c.Next()
+	})
+
+	app.Get("/", uc.GetUser)
+
+	r := httptest.NewRequest("GET", "/", nil)
+	resp, err := app.Test(r, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	var user UserResponse
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		t.Fatal(err)
+	}
+
+	c.assert.Empty(user.ReferralCode)
+}
+
 func TestReferralCodeIsGeneratedCorrectlyOnConstraint(t *testing.T) {
 	// We can limit max to 2
 	// Which will only generate btw 1 and 2

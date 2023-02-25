@@ -214,7 +214,7 @@ type testDependencies struct {
 func TestReferralCodeIsGenerated(t *testing.T) {
 	ctx := context.Background()
 
-	c := prepareTestDependencies(t, ctx)
+	c := prepareTestDependencies(ctx, t)
 
 	defer c.container.Terminate(ctx) //nolint
 
@@ -239,7 +239,7 @@ func TestReferralCodeIsGenerated(t *testing.T) {
 func TestReferralCodeIsGeneratedForBlockchainUser(t *testing.T) {
 	ctx := context.Background()
 
-	c := prepareTestDependencies(t, ctx)
+	c := prepareTestDependencies(ctx, t)
 
 	defer c.container.Terminate(ctx) //nolint
 
@@ -352,7 +352,7 @@ func TestReferralCodeIsGeneratedForBlockchainUser(t *testing.T) {
 func TestNoReferralCodeForNonBlockchainUser(t *testing.T) {
 	ctx := context.Background()
 
-	c := prepareTestDependencies(t, ctx)
+	c := prepareTestDependencies(ctx, t)
 
 	defer c.container.Terminate(ctx) //nolint
 
@@ -395,7 +395,7 @@ func TestNoReferralCodeForNonBlockchainUser(t *testing.T) {
 	c.assert.Empty(user.ReferralCode)
 }
 
-func prepareTestDependencies(t *testing.T, ctx context.Context) testDependencies {
+func prepareTestDependencies(ctx context.Context, t *testing.T) testDependencies {
 	port := 5432
 	nport := fmt.Sprintf("%d/tcp", port)
 

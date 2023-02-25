@@ -127,6 +127,8 @@ type UserResponse struct {
 	CountryCode null.String `json:"countryCode" swaggertype:"string" example:"USA"`
 	// AgreedTosAt is the time at which the user last agreed to the terms of service.
 	AgreedTOSAt null.Time `json:"agreedTosAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
+	// ReferredBy is t he referral code for the user
+	ReferralCode null.String `json:"referralCode"`
 }
 
 func formatUser(user *models.User) *UserResponse {
@@ -143,9 +145,10 @@ func formatUser(user *models.User) *UserResponse {
 			ChallengeSentAt: user.EthereumChallengeSent,
 			InApp:           user.InAppWallet,
 		},
-		CreatedAt:   user.CreatedAt,
-		CountryCode: user.CountryCode,
-		AgreedTOSAt: user.AgreedTosAt,
+		CreatedAt:    user.CreatedAt,
+		CountryCode:  user.CountryCode,
+		AgreedTOSAt:  user.AgreedTosAt,
+		ReferralCode: user.ReferralCode,
 	}
 }
 
@@ -666,11 +669,11 @@ func (d *UserController) generateReferralCode(ctx context.Context, maxDigit *big
 			return "", err
 		}
 
-		count, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(code))).Count(ctx, d.dbs.DBS().Reader)
+		exists, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(code))).Exists(ctx, d.dbs.DBS().Reader)
 		if err != nil {
 			return "", err
 		}
-		if count < 1 {
+		if !exists {
 			return code, nil
 		}
 	}
@@ -741,6 +744,13 @@ func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "given address and recovered address do not match")
 	}
 
+	referralCode, err := d.generateReferralCode(c.Context(), nil)
+	if err != nil {
+		d.log.Error().Err(err).Msg("error occurred creating referral code for user")
+		return fiber.NewError(fiber.StatusInternalServerError, "internal error")
+	}
+
+	user.ReferralCode = null.StringFrom(referralCode)
 	user.EthereumConfirmed = true
 	user.EthereumChallengeSent = null.Time{}
 	user.EthereumChallenge = null.String{}

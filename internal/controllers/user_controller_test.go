@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -232,6 +233,7 @@ func TestReferralCodeIsGenerated(t *testing.T) {
 	c.assert.NoError(err)
 
 	c.assert.NotEmpty(code)
+	c.assert.Regexp(regexp.MustCompile(`^\d{6}$`), code)
 }
 
 func TestReferralCodeIsGeneratedCorrectlyOnConstraint(t *testing.T) {

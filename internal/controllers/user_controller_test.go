@@ -395,12 +395,6 @@ func TestNoReferralCodeForNonBlockchainUser(t *testing.T) {
 	c.assert.Empty(user.ReferralCode)
 }
 
-func TestReferralCodeIsGeneratedCorrectlyOnConstraint(t *testing.T) {
-	// We can limit max to 2
-	// Which will only generate btw 1 and 2
-	// and save all other combinations except 1, then check if that 1 is generated
-}
-
 func prepareTestDependencies(t *testing.T, ctx context.Context) testDependencies {
 	port := 5432
 	nport := fmt.Sprintf("%d/tcp", port)

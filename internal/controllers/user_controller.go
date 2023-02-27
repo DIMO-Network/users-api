@@ -59,6 +59,7 @@ type UserController struct {
 
 func NewUserController(settings *config.Settings, dbs db.Store, eventService services.EventService, logger *zerolog.Logger) UserController {
 	rand.Seed(time.Now().UnixNano())
+
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
 		panic(err)
@@ -149,16 +150,14 @@ func formatUser(user *models.User) *UserResponse {
 	}
 }
 
-func getStringClaim(claims jwt.MapClaims, key string) (value string, ok bool) {
-	if rawValue, ok := claims[key]; ok {
-		if value, ok := rawValue.(string); ok {
-			return value, true
-		}
-	}
-	return "", false
-}
-
 const UserCreationEventType = "com.dimo.zone.user.create"
+
+type DIMOClaims struct {
+	jwt.RegisteredClaims
+	ProviderID      string `json:"provider_id,omitempty"`
+	Email           string `json:"email,omitempty"`
+	EthereumAddress string `json:"ethereum_address,omitempty"`
+}
 
 type UserCreationEventData struct {
 	Timestamp time.Time `json:"timestamp"`
@@ -175,67 +174,52 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 
 	user, err = models.FindUser(c.Context(), tx, userID)
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
+		if err != sql.ErrNoRows {
 			return nil, err
 		}
 
 		// New user, generate a record
 		token := c.Locals("user").(*jwt.Token)
-		claims := token.Claims.(jwt.MapClaims)
+		claims := token.Claims.(DIMOClaims)
 
-		providerID, ok := getStringClaim(claims, "provider_id")
-		if !ok {
-			return nil, errors.New("no provider_id claim in ID token")
-		}
+		providerID := claims.ProviderID
 
 		user = &models.User{ID: userID, AuthProviderID: providerID}
 
 		switch providerID {
 		case "apple", "google":
-			email, ok := getStringClaim(claims, "email")
-			if !ok {
-				return nil, fmt.Errorf("provider %s but no email claim in ID token", providerID)
-			}
+			email := claims.Email
 			if !emailPattern.MatchString(email) {
-				return nil, fmt.Errorf("invalid email address %s", email)
+				return nil, fmt.Errorf("invalid email address %q", email)
 			}
 			user.EmailAddress = null.StringFrom(email)
 			user.EmailConfirmed = true
-			user.EthereumConfirmed = false
 		case "web3":
-			ethereum, ok := getStringClaim(claims, "ethereum_address")
-			if !ok {
-				return nil, fmt.Errorf("provider %s but no ethereum_address claim in ID token", providerID)
+			addr := claims.EthereumAddress
+			if !common.IsHexAddress(addr) {
+				return nil, fmt.Errorf("invalid ethereum address %q", addr)
 			}
-			mixAddr, err := common.NewMixedcaseAddressFromString(ethereum)
-			if err != nil {
-				return nil, fmt.Errorf("invalid ethereum_address %s", ethereum)
-			}
-			if !mixAddr.ValidChecksum() {
-				d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", ethereum)
-			}
-			user.EthereumAddress = null.StringFrom(mixAddr.Address().Hex())
+			user.EthereumAddress = null.StringFrom(common.HexToAddress(addr).Hex())
 			user.EthereumConfirmed = true
 		default:
-			return nil, fmt.Errorf("unrecognized provider_id %s", providerID)
+			return nil, fmt.Errorf("unrecognized provider id %q", providerID)
 		}
 
-		d.log.Info().Msgf("Creating new user with id %s, provider %s", userID, providerID)
+		d.log.Info().Str("userId", userID).Msgf("Creating new user with provider %s.")
 
 		if err := user.Insert(c.Context(), tx, boil.Infer()); err != nil {
 			return nil, err
 		}
 
-		msg := UserCreationEventData{
-			Timestamp: time.Now(),
-			UserID:    userID,
-			Method:    providerID,
-		}
 		err = d.eventService.Emit(&services.Event{
 			Type:    UserCreationEventType,
 			Subject: userID,
 			Source:  "users-api",
-			Data:    msg,
+			Data: UserCreationEventData{
+				Timestamp: time.Now(),
+				UserID:    userID,
+				Method:    providerID,
+			},
 		})
 		if err != nil {
 			d.log.Err(err).Msg("Failed sending user creation event")
@@ -765,110 +749,4 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
-}
-
-// CheckAccount godoc
-// @Summary Suggests to a user with an identity token other accounts that may also be theirs.
-// @Success 200 {object} controllers.AlternateAccountsResponse
-// @Failure 400 {object} controllers.ErrorResponse
-// @Failure 500 {object} controllers.ErrorResponse
-// @Router /v1/user/check-accounts [get]
-func (d *UserController) CheckAccount(c *fiber.Ctx) error {
-	token := c.Locals("user").(*jwt.Token)
-	claims := token.Claims.(jwt.MapClaims)
-
-	userID, ok := getStringClaim(claims, "sub")
-	if !ok {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid token, no sub claim.")
-	}
-
-	providerID, ok := getStringClaim(claims, "provider_id")
-	if !ok {
-		return fiber.NewError(fiber.StatusBadRequest, "Token lacks provider_id.")
-	}
-
-	switch providerID {
-	case "apple", "google":
-		email, ok := getStringClaim(claims, "email")
-		if !ok {
-			return fiber.NewError(fiber.StatusBadRequest, "No email in token.")
-		}
-		if !emailPattern.MatchString(email) {
-			return fiber.NewError(fiber.StatusBadRequest, "Invalid email.")
-		}
-
-		otherAccounts, err := models.Users(
-			models.UserWhere.ID.NEQ(userID),
-			models.UserWhere.EmailAddress.EQ(null.StringFrom(email)),
-			models.UserWhere.EmailConfirmed.EQ(true),
-		).All(c.Context(), d.dbs.DBS().Reader)
-		if err != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
-		}
-
-		return c.JSON(formatAlternateAccounts(otherAccounts))
-	case "web3":
-		ethereum, ok := getStringClaim(claims, "ethereum_address")
-		if !ok {
-			return fiber.NewError(fiber.StatusBadRequest, "Token lacks ethereum_address.")
-		}
-		mixAddr, err := common.NewMixedcaseAddressFromString(ethereum)
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, "Invalid ethereum_address.")
-		}
-		if !mixAddr.ValidChecksum() {
-			d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", ethereum)
-		}
-
-		otherAccounts, err := models.Users(
-			models.UserWhere.ID.NEQ(userID),
-			models.UserWhere.EthereumAddress.EQ(null.StringFrom(mixAddr.Address().Hex())),
-			models.UserWhere.EthereumConfirmed.EQ(true),
-		).All(c.Context(), d.dbs.DBS().Reader)
-		if err != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
-		}
-
-		return c.JSON(formatAlternateAccounts(otherAccounts))
-	}
-
-	return fiber.NewError(fiber.StatusBadRequest, "Unrecognized authentication provider.")
-}
-
-type AltAccount struct {
-	// Type is the authentication provider, one of "web3", "apple", "google".
-	Type string `json:"type"`
-	// Login is the login username for the provider, either an email address
-	// or an EIP-55-compliant ethereum address.
-	Login string `json:"login"`
-}
-
-type AlternateAccountsResponse struct {
-	// OtherAccounts is a list of any other accounts that share email or
-	// ethereum address with the provided token.
-	OtherAccounts []*AltAccount `json:"otherAccounts"`
-}
-
-func formatAlternateAccounts(users []*models.User) *AlternateAccountsResponse {
-	accs := []*AltAccount{}
-
-	for _, user := range users {
-		switch user.AuthProviderID {
-		case "apple", "google":
-			acc := &AltAccount{
-				Type:  user.AuthProviderID,
-				Login: user.EmailAddress.String,
-			}
-
-			accs = append(accs, acc)
-		case "web3":
-			acc := &AltAccount{
-				Type:  user.AuthProviderID,
-				Login: user.EthereumAddress.String,
-			}
-			accs = append(accs, acc)
-		}
-	}
-
-	return &AlternateAccountsResponse{OtherAccounts: accs}
 }

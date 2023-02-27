@@ -110,6 +110,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 
 	keyRefreshInterval := time.Hour
 	keyRefreshUnknownKID := true
+
 	v1User := app.Group("/v1/user", jwtware.New(jwtware.Config{
 		KeySetURL: settings.JWTKeySetURL,
 		KeyRefreshErrorHandler: func(j *jwtware.KeySet, err error) {
@@ -122,13 +123,13 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 		},
 		KeyRefreshInterval:   &keyRefreshInterval,
 		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
+		Claims:               controllers.DIMOClaims{},
 	}))
 
 	userController := controllers.NewUserController(settings, dbs, eventService, &logger)
 	v1User.Get("/", userController.GetUser)
 	v1User.Put("/", userController.UpdateUser)
 	v1User.Delete("/", userController.DeleteUser)
-	v1User.Get("/check-accounts", userController.CheckAccount)
 	v1User.Post("/agree-tos", userController.AgreeTOS)
 	v1User.Post("/send-confirmation-email", userController.SendConfirmationEmail)
 	v1User.Post("/confirm-email", userController.ConfirmEmail)

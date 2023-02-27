@@ -64,7 +64,6 @@ func (s *UserControllerTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.dbcont = dbcont
 
-	// defer cont.Terminate(ctx) //nolint
 	host, err := dbcont.Host(ctx)
 	s.Require().NoError(err)
 
@@ -91,7 +90,7 @@ func (s *UserControllerTestSuite) SetupSuite() {
 }
 
 func (s *UserControllerTestSuite) TearDownSuite() {
-	s.dbcont.Terminate(context.Background())
+	s.Require().NoError(s.dbcont.Terminate(context.Background()))
 }
 
 func (s *UserControllerTestSuite) TearDownTest() {

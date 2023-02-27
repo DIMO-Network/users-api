@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"log"
 	"math/big"
 	"math/rand"
 	"mime/multipart"
@@ -211,6 +212,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			if !ok {
 				return nil, fmt.Errorf("provider %s but no ethereum_address claim in ID token", providerID)
 			}
+
 			mixAddr, err := common.NewMixedcaseAddressFromString(ethereum)
 			if err != nil {
 				return nil, fmt.Errorf("invalid ethereum_address %s", ethereum)
@@ -860,6 +862,7 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 
 		return c.JSON(formatAlternateAccounts(otherAccounts))
 	case "web3":
+		log.Println("sssmskssssss")
 		ethereum, ok := getStringClaim(claims, "ethereum_address")
 		if !ok {
 			return fiber.NewError(fiber.StatusBadRequest, "Token lacks ethereum_address.")

@@ -75,6 +75,12 @@ definitions:
         description: ID is the user's DIMO-internal ID.
         example: ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl
         type: string
+      referralCode:
+        description: |-
+          ReferralCode is the user's referral code to be given to others. It is a 6 digit numeric code,
+          only present if the account has a confirmed Ethereum address.
+        example: "883163"
+        type: string
       web3:
         allOf:
         - $ref: '#/definitions/controllers.UserResponseWeb3'

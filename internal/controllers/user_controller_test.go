@@ -14,17 +14,90 @@ import (
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
+	"github.com/DIMO-Network/users-api/models"
 	"github.com/docker/go-connections/nat"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/grpc"
 )
+
+type UserControllerTestSuite struct {
+	suite.Suite
+	dbcont testcontainers.Container
+	dbs    db.Store
+	logger *zerolog.Logger
+}
+
+func TestUserControllerSuite(t *testing.T) {
+	suite.Run(t, &UserControllerTestSuite{})
+}
+
+func (s *UserControllerTestSuite) SetupSuite() {
+	ctx := context.Background()
+
+	logger := zerolog.Nop()
+	s.logger = &logger
+
+	port := 5432
+	nport := fmt.Sprintf("%d/tcp", port)
+
+	req := testcontainers.ContainerRequest{
+		Image:        "postgres:12.11-alpine",
+		ExposedPorts: []string{nport},
+		AutoRemove:   true,
+		Env: map[string]string{
+			"POSTGRES_DB":       "users_api",
+			"POSTGRES_PASSWORD": "postgres",
+		},
+		WaitingFor: wait.ForListeningPort(nat.Port(nport)),
+	}
+	dbcont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	s.Require().NoError(err)
+	s.dbcont = dbcont
+
+	// defer cont.Terminate(ctx) //nolint
+	host, err := dbcont.Host(ctx)
+	s.Require().NoError(err)
+
+	mport, err := dbcont.MappedPort(ctx, nat.Port(nport))
+	s.Require().NoError(err)
+
+	dbset := db.Settings{
+		User:               "postgres",
+		Password:           "postgres",
+		Port:               mport.Port(),
+		Host:               host,
+		Name:               "users_api",
+		MaxOpenConnections: 10,
+		MaxIdleConnections: 10,
+	}
+
+	err = database.MigrateDatabase(logger, &dbset, "", "../../migrations")
+	s.Require().NoError(err)
+
+	dbs := db.NewDbConnectionFromSettings(ctx, &dbset, true)
+	dbs.WaitForDB(logger)
+
+	s.dbs = dbs
+}
+
+func (s *UserControllerTestSuite) TearDownSuite() {
+	s.dbcont.Terminate(context.Background())
+}
+
+func (s *UserControllerTestSuite) TearDownTest() {
+	_, err := models.Users().DeleteAll(context.Background(), s.dbs.DBS().Writer)
+	s.Require().NoError(err)
+}
 
 type es struct{}
 
@@ -47,64 +120,10 @@ func (c *adsc) ListAftermarketDevicesForUser(ctx context.Context, in *pb.ListAft
 	return &pb.ListAftermarketDevicesForUserResponse{AftermarketDevices: []*pb.AftermarketDevice{}}, nil
 }
 
-func TestSubmitChallenge(t *testing.T) {
-	ctx := context.Background()
-
-	port := 5432
-	nport := fmt.Sprintf("%d/tcp", port)
-
-	req := testcontainers.ContainerRequest{
-		Image:        "postgres:12.11-alpine",
-		ExposedPorts: []string{nport},
-		AutoRemove:   true,
-		Env: map[string]string{
-			"POSTGRES_DB":       "users_api",
-			"POSTGRES_PASSWORD": "postgres",
-		},
-		WaitingFor: wait.ForListeningPort(nat.Port(nport)),
-	}
-	cont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer cont.Terminate(ctx) //nolint
-
-	logger := zerolog.Nop()
-
-	host, err := cont.Host(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	mport, err := cont.MappedPort(ctx, nat.Port(nport))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	dbset := db.Settings{
-		User:               "postgres",
-		Password:           "postgres",
-		Port:               mport.Port(),
-		Host:               host,
-		Name:               "users_api",
-		MaxOpenConnections: 10,
-		MaxIdleConnections: 10,
-	}
-
-	if err := database.MigrateDatabase(logger, &dbset, "", "../../migrations"); err != nil {
-		t.Fatal(err)
-	}
-
-	dbs := db.NewDbConnectionFromSettings(ctx, &dbset, true)
-	dbs.WaitForDB(logger)
-
+func (s *UserControllerTestSuite) TestSubmitChallenge() {
 	uc := UserController{
-		dbs:             dbs,
-		log:             &logger,
+		dbs:             s.dbs,
+		log:             s.logger,
 		allowedLateness: 5 * time.Minute,
 		countryCodes:    []string{"USA", "CAN"},
 		emailTemplate:   nil,
@@ -125,9 +144,7 @@ func TestSubmitChallenge(t *testing.T) {
 	})
 
 	privateKey, err := crypto.GenerateKey()
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
 
 	address := crypto.PubkeyToAddress(privateKey.PublicKey)
 
@@ -136,91 +153,62 @@ func TestSubmitChallenge(t *testing.T) {
 	app.Post("/generate-challenge", uc.GenerateEthereumChallenge)
 	app.Post("/submit-challenge", uc.SubmitEthereumChallenge)
 
-	s := fmt.Sprintf(`{"web3": {"address": %q}}`, address)
+	req := fmt.Sprintf(`{"web3": {"address": %q}}`, address)
 
-	r := httptest.NewRequest("PUT", "/", strings.NewReader(s))
+	r := httptest.NewRequest("PUT", "/", strings.NewReader(req))
 	r.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(r, -1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		t.Fatal(err)
-	}
+	s.Require().Equal(200, resp.StatusCode)
 
 	r = httptest.NewRequest("POST", "/generate-challenge", nil)
 
 	resp, err = app.Test(r, -1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		t.Fatalf("Got status code %d when generating challenge", resp.StatusCode)
-	}
+	s.Require().Equal(200, resp.StatusCode)
 
 	var chall struct{ Challenge string }
-	if err := json.NewDecoder(resp.Body).Decode(&chall); err != nil {
-		t.Fatal(err)
-	}
+	err = json.NewDecoder(resp.Body).Decode(&chall)
+	s.Require().NoError(err)
 
 	toSign := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(chall.Challenge), chall.Challenge)
 
 	hash := crypto.Keccak256([]byte(toSign))
 	sig, err := crypto.Sign(hash, privateKey)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
 
 	sig[64] += 27
 
-	s = fmt.Sprintf(`{"signature": %q}`, hexutil.Encode(sig))
+	req = fmt.Sprintf(`{"signature": %q}`, hexutil.Encode(sig))
 
-	r = httptest.NewRequest("POST", "/submit-challenge", strings.NewReader(s))
+	r = httptest.NewRequest("POST", "/submit-challenge", strings.NewReader(req))
 	r.Header.Set("Content-Type", "application/json")
 
 	resp, err = app.Test(r, -1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
+
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 204 {
-		t.Fatal("BAD")
-	}
+	s.Require().Equal(204, resp.StatusCode)
 
 	r = httptest.NewRequest("GET", "/", nil)
 	resp, err = app.Test(r, -1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
+
 	defer resp.Body.Close()
-
-	// Assert things about the body.
 }
 
-type testDependencies struct {
-	dbs       db.Store
-	logger    *zerolog.Logger
-	ctx       context.Context
-	assert    *assert.Assertions
-	container testcontainers.Container
-}
-
-func TestReferralCodeIsGenerated(t *testing.T) {
+func (s *UserControllerTestSuite) TestGenerateReferralCode() {
 	ctx := context.Background()
 
-	c := prepareTestDependencies(ctx, t)
-
-	defer c.container.Terminate(ctx) //nolint
-
 	uc := UserController{
-		dbs:             c.dbs,
-		log:             c.logger,
+		dbs:             s.dbs,
+		log:             s.logger,
 		allowedLateness: 5 * time.Minute,
 		countryCodes:    []string{"USA", "CAN"},
 		emailTemplate:   nil,
@@ -230,22 +218,15 @@ func TestReferralCodeIsGenerated(t *testing.T) {
 	}
 
 	code, err := uc.generateReferralCode(ctx, nil)
-	c.assert.NoError(err)
+	s.NoError(err)
 
-	c.assert.NotEmpty(code)
-	c.assert.Regexp(regexp.MustCompile(`^\d{6}$`), code)
+	s.Regexp(regexp.MustCompile(`^\d{6}$`), code)
 }
 
-func TestReferralCodeIsGeneratedForBlockchainUser(t *testing.T) {
-	ctx := context.Background()
-
-	c := prepareTestDependencies(ctx, t)
-
-	defer c.container.Terminate(ctx) //nolint
-
+func (s *UserControllerTestSuite) TestConfirmingAddressGeneratesReferralCode() {
 	uc := UserController{
-		dbs:             c.dbs,
-		log:             c.logger,
+		dbs:             s.dbs,
+		log:             s.logger,
 		allowedLateness: 5 * time.Minute,
 		countryCodes:    []string{"USA", "CAN"},
 		emailTemplate:   nil,
@@ -266,9 +247,7 @@ func TestReferralCodeIsGeneratedForBlockchainUser(t *testing.T) {
 	})
 
 	privateKey, err := crypto.GenerateKey()
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
 
 	address := crypto.PubkeyToAddress(privateKey.PublicKey)
 
@@ -277,88 +256,68 @@ func TestReferralCodeIsGeneratedForBlockchainUser(t *testing.T) {
 	app.Post("/generate-challenge", uc.GenerateEthereumChallenge)
 	app.Post("/submit-challenge", uc.SubmitEthereumChallenge)
 
-	s := fmt.Sprintf(`{"web3": {"address": %q}}`, address)
+	req := fmt.Sprintf(`{"web3": {"address": %q}}`, address)
 
-	r := httptest.NewRequest("PUT", "/", strings.NewReader(s))
+	r := httptest.NewRequest("PUT", "/", strings.NewReader(req))
 	r.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(r, -1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
+
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		t.Fatal(err)
-	}
+	s.Require().Equal(200, resp.StatusCode)
 
 	r = httptest.NewRequest("POST", "/generate-challenge", nil)
 
 	resp, err = app.Test(r, -1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
+
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		t.Fatalf("Got status code %d when generating challenge", resp.StatusCode)
-	}
+	s.Require().Equal(200, resp.StatusCode)
 
 	var chall struct{ Challenge string }
-	if err := json.NewDecoder(resp.Body).Decode(&chall); err != nil {
-		t.Fatal(err)
-	}
+	err = json.NewDecoder(resp.Body).Decode(&chall)
+	s.Require().NoError(err)
 
 	toSign := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(chall.Challenge), chall.Challenge)
 
 	hash := crypto.Keccak256([]byte(toSign))
 	sig, err := crypto.Sign(hash, privateKey)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
 
 	sig[64] += 27
 
-	s = fmt.Sprintf(`{"signature": %q}`, hexutil.Encode(sig))
+	req = fmt.Sprintf(`{"signature": %q}`, hexutil.Encode(sig))
 
-	r = httptest.NewRequest("POST", "/submit-challenge", strings.NewReader(s))
+	r = httptest.NewRequest("POST", "/submit-challenge", strings.NewReader(req))
 	r.Header.Set("Content-Type", "application/json")
 
 	resp, err = app.Test(r, -1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
+
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 204 {
-		t.Fatal("BAD")
-	}
+	s.Require().Equal(204, resp.StatusCode)
 
 	r = httptest.NewRequest("GET", "/", nil)
 	resp, err = app.Test(r, -1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
+
 	defer resp.Body.Close()
 
 	var user UserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-		t.Fatal(err)
-	}
+	err = json.NewDecoder(resp.Body).Decode(&user)
+	s.Require().NoError(err)
 
-	c.assert.NotEmpty(user.ReferralCode)
+	s.NotEmpty(user.ReferralCode)
 }
 
-func TestNoReferralCodeForNonBlockchainUser(t *testing.T) {
-	ctx := context.Background()
-
-	c := prepareTestDependencies(ctx, t)
-
-	defer c.container.Terminate(ctx) //nolint
-
+func (s *UserControllerTestSuite) TestNoReferralCodeWithoutEthereumAddress() {
 	uc := UserController{
-		dbs:             c.dbs,
-		log:             c.logger,
+		dbs:             s.dbs,
+		log:             s.logger,
 		allowedLateness: 5 * time.Minute,
 		countryCodes:    []string{"USA", "CAN"},
 		emailTemplate:   nil,
@@ -382,79 +341,13 @@ func TestNoReferralCodeForNonBlockchainUser(t *testing.T) {
 
 	r := httptest.NewRequest("GET", "/", nil)
 	resp, err := app.Test(r, -1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s.Require().NoError(err)
+
 	defer resp.Body.Close()
 
 	var user UserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-		t.Fatal(err)
-	}
+	err = json.NewDecoder(resp.Body).Decode(&user)
+	s.Require().NoError(err)
 
-	c.assert.Empty(user.ReferralCode)
-}
-
-func prepareTestDependencies(ctx context.Context, t *testing.T) testDependencies {
-	port := 5432
-	nport := fmt.Sprintf("%d/tcp", port)
-
-	req := testcontainers.ContainerRequest{
-		Image:        "postgres:12.11-alpine",
-		ExposedPorts: []string{nport},
-		AutoRemove:   true,
-		Env: map[string]string{
-			"POSTGRES_DB":       "users_api",
-			"POSTGRES_PASSWORD": "postgres",
-		},
-		WaitingFor: wait.ForListeningPort(nat.Port(nport)),
-	}
-	cont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// defer cont.Terminate(ctx) //nolint
-
-	logger := zerolog.Nop()
-
-	host, err := cont.Host(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	mport, err := cont.MappedPort(ctx, nat.Port(nport))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	dbset := db.Settings{
-		User:               "postgres",
-		Password:           "postgres",
-		Port:               mport.Port(),
-		Host:               host,
-		Name:               "users_api",
-		MaxOpenConnections: 10,
-		MaxIdleConnections: 10,
-	}
-
-	if err := database.MigrateDatabase(logger, &dbset, "", "../../migrations"); err != nil {
-		t.Fatal(err)
-	}
-
-	dbs := db.NewDbConnectionFromSettings(ctx, &dbset, true)
-	dbs.WaitForDB(logger)
-
-	assert := assert.New(t)
-
-	return testDependencies{
-		dbs:       dbs,
-		logger:    &logger,
-		ctx:       ctx,
-		assert:    assert,
-		container: cont,
-	}
+	s.Empty(user.ReferralCode)
 }

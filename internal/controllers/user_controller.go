@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"log"
 	"math/big"
 	"math/rand"
 	"mime/multipart"
@@ -862,7 +861,6 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 
 		return c.JSON(formatAlternateAccounts(otherAccounts))
 	case "web3":
-		log.Println("sssmskssssss")
 		ethereum, ok := getStringClaim(claims, "ethereum_address")
 		if !ok {
 			return fiber.NewError(fiber.StatusBadRequest, "Token lacks ethereum_address.")

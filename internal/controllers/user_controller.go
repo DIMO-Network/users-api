@@ -135,8 +135,7 @@ type UserResponse struct {
 }
 
 type SubmitReferralCodeRequest struct {
-	// Signature is the result of signing the provided challenge message using the address in
-	// question.
+	// ReferralCode is the 6-digit, numeric referral code from another user.
 	ReferralCode string `json:"referralCode" example:"52140"`
 }
 

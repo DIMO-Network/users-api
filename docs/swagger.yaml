@@ -332,6 +332,7 @@ paths:
       - description: Specifies referralCode of the referring user
         in: body
         name: submitReferralCodeRequest
+        required: true
         schema:
           $ref: '#/definitions/controllers.SubmitReferralCodeRequest'
       responses:

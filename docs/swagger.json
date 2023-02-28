@@ -231,6 +231,7 @@
                         "description": "Specifies referralCode of the referring user",
                         "name": "submitReferralCodeRequest",
                         "in": "body",
+                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/controllers.SubmitReferralCodeRequest"
                         }

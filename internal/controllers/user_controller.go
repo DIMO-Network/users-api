@@ -45,6 +45,8 @@ var rawCountryCodes []byte
 //go:embed confirmation_email.html
 var rawConfirmationEmail string
 
+var referralCodeRegex = regexp.MustCompile(`^\d{6}$`)
+
 type UserController struct {
 	Settings        *config.Settings
 	dbs             db.Store
@@ -135,7 +137,7 @@ type UserResponse struct {
 type SubmitReferralCodeRequest struct {
 	// Signature is the result of signing the provided challenge message using the address in
 	// question.
-	ReferrealCode string `json:"referralCode"`
+	ReferralCode string `json:"referralCode"`
 }
 
 type SubmitReferralCodeResponse struct {
@@ -900,7 +902,7 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 
 // SubmitReferralCode godoc
 // @Summary Takes the referral code, validates and stores it'
-// @Param submitReferralCodeRequest body controllers.SubmitReferralCodeRequest referralCode "Specifies referralCode of the referring user"
+// @Param submitReferralCodeRequest body controllers.SubmitReferralCodeRequest true "Specifies referralCode of the referring user"
 // @Success 200 {object} controllers.SubmitReferralCodeResponse
 // @Failure 400 {object} controllers.ErrorResponse
 // @Failure 500 {object} controllers.ErrorResponse
@@ -918,22 +920,21 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
 	}
 
-	r := regexp.MustCompile(`^\d{6}$`)
-
-	if !r.Match([]byte(body.ReferrealCode)) {
+	if !referralCodeRegex.MatchString(body.ReferralCode) {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
 	}
 
-	referrer, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(body.ReferrealCode))).One(c.Context(), d.dbs.DBS().Reader)
+	exists, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(body.ReferralCode))).Exists(c.Context(), d.dbs.DBS().Reader)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
-		}
 		d.log.Err(err).Msg("Could not save referral code")
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 
-	if referrer.ReferralCode == user.ReferralCode {
+	if !exists {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
+	}
+
+	if null.StringFrom(body.ReferralCode) == user.ReferralCode {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
 	}
 
@@ -941,7 +942,7 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "user has been referred already")
 	}
 
-	user.ReferredBy = null.StringFrom(body.ReferrealCode)
+	user.ReferredBy = null.StringFrom(body.ReferralCode)
 	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		d.log.Err(err).Msg("Could not save referral code")
 		return fiber.NewError(fiber.StatusInternalServerError, "error occurred completing referral code verification")

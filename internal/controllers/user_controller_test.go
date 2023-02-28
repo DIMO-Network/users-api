@@ -111,6 +111,7 @@ type udsc struct{}
 func (c *udsc) GetUserDevice(ctx context.Context, in *pb.GetUserDeviceRequest, opts ...grpc.CallOption) (*pb.UserDevice, error) {
 	return nil, nil
 }
+
 func (c *udsc) ListUserDevicesForUser(ctx context.Context, in *pb.ListUserDevicesForUserRequest, opts ...grpc.CallOption) (*pb.ListUserDevicesForUserResponse, error) {
 	return &pb.ListUserDevicesForUserResponse{UserDevices: []*pb.UserDevice{}}, nil
 }

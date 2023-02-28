@@ -8,7 +8,9 @@ import (
 	pb "github.com/DIMO-Network/shared/api/users"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/models"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog"
+	"github.com/volatiletech/null/v8"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -32,14 +34,32 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 		s.logger.Err(err).Str("userId", req.Id).Msg("Database failure retrieving user.")
 		return nil, status.Error(codes.Internal, "Internal error.")
 	}
-	pbDevice := &pb.User{
+
+	pbUser := &pb.User{
 		Id: dbUser.ID,
 	}
+
 	if dbUser.EthereumConfirmed {
-		pbDevice.EthereumAddress = dbUser.EthereumAddress.Ptr()
+		pbUser.EthereumAddress = dbUser.EthereumAddress.Ptr()
 	}
+
 	if dbUser.EmailConfirmed {
-		pbDevice.EmailAddress = dbUser.EmailAddress.Ptr()
+		pbUser.EmailAddress = dbUser.EmailAddress.Ptr()
 	}
-	return pbDevice, nil
+
+	if dbUser.ReferredBy.Valid {
+		referrer, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(dbUser.ReferredBy.String))).One(ctx, s.dbs.DBS().Reader)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				return nil, status.Error(codes.Internal, "Internal error.")
+			}
+		} else if referrer.EthereumConfirmed {
+			// This should always be the case.
+			pbUser.ReferredBy = &pb.UserReferrer{
+				EthereumAddress: common.FromHex(referrer.EthereumAddress.String),
+			}
+		}
+	}
+
+	return pbUser, nil
 }

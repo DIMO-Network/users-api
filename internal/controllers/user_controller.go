@@ -55,8 +55,12 @@ type UserController struct {
 	countryCodes    []string
 	emailTemplate   *template.Template
 	eventService    services.EventService
-	devicesClient   pb.UserDeviceServiceClient
+	devicesClient   DevicesAPI
 	amClient        pb.AftermarketDeviceServiceClient
+}
+
+type DevicesAPI interface {
+	ListUserDevicesForUser(ctx context.Context, in *pb.ListUserDevicesForUserRequest, opts ...grpc.CallOption) (*pb.ListUserDevicesForUserResponse, error)
 }
 
 func NewUserController(settings *config.Settings, dbs db.Store, eventService services.EventService, logger *zerolog.Logger) UserController {

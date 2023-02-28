@@ -54,9 +54,9 @@ definitions:
   controllers.SubmitReferralCodeRequest:
     properties:
       referralCode:
-        description: |-
-          Signature is the result of signing the provided challenge message using the address in
-          question.
+        description: ReferralCode is the 6-digit, numeric referral code from another
+          user.
+        example: "52140"
         type: string
     type: object
   controllers.SubmitReferralCodeResponse:
@@ -329,7 +329,8 @@ paths:
   /v1/user/submit-referral-code:
     post:
       parameters:
-      - description: Specifies referralCode of the referring user
+      - description: ReferralCode is the 6-digit, numeric referral code from another
+          user.
         in: body
         name: submitReferralCodeRequest
         required: true
@@ -348,7 +349,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
-      summary: Takes the referral code, validates and stores it'
+      summary: Takes the referral code, validates and stores it
   /v1/user/web3/challenge/generate:
     post:
       responses:

@@ -225,10 +225,10 @@
         },
         "/v1/user/submit-referral-code": {
             "post": {
-                "summary": "Takes the referral code, validates and stores it'",
+                "summary": "Takes the referral code, validates and stores it",
                 "parameters": [
                     {
-                        "description": "Specifies referralCode of the referring user",
+                        "description": "ReferralCode is the 6-digit, numeric referral code from another user.",
                         "name": "submitReferralCodeRequest",
                         "in": "body",
                         "required": true,
@@ -388,8 +388,9 @@
             "type": "object",
             "properties": {
                 "referralCode": {
-                    "description": "Signature is the result of signing the provided challenge message using the address in\nquestion.",
-                    "type": "string"
+                    "description": "ReferralCode is the 6-digit, numeric referral code from another user.",
+                    "type": "string",
+                    "example": "52140"
                 }
             }
         },

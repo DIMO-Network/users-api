@@ -1,19 +1,21 @@
 -- +goose Up
 -- +goose StatementBegin
+SELECT 'up SQL query';
+
 SET search_path TO users_api, public;
 
 ALTER TABLE users_api.users 
-    ADD COLUMN referral_code CHAR(12),
-    ADD COLUMN referred_by CHAR(12);
-
-ALTER TABLE users_api.users ADD CONSTRAINT users_referral_code_key UNIQUE (referral_code);
+    ALTER COLUMN referral_code TYPE varchar(12),
+    ALTER COLUMN referred_by TYPE varchar(12);
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
+SELECT 'down SQL query';
+
 SET search_path TO users_api, public;
 
 ALTER TABLE users_api.users 
-    DROP COLUMN referral_code,
-    DROP COLUMN referred_by;
+    ALTER COLUMN referral_code TYPE CHAR(6),
+    ALTER COLUMN referred_by TYPE CHAR(6);
 -- +goose StatementEnd

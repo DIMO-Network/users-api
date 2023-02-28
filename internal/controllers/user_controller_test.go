@@ -312,7 +312,7 @@ func (s *UserControllerTestSuite) TestConfirmingAddressGeneratesReferralCode() {
 	err = json.NewDecoder(resp.Body).Decode(&user)
 	s.Require().NoError(err)
 
-	s.NotEmpty(user.ReferralCode)
+	s.Regexp(`^\d{6}$`, user.ReferralCode.String)
 }
 
 func (s *UserControllerTestSuite) TestNoReferralCodeWithoutEthereumAddress() {
@@ -394,7 +394,7 @@ func (s *UserControllerTestSuite) TestReferralCodeGeneratedOnWeb3Provider() {
 	err = json.NewDecoder(resp.Body).Decode(&user)
 	s.Require().NoError(err)
 
-	s.NotEmpty(user.ReferralCode)
+	s.Regexp(`^\d{6}$`, user.ReferralCode.String)
 }
 
 func (s *UserControllerTestSuite) TestSubmitReferralCode() {

@@ -24,6 +24,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"google.golang.org/grpc"
 )
 
@@ -310,7 +312,7 @@ func (s *UserControllerTestSuite) TestConfirmingAddressGeneratesReferralCode() {
 	err = json.NewDecoder(resp.Body).Decode(&user)
 	s.Require().NoError(err)
 
-	s.NotEmpty(user.ReferralCode)
+	s.Regexp(`^\d{6}$`, user.ReferralCode.String)
 }
 
 func (s *UserControllerTestSuite) TestNoReferralCodeWithoutEthereumAddress() {
@@ -392,5 +394,290 @@ func (s *UserControllerTestSuite) TestReferralCodeGeneratedOnWeb3Provider() {
 	err = json.NewDecoder(resp.Body).Decode(&user)
 	s.Require().NoError(err)
 
-	s.NotEmpty(user.ReferralCode)
+	s.Regexp(`^\d{6}$`, user.ReferralCode.String)
+}
+
+func (s *UserControllerTestSuite) TestSubmitReferralCode() {
+	ctx := context.Background()
+
+	uc := UserController{
+		dbs:             s.dbs,
+		log:             s.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	app := fiber.New()
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id": "google",
+			"sub":         "Cwbss",
+			"email":       "steve@web3.com",
+		}})
+		return c.Next()
+	})
+
+	app.Post("/submit-referral-code", uc.SubmitReferralCode)
+
+	nu := models.User{
+		ID:             "SomeID",
+		EmailConfirmed: true,
+		CreatedAt:      time.Now(),
+		ReferralCode:   null.StringFrom("123456"),
+	}
+
+	err := nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	req := `{"referralCode": "123456"}`
+
+	r := httptest.NewRequest("POST", "/submit-referral-code", strings.NewReader(req))
+	r.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(r, -1)
+	s.Require().NoError(err)
+
+	defer resp.Body.Close()
+
+	eResp := SubmitReferralCodeResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&eResp)
+	s.Require().NoError(err)
+
+	s.Require().Equal(200, resp.StatusCode)
+
+	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
+	s.Require().NoError(err)
+
+	s.Require().Equal(null.StringFrom("123456"), user.ReferredBy)
+}
+
+func (s *UserControllerTestSuite) TestUserCannotRecommendSelf() {
+	ctx := context.Background()
+
+	uc := UserController{
+		dbs:             s.dbs,
+		log:             s.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	app := fiber.New()
+
+	mockRefCode := "123456"
+
+	nu := models.User{
+		ID:             "Cwbss",
+		EmailAddress:   null.StringFrom("steve@web3.com"),
+		EmailConfirmed: true,
+		CreatedAt:      time.Now(),
+		ReferralCode:   null.StringFrom(mockRefCode),
+	}
+
+	err := nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id": "google",
+			"sub":         "Cwbss",
+			"email":       "steve@web3.com",
+		}})
+		return c.Next()
+	})
+
+	app.Post("/submit-referral-code", uc.SubmitReferralCode)
+
+	req := fmt.Sprintf(`{"referralCode": %q}`, mockRefCode)
+
+	r := httptest.NewRequest("POST", "/submit-referral-code", strings.NewReader(req))
+	r.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(r, -1)
+	s.Require().NoError(err)
+
+	defer resp.Body.Close()
+
+	eResp := SubmitReferralCodeResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&eResp)
+	s.Require().Error(err)
+
+	s.Require().Equal(400, resp.StatusCode)
+
+	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
+	s.Require().NoError(err)
+
+	s.Require().Empty(user.ReferredBy)
+}
+
+func (s *UserControllerTestSuite) TestFailureOnReferralCodeNotExist() {
+	ctx := context.Background()
+
+	uc := UserController{
+		dbs:             s.dbs,
+		log:             s.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	app := fiber.New()
+
+	mockRefCode := "123456"
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id": "google",
+			"sub":         "Cwbss",
+			"email":       "steve@web3.com",
+		}})
+		return c.Next()
+	})
+
+	app.Post("/submit-referral-code", uc.SubmitReferralCode)
+
+	req := fmt.Sprintf(`{"referralCode": %q}`, mockRefCode)
+
+	r := httptest.NewRequest("POST", "/submit-referral-code", strings.NewReader(req))
+	r.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(r, -1)
+	s.Require().NoError(err)
+
+	defer resp.Body.Close()
+
+	eResp := SubmitReferralCodeResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&eResp)
+	s.Require().Error(err)
+
+	s.Require().Equal(400, resp.StatusCode)
+
+	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
+	s.Require().NoError(err)
+
+	s.Require().Empty(user.ReferredBy)
+}
+
+func (s *UserControllerTestSuite) TestFailureOnInvalidReferralCode() {
+	ctx := context.Background()
+
+	uc := UserController{
+		dbs:             s.dbs,
+		log:             s.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	app := fiber.New()
+
+	mockRefCode := "1234"
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id": "google",
+			"sub":         "Cwbss",
+			"email":       "steve@web3.com",
+		}})
+		return c.Next()
+	})
+
+	app.Post("/submit-referral-code", uc.SubmitReferralCode)
+
+	req := fmt.Sprintf(`{"referralCode": %q}`, mockRefCode)
+
+	r := httptest.NewRequest("POST", "/submit-referral-code", strings.NewReader(req))
+	r.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(r, -1)
+	s.Require().NoError(err)
+
+	defer resp.Body.Close()
+
+	eResp := SubmitReferralCodeResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&eResp)
+	s.Require().Error(err)
+
+	s.Require().Equal(400, resp.StatusCode)
+
+	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
+	s.Require().NoError(err)
+
+	s.Require().Empty(user.ReferredBy)
+}
+
+func (s *UserControllerTestSuite) TestFailureOnUserAlreadyReferred() {
+	ctx := context.Background()
+
+	uc := UserController{
+		dbs:             s.dbs,
+		log:             s.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	app := fiber.New()
+
+	mockRefCode := "789102"
+
+	nu := models.User{
+		ID:             "Cwbss",
+		EmailAddress:   null.StringFrom("steve@web3.com"),
+		EmailConfirmed: true,
+		CreatedAt:      time.Now(),
+		ReferredBy:     null.StringFrom(mockRefCode),
+	}
+
+	err := nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id": "google",
+			"sub":         "Cwbss",
+			"email":       "steve@web3.com",
+		}})
+		return c.Next()
+	})
+
+	app.Post("/submit-referral-code", uc.SubmitReferralCode)
+
+	req := fmt.Sprintf(`{"referralCode": %q}`, "123456")
+
+	r := httptest.NewRequest("POST", "/submit-referral-code", strings.NewReader(req))
+	r.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(r, -1)
+	s.Require().NoError(err)
+
+	defer resp.Body.Close()
+
+	eResp := SubmitReferralCodeResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&eResp)
+	s.Require().Error(err)
+
+	s.Require().Equal(400, resp.StatusCode)
+
+	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
+	s.Require().NoError(err)
+
+	s.Require().Equal(user.ReferredBy, null.StringFrom(mockRefCode))
 }

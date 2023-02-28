@@ -901,7 +901,7 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 }
 
 // SubmitReferralCode godoc
-// @Summary Takes the referral code, validates and stores it'
+// @Summary Takes the referral code, validates and stores it
 // @Param submitReferralCodeRequest body controllers.SubmitReferralCodeRequest true "Specifies referralCode of the referring user"
 // @Success 200 {object} controllers.SubmitReferralCodeResponse
 // @Failure 400 {object} controllers.ErrorResponse

@@ -51,6 +51,19 @@ definitions:
       errorMessage:
         type: string
     type: object
+  controllers.SubmitReferralCodeRequest:
+    properties:
+      referralCode:
+        description: |-
+          Signature is the result of signing the provided challenge message using the address in
+          question.
+        type: string
+    type: object
+  controllers.SubmitReferralCodeResponse:
+    properties:
+      message:
+        type: string
+    type: object
   controllers.UserResponse:
     properties:
       agreedTosAt:
@@ -313,6 +326,28 @@ paths:
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
       summary: Send a confirmation email to the authenticated user
+  /v1/user/submit-referral-code:
+    post:
+      parameters:
+      - description: Specifies referralCode of the referring user
+        in: body
+        name: submitReferralCodeRequest
+        schema:
+          $ref: '#/definitions/controllers.SubmitReferralCodeRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.SubmitReferralCodeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Takes the referral code, validates and stores it'
   /v1/user/web3/challenge/generate:
     post:
       responses:

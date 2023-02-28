@@ -223,6 +223,41 @@
                 }
             }
         },
+        "/v1/user/submit-referral-code": {
+            "post": {
+                "summary": "Takes the referral code, validates and stores it'",
+                "parameters": [
+                    {
+                        "description": "Specifies referralCode of the referring user",
+                        "name": "submitReferralCodeRequest",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.SubmitReferralCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.SubmitReferralCodeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/user/web3/challenge/generate": {
             "post": {
                 "summary": "Generate a challenge message for the user to sign.",
@@ -344,6 +379,23 @@
             "type": "object",
             "properties": {
                 "errorMessage": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.SubmitReferralCodeRequest": {
+            "type": "object",
+            "properties": {
+                "referralCode": {
+                    "description": "Signature is the result of signing the provided challenge message using the address in\nquestion.",
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.SubmitReferralCodeResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
                     "type": "string"
                 }
             }

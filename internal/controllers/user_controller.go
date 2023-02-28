@@ -127,12 +127,15 @@ type UserResponse struct {
 	CountryCode null.String `json:"countryCode" swaggertype:"string" example:"USA"`
 	// AgreedTosAt is the time at which the user last agreed to the terms of service.
 	AgreedTOSAt null.Time `json:"agreedTosAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
+	// ReferralCode is the user's referral code to be given to others. It is a 6 digit numeric code,
+	// only present if the account has a confirmed Ethereum address.
+	ReferralCode null.String `json:"referralCode" swaggertype:"string" example:"883163"`
 }
 
 type SubmitReferralCodeRequest struct {
 	// Signature is the result of signing the provided challenge message using the address in
 	// question.
-	ReferrealCode string `json:"referrealCode"`
+	ReferrealCode string `json:"referralCode"`
 }
 
 type SubmitReferralCodeResponse struct {
@@ -153,9 +156,10 @@ func formatUser(user *models.User) *UserResponse {
 			ChallengeSentAt: user.EthereumChallengeSent,
 			InApp:           user.InAppWallet,
 		},
-		CreatedAt:   user.CreatedAt,
-		CountryCode: user.CountryCode,
-		AgreedTOSAt: user.AgreedTosAt,
+		CreatedAt:    user.CreatedAt,
+		CountryCode:  user.CountryCode,
+		AgreedTOSAt:  user.AgreedTosAt,
+		ReferralCode: user.ReferralCode,
 	}
 }
 
@@ -217,6 +221,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			if !ok {
 				return nil, fmt.Errorf("provider %s but no ethereum_address claim in ID token", providerID)
 			}
+
 			mixAddr, err := common.NewMixedcaseAddressFromString(ethereum)
 			if err != nil {
 				return nil, fmt.Errorf("invalid ethereum_address %s", ethereum)
@@ -676,11 +681,11 @@ func (d *UserController) generateReferralCode(ctx context.Context, maxDigit *big
 			return "", err
 		}
 
-		count, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(code))).Count(ctx, d.dbs.DBS().Reader)
+		exists, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(code))).Exists(ctx, d.dbs.DBS().Reader)
 		if err != nil {
 			return "", err
 		}
-		if count < 1 {
+		if !exists {
 			return code, nil
 		}
 	}
@@ -751,6 +756,13 @@ func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "given address and recovered address do not match")
 	}
 
+	referralCode, err := d.generateReferralCode(c.Context(), nil)
+	if err != nil {
+		d.log.Error().Err(err).Msg("error occurred creating referral code for user")
+		return fiber.NewError(fiber.StatusInternalServerError, "internal error")
+	}
+
+	user.ReferralCode = null.StringFrom(referralCode)
 	user.EthereumConfirmed = true
 	user.EthereumChallengeSent = null.Time{}
 	user.EthereumChallenge = null.String{}
@@ -900,9 +912,7 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 
-	body := &struct {
-		ReferrealCode string `json:"referralCode"`
-	}{}
+	body := new(SubmitReferralCodeRequest)
 
 	if err := c.BodyParser(body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
@@ -910,7 +920,7 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 
 	r := regexp.MustCompile(`^\d{6}$`)
 
-	if r.Match([]byte(body.ReferrealCode)) {
+	if !r.Match([]byte(body.ReferrealCode)) {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
 	}
 

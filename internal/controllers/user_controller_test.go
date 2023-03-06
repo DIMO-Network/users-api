@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http/httptest"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -222,7 +221,7 @@ func (s *UserControllerTestSuite) TestGenerateReferralCode() {
 	code, err := uc.generateReferralCode(ctx, nil)
 	s.NoError(err)
 
-	s.Regexp(regexp.MustCompile(`^\d{6}$`), code)
+	s.Regexp(referralCodeRegex, code)
 }
 
 func (s *UserControllerTestSuite) TestConfirmingAddressGeneratesReferralCode() {
@@ -313,7 +312,7 @@ func (s *UserControllerTestSuite) TestConfirmingAddressGeneratesReferralCode() {
 	err = json.NewDecoder(resp.Body).Decode(&user)
 	s.Require().NoError(err)
 
-	s.Regexp(`^\d{6}$`, user.ReferralCode.String)
+	s.Regexp(referralCodeRegex, user.ReferralCode.String)
 }
 
 func (s *UserControllerTestSuite) TestNoReferralCodeWithoutEthereumAddress() {
@@ -395,7 +394,7 @@ func (s *UserControllerTestSuite) TestReferralCodeGeneratedOnWeb3Provider() {
 	err = json.NewDecoder(resp.Body).Decode(&user)
 	s.Require().NoError(err)
 
-	s.Regexp(`^\d{6}$`, user.ReferralCode.String)
+	s.Regexp(referralCodeRegex, user.ReferralCode.String)
 }
 
 func (s *UserControllerTestSuite) TestSubmitReferralCode() {

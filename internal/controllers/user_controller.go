@@ -45,7 +45,7 @@ var rawCountryCodes []byte
 //go:embed confirmation_email.html
 var rawConfirmationEmail string
 
-var referralCodeRegex = regexp.MustCompile(`^[a-zA-Z0-9]{6}$`)
+var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
 
 type UserController struct {
 	Settings        *config.Settings

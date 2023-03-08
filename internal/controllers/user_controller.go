@@ -45,7 +45,7 @@ var rawCountryCodes []byte
 //go:embed confirmation_email.html
 var rawConfirmationEmail string
 
-var referralCodeRegex = regexp.MustCompile(`^\d{6}$`)
+var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
 
 type UserController struct {
 	Settings        *config.Settings
@@ -664,20 +664,19 @@ type ConfirmEthereumRequest struct {
 }
 
 func (d *UserController) generateReferralCode(ctx context.Context, maxDigit *big.Int) (string, error) {
-	if maxDigit == nil {
-		maxDigit = big.NewInt(10)
-	}
+	const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	alphabetSize := big.NewInt(int64(len(alphabet)))
+
 	getCode := func() (string, error) {
-		res := ""
+		res := make([]byte, 6)
 		for i := 0; i < 6; i++ {
-			d, err := crypto_rand.Int(crypto_rand.Reader, maxDigit)
+			d, err := crypto_rand.Int(crypto_rand.Reader, alphabetSize)
 			if err != nil {
 				return "", err
 			}
-			d.Uint64()
-			res += d.String()
+			res[i] = alphabet[d.Int64()]
 		}
-		return res, nil
+		return string(res), nil
 	}
 
 	for {

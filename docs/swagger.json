@@ -434,9 +434,9 @@
                     "example": "ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"
                 },
                 "referralCode": {
-                    "description": "ReferralCode is the user's referral code to be given to others. It is a 6 digit numeric code,\nonly present if the account has a confirmed Ethereum address.",
+                    "description": "ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,\nonly present if the account has a confirmed Ethereum address.",
                     "type": "string",
-                    "example": "883163"
+                    "example": "ANB95N"
                 },
                 "web3": {
                     "description": "Web3 describes the user's blockchain account.",

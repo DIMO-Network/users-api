@@ -133,9 +133,9 @@ type UserResponse struct {
 	CountryCode null.String `json:"countryCode" swaggertype:"string" example:"USA"`
 	// AgreedTosAt is the time at which the user last agreed to the terms of service.
 	AgreedTOSAt null.Time `json:"agreedTosAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
-	// ReferralCode is the user's referral code to be given to others. It is a 6 digit numeric code,
+	// ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,
 	// only present if the account has a confirmed Ethereum address.
-	ReferralCode null.String `json:"referralCode" swaggertype:"string" example:"883163"`
+	ReferralCode null.String `json:"referralCode" swaggertype:"string" example:"ANB95N"`
 }
 
 type SubmitReferralCodeRequest struct {

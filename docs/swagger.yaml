@@ -90,9 +90,9 @@ definitions:
         type: string
       referralCode:
         description: |-
-          ReferralCode is the user's referral code to be given to others. It is a 6 digit numeric code,
+          ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,
           only present if the account has a confirmed Ethereum address.
-        example: "883163"
+        example: ANB95N
         type: string
       web3:
         allOf:

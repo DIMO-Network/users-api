@@ -1,3 +1,5 @@
+Please see [the technical documentation](https://docs.dimo.zone/docs) for background.
+
 ## Running the app
 
 Make a copy of the settings file and edit as you see fit:
@@ -46,3 +48,7 @@ And then to generate the models:
 ```
 sqlboiler psql --no-tests --wipe
 ```
+
+## License
+
+[BSL](LICENSE)

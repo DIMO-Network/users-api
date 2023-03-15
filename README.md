@@ -51,4 +51,4 @@ sqlboiler psql --no-tests --wipe
 
 ## License
 
-[BSL](LICENSE)
+[BUSL 1.1](LICENSE)

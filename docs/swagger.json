@@ -228,7 +228,7 @@
                 "summary": "Takes the referral code, validates and stores it",
                 "parameters": [
                     {
-                        "description": "ReferralCode is the 6-digit, numeric referral code from another user.",
+                        "description": "ReferralCode is the 6-digit, alphanumeric referral code from another user.",
                         "name": "submitReferralCodeRequest",
                         "in": "body",
                         "required": true,
@@ -388,9 +388,9 @@
             "type": "object",
             "properties": {
                 "referralCode": {
-                    "description": "ReferralCode is the 6-digit, numeric referral code from another user.",
+                    "description": "ReferralCode is the 6-digit, alphanumeric referral code from another user.",
                     "type": "string",
-                    "example": "52140"
+                    "example": "ANB95N"
                 }
             }
         },

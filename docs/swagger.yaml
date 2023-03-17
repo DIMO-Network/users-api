@@ -54,9 +54,9 @@ definitions:
   controllers.SubmitReferralCodeRequest:
     properties:
       referralCode:
-        description: ReferralCode is the 6-digit, numeric referral code from another
-          user.
-        example: "52140"
+        description: ReferralCode is the 6-digit, alphanumeric referral code from
+          another user.
+        example: ANB95N
         type: string
     type: object
   controllers.SubmitReferralCodeResponse:
@@ -329,8 +329,8 @@ paths:
   /v1/user/submit-referral-code:
     post:
       parameters:
-      - description: ReferralCode is the 6-digit, numeric referral code from another
-          user.
+      - description: ReferralCode is the 6-digit, alphanumeric referral code from
+          another user.
         in: body
         name: submitReferralCodeRequest
         required: true

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/internal/config"
@@ -20,7 +19,7 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-type PopulateReferralCodeSuite struct {
+type GenerateReferralCodesSuite struct {
 	suite.Suite
 	dbcont   testcontainers.Container
 	dbs      db.Store
@@ -29,10 +28,10 @@ type PopulateReferralCodeSuite struct {
 }
 
 func TestPopulateReferralCodeSuite(t *testing.T) {
-	suite.Run(t, &PopulateReferralCodeSuite{})
+	suite.Run(t, &GenerateReferralCodesSuite{})
 }
 
-func (s *PopulateReferralCodeSuite) SetupSuite() {
+func (s *GenerateReferralCodesSuite) SetupSuite() {
 	ctx := context.Background()
 
 	logger := zerolog.Nop()
@@ -77,7 +76,7 @@ func (s *PopulateReferralCodeSuite) SetupSuite() {
 	err = database.MigrateDatabase(logger, &dbset, "", "../../migrations")
 	s.Require().NoError(err)
 
-	dbs := db.NewDbConnectionFromSettings(ctx, &dbset, true)
+	dbs := db.NewDbConnectionForTest(ctx, &dbset, true)
 	dbs.WaitForDB(logger)
 
 	s.dbs = dbs
@@ -85,16 +84,16 @@ func (s *PopulateReferralCodeSuite) SetupSuite() {
 	s.settings = &config.Settings{}
 }
 
-func (s *PopulateReferralCodeSuite) TearDownSuite() {
+func (s *GenerateReferralCodesSuite) TearDownSuite() {
 	s.Require().NoError(s.dbcont.Terminate(context.Background()))
 }
 
-func (s *PopulateReferralCodeSuite) TearDownTest() {
+func (s *GenerateReferralCodesSuite) TearDownTest() {
 	_, err := models.Users().DeleteAll(context.Background(), s.dbs.DBS().Writer)
 	s.Require().NoError(err)
 }
 
-func (s *PopulateReferralCodeSuite) TestGenerateReferralCodeForUsers() {
+func (s *GenerateReferralCodesSuite) TestGenerateReferralCodeForUsers() {
 	ctx := context.Background()
 
 	privateKey, err := crypto.GenerateKey()
@@ -103,25 +102,25 @@ func (s *PopulateReferralCodeSuite) TestGenerateReferralCodeForUsers() {
 	address := crypto.PubkeyToAddress(privateKey.PublicKey)
 
 	nu := models.User{
-		ID:              "SomeID",
-		EmailConfirmed:  true,
-		CreatedAt:       time.Now(),
-		EthereumAddress: null.StringFrom(address.Hex()),
+		ID:                "SomeID",
+		EthereumAddress:   null.StringFrom(address.Hex()),
+		EthereumConfirmed: true,
 	}
 
-	nu.Insert(ctx, s.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(nu.Insert(ctx, s.dbs.DBS().Writer, boil.Infer()))
 
-	pp := &populateReferralCodeCmd{
+	pp := &generateReferralCodeCmd{
 		dbs:      s.dbs,
 		log:      s.logger,
-		ctx:      ctx,
 		Settings: s.settings,
 	}
 
-	pp.Execute()
+	err = pp.Execute(ctx)
+	s.Require().NoError(err)
 
 	res, err := models.Users().One(ctx, s.dbs.DBS().Reader)
-	s.NoError(err)
+	s.Require().NoError(err)
 
-	s.NotEmpty(res.ReferralCode)
+	s.Require().True(res.ReferralCode.Valid)
+	s.Regexp("^[A-Z0-9]{6}$", res.ReferralCode.String)
 }

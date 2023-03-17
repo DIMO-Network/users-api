@@ -69,14 +69,16 @@ func main() {
 	case "generate-events":
 		eventService := services.NewEventService(&logger, &settings)
 		generateEvents(&logger, &settings, dbs, eventService)
-	case "populate-referral-codes":
-		pp := &populateReferralCodeCmd{
+	case "generate-referral-codes":
+		grc := &generateReferralCodeCmd{
 			dbs:      dbs,
 			log:      &logger,
-			ctx:      ctx,
 			Settings: &settings,
 		}
-		pp.Execute()
+
+		if err := grc.Execute(ctx); err != nil {
+			logger.Fatal().Err(err).Msg("Error during referral code generation.")
+		}
 	default:
 		eventService := services.NewEventService(&logger, &settings)
 		startWebAPI(logger, &settings, dbs, eventService)

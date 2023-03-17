@@ -218,7 +218,7 @@ func (s *UserControllerTestSuite) TestGenerateReferralCode() {
 		amClient:        &adsc{},
 	}
 
-	code, err := uc.generateReferralCode(ctx, nil)
+	code, err := uc.GenerateReferralCode(ctx)
 	s.NoError(err)
 
 	s.Regexp(referralCodeRegex, code)

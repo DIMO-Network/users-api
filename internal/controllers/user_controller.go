@@ -235,7 +235,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 				d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", ethereum)
 			}
 
-			referralCode, err := d.generateReferralCode(c.Context(), nil)
+			referralCode, err := d.GenerateReferralCode(c.Context())
 			if err != nil {
 				d.log.Error().Err(err).Msg("error occurred creating referral code for user")
 				return nil, errors.New("internal error")
@@ -663,7 +663,7 @@ type ConfirmEthereumRequest struct {
 	Signature string `json:"signature"`
 }
 
-func (d *UserController) generateReferralCode(ctx context.Context, maxDigit *big.Int) (string, error) {
+func (d *UserController) GenerateReferralCode(ctx context.Context) (string, error) {
 	const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	alphabetSize := big.NewInt(int64(len(alphabet)))
 
@@ -760,7 +760,7 @@ func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "given address and recovered address do not match")
 	}
 
-	referralCode, err := d.generateReferralCode(c.Context(), nil)
+	referralCode, err := d.GenerateReferralCode(c.Context())
 	if err != nil {
 		d.log.Error().Err(err).Msg("error occurred creating referral code for user")
 		return fiber.NewError(fiber.StatusInternalServerError, "internal error")

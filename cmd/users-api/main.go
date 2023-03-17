@@ -69,6 +69,14 @@ func main() {
 	case "generate-events":
 		eventService := services.NewEventService(&logger, &settings)
 		generateEvents(&logger, &settings, dbs, eventService)
+	case "populate-referral-codes":
+		pp := &populateReferralCodeCmd{
+			dbs:      dbs,
+			log:      &logger,
+			ctx:      ctx,
+			Settings: &settings,
+		}
+		pp.Execute()
 	default:
 		eventService := services.NewEventService(&logger, &settings)
 		startWebAPI(logger, &settings, dbs, eventService)

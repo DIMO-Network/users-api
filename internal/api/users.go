@@ -53,12 +53,16 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 			if err != sql.ErrNoRows {
 				return nil, status.Error(codes.Internal, "Internal error.")
 			}
-		} else if referrer.EthereumConfirmed {
-			// This should always be the case.
-			pbUser.ReferredBy = &pb.UserReferrer{
-				EthereumAddress: common.FromHex(referrer.EthereumAddress.String),
-			}
 		}
+
+		pbUser.ReferredBy = &pb.UserReferrer{
+			EthereumAddress: common.FromHex(referrer.EthereumAddress.String),
+		}
+
+		if referrer.EthereumConfirmed {
+			pbUser.ReferredBy.ReferrerValid = true
+		}
+
 	}
 
 	return pbUser, nil

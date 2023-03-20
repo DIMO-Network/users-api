@@ -47,19 +47,18 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 		pbUser.EmailAddress = dbUser.EmailAddress.Ptr()
 	}
 
+	pbUser.ReferredBy = &pb.UserReferrer{
+		ReferrerValid: false,
+	}
+
 	if dbUser.ReferredBy.Valid {
 		referrer, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(dbUser.ReferredBy.String))).One(ctx, s.dbs.DBS().Reader)
 		if err != nil {
 			if err != sql.ErrNoRows {
 				return nil, status.Error(codes.Internal, "Internal error.")
 			}
-		}
-
-		pbUser.ReferredBy = &pb.UserReferrer{
-			EthereumAddress: common.FromHex(referrer.EthereumAddress.String),
-		}
-
-		if referrer.EthereumConfirmed {
+		} else if referrer.EthereumConfirmed {
+			pbUser.ReferredBy.EthereumAddress = common.FromHex(referrer.EthereumAddress.String)
 			pbUser.ReferredBy.ReferrerValid = true
 		}
 

@@ -425,14 +425,19 @@ func (s *UserControllerTestSuite) TestSubmitReferralCode() {
 
 	app.Post("/submit-referral-code", uc.SubmitReferralCode)
 
+	pk, err := crypto.GenerateKey()
+	s.Require().NoError(err)
+
+	addr := crypto.PubkeyToAddress(pk.PublicKey)
 	nu := models.User{
-		ID:             "SomeID",
-		EmailConfirmed: true,
-		CreatedAt:      time.Now(),
-		ReferralCode:   null.StringFrom("123456"),
+		ID:              "SomeID",
+		EmailConfirmed:  true,
+		CreatedAt:       time.Now(),
+		ReferralCode:    null.StringFrom("123456"),
+		EthereumAddress: null.StringFrom(addr.Hex()),
 	}
 
-	err := nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	err = nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
 	s.Require().NoError(err)
 
 	req := `{"referralCode": "123456"}`

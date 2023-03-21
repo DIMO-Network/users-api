@@ -928,12 +928,11 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 
 	referrer, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(body.ReferralCode))).One(c.Context(), d.dbs.DBS().Reader)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
+		}
 		d.log.Err(err).Msg("Could not save referral code")
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
-	}
-
-	if referrer == nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
 	}
 
 	if user.EthereumAddress == referrer.EthereumAddress {

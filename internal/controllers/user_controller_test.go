@@ -681,3 +681,65 @@ func (s *UserControllerTestSuite) TestFailureOnUserAlreadyReferred() {
 
 	s.Require().Equal(user.ReferredBy, null.StringFrom(mockRefCode))
 }
+
+func (s *UserControllerTestSuite) TestFailureOnUserAlreadyHasDevices() {
+	ctx := context.Background()
+
+	uc := UserController{
+		dbs:             s.dbs,
+		log:             s.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	app := fiber.New()
+
+	mockRefCode := "789102"
+
+	nu := models.User{
+		ID:             "Cwbss",
+		EmailAddress:   null.StringFrom("steve@web3.com"),
+		EmailConfirmed: true,
+		CreatedAt:      time.Now(),
+		ReferredBy:     null.StringFrom(mockRefCode),
+	}
+
+	err := nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id": "google",
+			"sub":         "Cwbss",
+			"email":       "steve@web3.com",
+		}})
+		return c.Next()
+	})
+
+	app.Post("/submit-referral-code", uc.SubmitReferralCode)
+
+	req := fmt.Sprintf(`{"referralCode": %q}`, "123456")
+
+	r := httptest.NewRequest("POST", "/submit-referral-code", strings.NewReader(req))
+	r.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(r, -1)
+	s.Require().NoError(err)
+
+	defer resp.Body.Close()
+
+	eResp := SubmitReferralCodeResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&eResp)
+	s.Require().Error(err)
+
+	s.Require().Equal(400, resp.StatusCode)
+
+	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
+	s.Require().NoError(err)
+
+	s.Require().Equal(user.ReferredBy, null.StringFrom(mockRefCode))
+}

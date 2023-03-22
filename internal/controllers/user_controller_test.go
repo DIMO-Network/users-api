@@ -351,7 +351,7 @@ func (s *UserControllerTestSuite) TestNoReferralCodeWithoutEthereumAddress() {
 	err = json.NewDecoder(resp.Body).Decode(&user)
 	s.Require().NoError(err)
 
-	s.Empty(user.ReferralCode)
+	s.Empty(user.ReferralCode.String)
 }
 
 func (s *UserControllerTestSuite) TestReferralCodeGeneratedOnWeb3Provider() {
@@ -761,3 +761,41 @@ func (s *UserControllerTestSuite) TestFailureOnSameEthereumAddressForReferrerAnd
 	s.Require().Equal(400, resp.StatusCode)
 	s.Require().Equal("invalid referral code, user cannot refer self", string(body))
 }
+
+/* func (s *UserControllerTestSuite) TestNoReferralCodeWithoutEthereumAddress() {
+	uc := UserController{
+		dbs:             s.dbs,
+		log:             s.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	app := fiber.New()
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id": "google",
+			"sub":         "Cwbs",
+			"email":       "steve@gmail.com",
+		}})
+		return c.Next()
+	})
+
+	app.Get("/", uc.GetUser)
+
+	r := httptest.NewRequest("GET", "/", nil)
+	resp, err := app.Test(r, -1)
+	s.Require().NoError(err)
+
+	defer resp.Body.Close()
+
+	var user UserResponse
+	err = json.NewDecoder(resp.Body).Decode(&user)
+	s.Require().NoError(err)
+
+	s.Empty(user.ReferralCode)
+} */

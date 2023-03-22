@@ -148,6 +148,11 @@ type SubmitReferralCodeResponse struct {
 }
 
 func formatUser(user *models.User) *UserResponse {
+	referralCode := user.EthereumAddress
+	if !user.EthereumConfirmed || user.EthereumAddress == null.StringFrom("") {
+		referralCode = null.StringFrom("")
+	}
+
 	return &UserResponse{
 		ID: user.ID,
 		Email: UserResponseEmail{
@@ -164,7 +169,7 @@ func formatUser(user *models.User) *UserResponse {
 		CreatedAt:    user.CreatedAt,
 		CountryCode:  user.CountryCode,
 		AgreedTOSAt:  user.AgreedTosAt,
-		ReferralCode: user.ReferralCode,
+		ReferralCode: referralCode,
 	}
 }
 

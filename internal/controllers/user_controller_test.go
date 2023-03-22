@@ -350,7 +350,7 @@ func (s *UserControllerTestSuite) TestNoReferralCodeWithoutEthereumAddress() {
 	err = json.NewDecoder(resp.Body).Decode(&user)
 	s.Require().NoError(err)
 
-	s.Empty(user.ReferralCode)
+	s.Empty(user.ReferralCode.String)
 }
 
 func (s *UserControllerTestSuite) TestReferralCodeGeneratedOnWeb3Provider() {

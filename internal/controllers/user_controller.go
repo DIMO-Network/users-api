@@ -918,6 +918,15 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 
+	dr, err := d.devicesClient.ListUserDevicesForUser(c.Context(), &pb.ListUserDevicesForUserRequest{UserId: userID})
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+	}
+
+	if len(dr.UserDevices) > 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "user cannot be referred")
+	}
+
 	body := new(SubmitReferralCodeRequest)
 
 	if err := c.BodyParser(body); err != nil {

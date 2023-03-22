@@ -106,14 +106,12 @@ func (e *es) Emit(*services.Event) error {
 	return nil
 }
 
-type udsc struct{}
-
-func (c *udsc) GetUserDevice(ctx context.Context, in *pb.GetUserDeviceRequest, opts ...grpc.CallOption) (*pb.UserDevice, error) {
-	return nil, nil
+type udsc struct {
+	store map[string][]*pb.UserDevice
 }
 
 func (c *udsc) ListUserDevicesForUser(ctx context.Context, in *pb.ListUserDevicesForUserRequest, opts ...grpc.CallOption) (*pb.ListUserDevicesForUserResponse, error) {
-	return &pb.ListUserDevicesForUserResponse{UserDevices: []*pb.UserDevice{}}, nil
+	return &pb.ListUserDevicesForUserResponse{UserDevices: c.store[in.UserId]}, nil
 }
 
 type adsc struct{}
@@ -760,4 +758,75 @@ func (s *UserControllerTestSuite) TestFailureOnSameEthereumAddressForReferrerAnd
 
 	s.Require().Equal(400, resp.StatusCode)
 	s.Require().Equal("invalid referral code, user cannot refer self", string(body))
+}
+
+func (s *UserControllerTestSuite) TestFailureOnUserAlreadyHasDevices() {
+	ctx := context.Background()
+
+	uc := UserController{
+		dbs:             s.dbs,
+		log:             s.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient: &udsc{
+			store: map[string][]*pb.UserDevice{
+				"Cwbss": {{Id: "Veh1"}},
+			},
+		},
+		amClient: &adsc{},
+	}
+
+	app := fiber.New()
+
+	ru := models.User{
+		ID:             "Cwbss1",
+		EmailAddress:   null.StringFrom("openai@web3.com"),
+		EmailConfirmed: true,
+		CreatedAt:      time.Now(),
+		ReferralCode:   null.StringFrom("123456"),
+	}
+
+	err := ru.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	nu := models.User{
+		ID:             "Cwbss",
+		EmailAddress:   null.StringFrom("steve@web3.com"),
+		EmailConfirmed: true,
+		CreatedAt:      time.Now(),
+		ReferralCode:   null.StringFrom("ABCDEF"),
+	}
+
+	err = nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id": "google",
+			"sub":         "Cwbss",
+			"email":       "steve@web3.com",
+		}})
+		return c.Next()
+	})
+
+	app.Post("/submit-referral-code", uc.SubmitReferralCode)
+
+	req := fmt.Sprintf(`{"referralCode": %q}`, "123456")
+
+	r := httptest.NewRequest("POST", "/submit-referral-code", strings.NewReader(req))
+	r.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(r, -1)
+	s.Require().NoError(err)
+
+	defer resp.Body.Close()
+
+	s.Require().Equal(400, resp.StatusCode)
+
+	err = nu.Reload(ctx, uc.dbs.DBS().Reader)
+	s.Require().NoError(err)
+
+	s.Require().False(nu.ReferredBy.Valid)
 }

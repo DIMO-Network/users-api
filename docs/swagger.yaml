@@ -94,6 +94,9 @@ definitions:
           only present if the account has a confirmed Ethereum address.
         example: ANB95N
         type: string
+      referredBy:
+        example: CXB95B
+        type: string
       web3:
         allOf:
         - $ref: '#/definitions/controllers.UserResponseWeb3'

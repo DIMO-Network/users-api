@@ -136,6 +136,7 @@ type UserResponse struct {
 	// ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,
 	// only present if the account has a confirmed Ethereum address.
 	ReferralCode null.String `json:"referralCode" swaggertype:"string" example:"ANB95N"`
+	ReferredBy   null.String `json:"referredBy" swaggertype:"string" example:"CXB95B"`
 }
 
 type SubmitReferralCodeRequest struct {
@@ -165,6 +166,7 @@ func formatUser(user *models.User) *UserResponse {
 		CountryCode:  user.CountryCode,
 		AgreedTOSAt:  user.AgreedTosAt,
 		ReferralCode: user.ReferralCode,
+		ReferredBy:   user.ReferredBy,
 	}
 }
 

@@ -136,6 +136,7 @@ type UserResponse struct {
 	// ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,
 	// only present if the account has a confirmed Ethereum address.
 	ReferralCode null.String `json:"referralCode" swaggertype:"string" example:"ANB95N"`
+	ReferredBy   null.String `json:"referredBy" swaggertype:"string" example:"CXB95B"`
 }
 
 type SubmitReferralCodeRequest struct {
@@ -165,6 +166,7 @@ func formatUser(user *models.User) *UserResponse {
 		CountryCode:  user.CountryCode,
 		AgreedTOSAt:  user.AgreedTosAt,
 		ReferralCode: user.ReferralCode,
+		ReferredBy:   user.ReferredBy,
 	}
 }
 
@@ -935,14 +937,17 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
 	}
 
-	exists, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(body.ReferralCode))).Exists(c.Context(), d.dbs.DBS().Reader)
+	referrer, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(body.ReferralCode))).One(c.Context(), d.dbs.DBS().Reader)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
+		}
 		d.log.Err(err).Msg("Could not save referral code")
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 
-	if !exists {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
+	if user.EthereumAddress == referrer.EthereumAddress {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code, user cannot refer self")
 	}
 
 	if null.StringFrom(body.ReferralCode) == user.ReferralCode {

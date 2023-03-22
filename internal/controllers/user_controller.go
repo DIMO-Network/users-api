@@ -918,7 +918,7 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 
 	dr, err := d.devicesClient.ListUserDevicesForUser(c.Context(), &pb.ListUserDevicesForUserRequest{UserId: userID})
 	if err != nil {
-		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 
 	if len(dr.UserDevices) > 0 {

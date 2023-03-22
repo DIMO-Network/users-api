@@ -105,14 +105,12 @@ func (e *es) Emit(*services.Event) error {
 	return nil
 }
 
-type udsc struct{}
-
-func (c *udsc) GetUserDevice(ctx context.Context, in *pb.GetUserDeviceRequest, opts ...grpc.CallOption) (*pb.UserDevice, error) {
-	return nil, nil
+type udsc struct {
+	store map[string][]*pb.UserDevice
 }
 
 func (c *udsc) ListUserDevicesForUser(ctx context.Context, in *pb.ListUserDevicesForUserRequest, opts ...grpc.CallOption) (*pb.ListUserDevicesForUserResponse, error) {
-	return &pb.ListUserDevicesForUserResponse{UserDevices: []*pb.UserDevice{}}, nil
+	return &pb.ListUserDevicesForUserResponse{UserDevices: c.store[in.UserId]}, nil
 }
 
 type adsc struct{}
@@ -692,23 +690,36 @@ func (s *UserControllerTestSuite) TestFailureOnUserAlreadyHasDevices() {
 		countryCodes:    []string{"USA", "CAN"},
 		emailTemplate:   nil,
 		eventService:    &es{},
-		devicesClient:   &udsc{},
-		amClient:        &adsc{},
+		devicesClient: &udsc{
+			store: map[string][]*pb.UserDevice{
+				"Cwbss": {{Id: "Veh1"}},
+			},
+		},
+		amClient: &adsc{},
 	}
 
 	app := fiber.New()
 
-	mockRefCode := "789102"
+	ru := models.User{
+		ID:             "Cwbss1",
+		EmailAddress:   null.StringFrom("openai@web3.com"),
+		EmailConfirmed: true,
+		CreatedAt:      time.Now(),
+		ReferralCode:   null.StringFrom("123456"),
+	}
+
+	err := ru.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
 
 	nu := models.User{
 		ID:             "Cwbss",
 		EmailAddress:   null.StringFrom("steve@web3.com"),
 		EmailConfirmed: true,
 		CreatedAt:      time.Now(),
-		ReferredBy:     null.StringFrom(mockRefCode),
+		ReferralCode:   null.StringFrom("ABCDEF"),
 	}
 
-	err := nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	err = nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
 	s.Require().NoError(err)
 
 	app.Use(func(c *fiber.Ctx) error {
@@ -732,14 +743,10 @@ func (s *UserControllerTestSuite) TestFailureOnUserAlreadyHasDevices() {
 
 	defer resp.Body.Close()
 
-	eResp := SubmitReferralCodeResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&eResp)
-	s.Require().Error(err)
-
 	s.Require().Equal(400, resp.StatusCode)
 
-	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
+	err = nu.Reload(ctx, uc.dbs.DBS().Reader)
 	s.Require().NoError(err)
 
-	s.Require().Equal(user.ReferredBy, null.StringFrom(mockRefCode))
+	s.Require().False(nu.ReferredBy.Valid)
 }

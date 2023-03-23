@@ -1,7 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-SELECT 'up SQL query';
-
 SET search_path TO users_api, public;
 
 ALTER TABLE users_api.users 

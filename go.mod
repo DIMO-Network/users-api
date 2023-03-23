@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/DIMO-Network/devices-api v1.13.4
-	github.com/DIMO-Network/shared v0.9.1
+	github.com/DIMO-Network/shared v0.9.2
 	github.com/ansrivas/fiberprometheus/v2 v2.1.2
 	github.com/arsmn/fiber-swagger/v2 v2.31.1
 	github.com/docker/go-connections v0.4.0

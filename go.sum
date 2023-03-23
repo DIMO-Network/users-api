@@ -63,8 +63,8 @@ github.com/DATA-DOG/go-sqlmock v1.4.1 h1:ThlnYciV1iM/V0OSF/dtkqWb6xo5qITT1TJBG1M
 github.com/DATA-DOG/go-sqlmock v1.4.1/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DIMO-Network/devices-api v1.13.4 h1:MvC2Xbk3wCGEk0jIU61a3g5JgdQznvx1IpgCf0+9r7I=
 github.com/DIMO-Network/devices-api v1.13.4/go.mod h1:yeO1dNLRqr0B0HXesdQFB76wxZ+6X9kZnJbz11YNjDk=
-github.com/DIMO-Network/shared v0.9.1 h1:F1Y6BDc3QrZK8KqZrexkjgoSGRdyiJ12rjStdM68/00=
-github.com/DIMO-Network/shared v0.9.1/go.mod h1:Edzbgny+7yh/CKKWKAUbOVT6K+dUWBFAxkYa89kvIxU=
+github.com/DIMO-Network/shared v0.9.2 h1:/Pu3pRCSpvueOKVh18tAuBU2OnbV8V4wN2RJ/N01pdA=
+github.com/DIMO-Network/shared v0.9.2/go.mod h1:Edzbgny+7yh/CKKWKAUbOVT6K+dUWBFAxkYa89kvIxU=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=

@@ -50,13 +50,14 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 		pbUser.EmailAddress = dbUser.EmailAddress.Ptr()
 	}
 
-	if ref := dbUser.R.ReferringUser; ref != nil {
-		if ref.EthereumConfirmed {
+	if dbUser.ReferredAt.Valid {
+		pbUser.ReferredBy = &pb.UserReferrer{
+			ReferrerValid: false,
+		}
 
-			// This should always be the case.
-			pbUser.ReferredBy = &pb.UserReferrer{
-				EthereumAddress: common.FromHex(ref.EthereumAddress.String),
-			}
+		if ref := dbUser.R.ReferringUser; ref != nil && ref.EthereumConfirmed {
+			pbUser.ReferredBy.EthereumAddress = common.FromHex(ref.EthereumAddress.String)
+			pbUser.ReferredBy.ReferrerValid = true
 		}
 	}
 

@@ -8,8 +8,6 @@ ALTER TABLE users_api.users
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
-
 SET search_path TO users_api, public;
 
 ALTER TABLE users_api.users 

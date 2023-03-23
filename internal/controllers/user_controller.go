@@ -32,7 +32,9 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
+
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -136,7 +138,8 @@ type UserResponse struct {
 	// ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,
 	// only present if the account has a confirmed Ethereum address.
 	ReferralCode null.String `json:"referralCode" swaggertype:"string" example:"ANB95N"`
-	ReferredBy   null.String `json:"referredBy" swaggertype:"string" example:"CXB95B"`
+	ReferredBy   null.String `json:"referredBy" swaggertype:"string" example:"0x3497B704a954789BC39999262510DE9B09Ff1366"`
+	ReferredAt   null.Time   `json:"referredAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 }
 
 type SubmitReferralCodeRequest struct {
@@ -152,6 +155,11 @@ func formatUser(user *models.User) *UserResponse {
 	var referralCode null.String
 	if user.EthereumConfirmed {
 		referralCode = user.ReferralCode
+	}
+
+	var referrer null.String
+	if user.R != nil && user.R.ReferringUser != nil && user.R.ReferringUser.EthereumConfirmed {
+		referrer = user.R.ReferringUser.EthereumAddress
 	}
 
 	return &UserResponse{
@@ -171,7 +179,8 @@ func formatUser(user *models.User) *UserResponse {
 		CountryCode:  user.CountryCode,
 		AgreedTOSAt:  user.AgreedTosAt,
 		ReferralCode: referralCode,
-		ReferredBy:   user.ReferredBy,
+		ReferredBy:   referrer,
+		ReferredAt:   user.ReferredAt,
 	}
 }
 
@@ -199,7 +208,10 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	}
 	defer tx.Rollback() //nolint
 
-	user, err = models.FindUser(c.Context(), tx, userID)
+	user, err = models.Users(
+		models.UserWhere.ID.EQ(userID),
+		qm.Load(models.UserRels.ReferringUser),
+	).One(c.Context(), tx)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
@@ -959,11 +971,12 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
 	}
 
-	if user.ReferredBy.String != "" {
+	if user.ReferringUserID.Valid {
 		return fiber.NewError(fiber.StatusBadRequest, "user has been referred already")
 	}
 
-	user.ReferredBy = null.StringFrom(body.ReferralCode)
+	user.ReferringUserID = null.StringFrom(referrer.ID)
+	user.ReferredAt = null.TimeFrom(time.Now())
 	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		d.log.Err(err).Msg("Could not save referral code")
 		return fiber.NewError(fiber.StatusInternalServerError, "error occurred completing referral code verification")

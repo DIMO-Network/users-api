@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func generateEvents(logger *zerolog.Logger, settings *config.Settings, dbs db.Store, eventService services.EventService) {
+func generateEvents(logger *zerolog.Logger, _ *config.Settings, dbs db.Store, eventService services.EventService) {
 	ctx := context.Background()
 	users, err := models.Users().All(ctx, dbs.DBS().Reader)
 	if err != nil {

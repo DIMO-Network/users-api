@@ -8,7 +8,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func MigrateDatabase(logger zerolog.Logger, settings *db.Settings, command, migrationsDir string) error {
+func MigrateDatabase(_ zerolog.Logger, settings *db.Settings, command, migrationsDir string) error {
 	db, err := sql.Open("postgres", settings.BuildConnectionString(true))
 	if err != nil {
 		return err

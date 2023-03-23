@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/DIMO-Network/shared/api/devices"
+	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
@@ -110,13 +110,13 @@ type udsc struct {
 	store map[string][]*pb.UserDevice
 }
 
-func (c *udsc) ListUserDevicesForUser(ctx context.Context, in *pb.ListUserDevicesForUserRequest, opts ...grpc.CallOption) (*pb.ListUserDevicesForUserResponse, error) {
+func (c *udsc) ListUserDevicesForUser(_ context.Context, in *pb.ListUserDevicesForUserRequest, _ ...grpc.CallOption) (*pb.ListUserDevicesForUserResponse, error) {
 	return &pb.ListUserDevicesForUserResponse{UserDevices: c.store[in.UserId]}, nil
 }
 
 type adsc struct{}
 
-func (c *adsc) ListAftermarketDevicesForUser(ctx context.Context, in *pb.ListAftermarketDevicesForUserRequest, opts ...grpc.CallOption) (*pb.ListAftermarketDevicesForUserResponse, error) {
+func (c *adsc) ListAftermarketDevicesForUser(_ context.Context, _ *pb.ListAftermarketDevicesForUserRequest, _ ...grpc.CallOption) (*pb.ListAftermarketDevicesForUserResponse, error) {
 	return &pb.ListAftermarketDevicesForUserResponse{AftermarketDevices: []*pb.AftermarketDevice{}}, nil
 }
 

@@ -39,8 +39,8 @@ type User struct {
 	EthereumConfirmed       bool        `boil:"ethereum_confirmed" json:"ethereum_confirmed" toml:"ethereum_confirmed" yaml:"ethereum_confirmed"`
 	InAppWallet             bool        `boil:"in_app_wallet" json:"in_app_wallet" toml:"in_app_wallet" yaml:"in_app_wallet"`
 	ReferralCode            null.String `boil:"referral_code" json:"referral_code,omitempty" toml:"referral_code" yaml:"referral_code,omitempty"`
-	ReferredBy              null.String `boil:"referred_by" json:"referred_by,omitempty" toml:"referred_by" yaml:"referred_by,omitempty"`
 	ReferredAt              null.Time   `boil:"referred_at" json:"referred_at,omitempty" toml:"referred_at" yaml:"referred_at,omitempty"`
+	ReferringUserID         null.String `boil:"referring_user_id" json:"referring_user_id,omitempty" toml:"referring_user_id" yaml:"referring_user_id,omitempty"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -62,8 +62,8 @@ var UserColumns = struct {
 	EthereumConfirmed       string
 	InAppWallet             string
 	ReferralCode            string
-	ReferredBy              string
 	ReferredAt              string
+	ReferringUserID         string
 }{
 	ID:                      "id",
 	EmailAddress:            "email_address",
@@ -80,8 +80,8 @@ var UserColumns = struct {
 	EthereumConfirmed:       "ethereum_confirmed",
 	InAppWallet:             "in_app_wallet",
 	ReferralCode:            "referral_code",
-	ReferredBy:              "referred_by",
 	ReferredAt:              "referred_at",
+	ReferringUserID:         "referring_user_id",
 }
 
 var UserTableColumns = struct {
@@ -100,8 +100,8 @@ var UserTableColumns = struct {
 	EthereumConfirmed       string
 	InAppWallet             string
 	ReferralCode            string
-	ReferredBy              string
 	ReferredAt              string
+	ReferringUserID         string
 }{
 	ID:                      "users.id",
 	EmailAddress:            "users.email_address",
@@ -118,8 +118,8 @@ var UserTableColumns = struct {
 	EthereumConfirmed:       "users.ethereum_confirmed",
 	InAppWallet:             "users.in_app_wallet",
 	ReferralCode:            "users.referral_code",
-	ReferredBy:              "users.referred_by",
 	ReferredAt:              "users.referred_at",
+	ReferringUserID:         "users.referring_user_id",
 }
 
 // Generated where
@@ -255,8 +255,8 @@ var UserWhere = struct {
 	EthereumConfirmed       whereHelperbool
 	InAppWallet             whereHelperbool
 	ReferralCode            whereHelpernull_String
-	ReferredBy              whereHelpernull_String
 	ReferredAt              whereHelpernull_Time
+	ReferringUserID         whereHelpernull_String
 }{
 	ID:                      whereHelperstring{field: "\"users_api\".\"users\".\"id\""},
 	EmailAddress:            whereHelpernull_String{field: "\"users_api\".\"users\".\"email_address\""},
@@ -273,16 +273,23 @@ var UserWhere = struct {
 	EthereumConfirmed:       whereHelperbool{field: "\"users_api\".\"users\".\"ethereum_confirmed\""},
 	InAppWallet:             whereHelperbool{field: "\"users_api\".\"users\".\"in_app_wallet\""},
 	ReferralCode:            whereHelpernull_String{field: "\"users_api\".\"users\".\"referral_code\""},
-	ReferredBy:              whereHelpernull_String{field: "\"users_api\".\"users\".\"referred_by\""},
 	ReferredAt:              whereHelpernull_Time{field: "\"users_api\".\"users\".\"referred_at\""},
+	ReferringUserID:         whereHelpernull_String{field: "\"users_api\".\"users\".\"referring_user_id\""},
 }
 
 // UserRels is where relationship names are stored.
 var UserRels = struct {
-}{}
+	ReferringUser      string
+	ReferringUserUsers string
+}{
+	ReferringUser:      "ReferringUser",
+	ReferringUserUsers: "ReferringUserUsers",
+}
 
 // userR is where relationships are stored.
 type userR struct {
+	ReferringUser      *User     `boil:"ReferringUser" json:"ReferringUser" toml:"ReferringUser" yaml:"ReferringUser"`
+	ReferringUserUsers UserSlice `boil:"ReferringUserUsers" json:"ReferringUserUsers" toml:"ReferringUserUsers" yaml:"ReferringUserUsers"`
 }
 
 // NewStruct creates a new relationship struct
@@ -290,13 +297,27 @@ func (*userR) NewStruct() *userR {
 	return &userR{}
 }
 
+func (r *userR) GetReferringUser() *User {
+	if r == nil {
+		return nil
+	}
+	return r.ReferringUser
+}
+
+func (r *userR) GetReferringUserUsers() UserSlice {
+	if r == nil {
+		return nil
+	}
+	return r.ReferringUserUsers
+}
+
 // userL is where Load methods for each relationship are stored.
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "agreed_tos_at", "auth_provider_id", "ethereum_challenge", "ethereum_challenge_sent", "ethereum_confirmed", "in_app_wallet", "referral_code", "referred_by", "referred_at"}
+	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "agreed_tos_at", "auth_provider_id", "ethereum_challenge", "ethereum_challenge_sent", "ethereum_confirmed", "in_app_wallet", "referral_code", "referred_at", "referring_user_id"}
 	userColumnsWithoutDefault = []string{"id", "email_confirmed", "created_at", "auth_provider_id", "ethereum_confirmed"}
-	userColumnsWithDefault    = []string{"email_address", "email_confirmation_sent_at", "email_confirmation_key", "country_code", "ethereum_address", "agreed_tos_at", "ethereum_challenge", "ethereum_challenge_sent", "in_app_wallet", "referral_code", "referred_by", "referred_at"}
+	userColumnsWithDefault    = []string{"email_address", "email_confirmation_sent_at", "email_confirmation_key", "country_code", "ethereum_address", "agreed_tos_at", "ethereum_challenge", "ethereum_challenge_sent", "in_app_wallet", "referral_code", "referred_at", "referring_user_id"}
 	userPrimaryKeyColumns     = []string{"id"}
 	userGeneratedColumns      = []string{}
 )
@@ -577,6 +598,476 @@ func (q userQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool,
 	}
 
 	return count > 0, nil
+}
+
+// ReferringUser pointed to by the foreign key.
+func (o *User) ReferringUser(mods ...qm.QueryMod) userQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"id\" = ?", o.ReferringUserID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Users(queryMods...)
+}
+
+// ReferringUserUsers retrieves all the user's Users with an executor via referring_user_id column.
+func (o *User) ReferringUserUsers(mods ...qm.QueryMod) userQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"users_api\".\"users\".\"referring_user_id\"=?", o.ID),
+	)
+
+	return Users(queryMods...)
+}
+
+// LoadReferringUser allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (userL) LoadReferringUser(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make([]interface{}, 0, 1)
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		if !queries.IsNil(object.ReferringUserID) {
+			args = append(args, object.ReferringUserID)
+		}
+
+	} else {
+	Outer:
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+
+			for _, a := range args {
+				if queries.Equal(a, obj.ReferringUserID) {
+					continue Outer
+				}
+			}
+
+			if !queries.IsNil(obj.ReferringUserID) {
+				args = append(args, obj.ReferringUserID)
+			}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	query := NewQuery(
+		qm.From(`users_api.users`),
+		qm.WhereIn(`users_api.users.id in ?`, args...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load User")
+	}
+
+	var resultSlice []*User
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice User")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for users")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for users")
+	}
+
+	if len(userAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.ReferringUser = foreign
+		if foreign.R == nil {
+			foreign.R = &userR{}
+		}
+		foreign.R.ReferringUserUsers = append(foreign.R.ReferringUserUsers, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if queries.Equal(local.ReferringUserID, foreign.ID) {
+				local.R.ReferringUser = foreign
+				if foreign.R == nil {
+					foreign.R = &userR{}
+				}
+				foreign.R.ReferringUserUsers = append(foreign.R.ReferringUserUsers, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadReferringUserUsers allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadReferringUserUsers(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser interface{}, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make([]interface{}, 0, 1)
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args = append(args, object.ID)
+	} else {
+	Outer:
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+
+			for _, a := range args {
+				if queries.Equal(a, obj.ID) {
+					continue Outer
+				}
+			}
+
+			args = append(args, obj.ID)
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	query := NewQuery(
+		qm.From(`users_api.users`),
+		qm.WhereIn(`users_api.users.referring_user_id in ?`, args...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load users")
+	}
+
+	var resultSlice []*User
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice users")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on users")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for users")
+	}
+
+	if len(userAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.ReferringUserUsers = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &userR{}
+			}
+			foreign.R.ReferringUser = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.ReferringUserID) {
+				local.R.ReferringUserUsers = append(local.R.ReferringUserUsers, foreign)
+				if foreign.R == nil {
+					foreign.R = &userR{}
+				}
+				foreign.R.ReferringUser = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// SetReferringUser of the user to the related item.
+// Sets o.R.ReferringUser to related.
+// Adds o to related.R.ReferringUserUsers.
+func (o *User) SetReferringUser(ctx context.Context, exec boil.ContextExecutor, insert bool, related *User) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"users_api\".\"users\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"referring_user_id"}),
+		strmangle.WhereClause("\"", "\"", 2, userPrimaryKeyColumns),
+	)
+	values := []interface{}{related.ID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	queries.Assign(&o.ReferringUserID, related.ID)
+	if o.R == nil {
+		o.R = &userR{
+			ReferringUser: related,
+		}
+	} else {
+		o.R.ReferringUser = related
+	}
+
+	if related.R == nil {
+		related.R = &userR{
+			ReferringUserUsers: UserSlice{o},
+		}
+	} else {
+		related.R.ReferringUserUsers = append(related.R.ReferringUserUsers, o)
+	}
+
+	return nil
+}
+
+// RemoveReferringUser relationship.
+// Sets o.R.ReferringUser to nil.
+// Removes o from all passed in related items' relationships struct.
+func (o *User) RemoveReferringUser(ctx context.Context, exec boil.ContextExecutor, related *User) error {
+	var err error
+
+	queries.SetScanner(&o.ReferringUserID, nil)
+	if _, err = o.Update(ctx, exec, boil.Whitelist("referring_user_id")); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	if o.R != nil {
+		o.R.ReferringUser = nil
+	}
+	if related == nil || related.R == nil {
+		return nil
+	}
+
+	for i, ri := range related.R.ReferringUserUsers {
+		if queries.Equal(o.ReferringUserID, ri.ReferringUserID) {
+			continue
+		}
+
+		ln := len(related.R.ReferringUserUsers)
+		if ln > 1 && i < ln-1 {
+			related.R.ReferringUserUsers[i] = related.R.ReferringUserUsers[ln-1]
+		}
+		related.R.ReferringUserUsers = related.R.ReferringUserUsers[:ln-1]
+		break
+	}
+	return nil
+}
+
+// AddReferringUserUsers adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.ReferringUserUsers.
+// Sets related.R.ReferringUser appropriately.
+func (o *User) AddReferringUserUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.ReferringUserID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"users_api\".\"users\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"referring_user_id"}),
+				strmangle.WhereClause("\"", "\"", 2, userPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.ReferringUserID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			ReferringUserUsers: related,
+		}
+	} else {
+		o.R.ReferringUserUsers = append(o.R.ReferringUserUsers, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &userR{
+				ReferringUser: o,
+			}
+		} else {
+			rel.R.ReferringUser = o
+		}
+	}
+	return nil
+}
+
+// SetReferringUserUsers removes all previously related items of the
+// user replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.ReferringUser's ReferringUserUsers accordingly.
+// Replaces o.R.ReferringUserUsers with related.
+// Sets related.R.ReferringUser's ReferringUserUsers accordingly.
+func (o *User) SetReferringUserUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
+	query := "update \"users_api\".\"users\" set \"referring_user_id\" = null where \"referring_user_id\" = $1"
+	values := []interface{}{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.ReferringUserUsers {
+			queries.SetScanner(&rel.ReferringUserID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.ReferringUser = nil
+		}
+		o.R.ReferringUserUsers = nil
+	}
+
+	return o.AddReferringUserUsers(ctx, exec, insert, related...)
+}
+
+// RemoveReferringUserUsers relationships from objects passed in.
+// Removes related items from R.ReferringUserUsers (uses pointer comparison, removal does not keep order)
+// Sets related.R.ReferringUser.
+func (o *User) RemoveReferringUserUsers(ctx context.Context, exec boil.ContextExecutor, related ...*User) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.ReferringUserID, nil)
+		if rel.R != nil {
+			rel.R.ReferringUser = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("referring_user_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.ReferringUserUsers {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.ReferringUserUsers)
+			if ln > 1 && i < ln-1 {
+				o.R.ReferringUserUsers[i] = o.R.ReferringUserUsers[ln-1]
+			}
+			o.R.ReferringUserUsers = o.R.ReferringUserUsers[:ln-1]
+			break
+		}
+	}
+
+	return nil
 }
 
 // Users retrieves all the records using an executor.

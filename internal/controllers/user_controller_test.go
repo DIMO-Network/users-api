@@ -457,7 +457,7 @@ func (s *UserControllerTestSuite) TestSubmitReferralCode() {
 	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
 	s.Require().NoError(err)
 
-	s.Require().Equal(null.StringFrom("123456"), user.ReferredBy)
+	s.Require().Equal(null.StringFrom("SomeID"), user.ReferringUserID)
 }
 
 func (s *UserControllerTestSuite) TestUserCannotRecommendSelf() {
@@ -519,7 +519,8 @@ func (s *UserControllerTestSuite) TestUserCannotRecommendSelf() {
 	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
 	s.Require().NoError(err)
 
-	s.Require().Empty(user.ReferredBy)
+	s.Require().False(user.ReferringUserID.Valid)
+	// s.Require().Empty(user.ReferredBy)
 }
 
 func (s *UserControllerTestSuite) TestFailureOnReferralCodeNotExist() {
@@ -570,7 +571,8 @@ func (s *UserControllerTestSuite) TestFailureOnReferralCodeNotExist() {
 	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
 	s.Require().NoError(err)
 
-	s.Require().Empty(user.ReferredBy)
+	//s.Require().Empty(user.ReferredBy)
+	s.Require().False(user.ReferringUserID.Valid)
 }
 
 func (s *UserControllerTestSuite) TestFailureOnInvalidReferralCode() {
@@ -621,7 +623,9 @@ func (s *UserControllerTestSuite) TestFailureOnInvalidReferralCode() {
 	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
 	s.Require().NoError(err)
 
-	s.Require().Empty(user.ReferredBy)
+	// s.Require().Empty(user.ReferredBy)
+	s.Require().False(user.ReferringUserID.Valid)
+
 }
 
 func (s *UserControllerTestSuite) TestFailureOnUserAlreadyReferred() {
@@ -643,14 +647,25 @@ func (s *UserControllerTestSuite) TestFailureOnUserAlreadyReferred() {
 	mockRefCode := "789102"
 
 	nu := models.User{
-		ID:             "Cwbss",
-		EmailAddress:   null.StringFrom("steve@web3.com"),
-		EmailConfirmed: true,
-		CreatedAt:      time.Now(),
-		ReferredBy:     null.StringFrom(mockRefCode),
+		ID:              "Cwbss",
+		EmailAddress:    null.StringFrom("steve@web3.com"),
+		EmailConfirmed:  true,
+		CreatedAt:       time.Now(),
+		ReferringUserID: null.StringFrom("Xwbzz"),
 	}
 
-	err := nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	nu2 := models.User{
+		ID:             "Xwbzz",
+		EmailAddress:   null.StringFrom("steve2@web3.com"),
+		EmailConfirmed: true,
+		CreatedAt:      time.Now(),
+		ReferralCode:   null.StringFrom(mockRefCode),
+	}
+
+	err := nu2.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	err = nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
 	s.Require().NoError(err)
 
 	app.Use(func(c *fiber.Ctx) error {
@@ -683,7 +698,7 @@ func (s *UserControllerTestSuite) TestFailureOnUserAlreadyReferred() {
 	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
 	s.Require().NoError(err)
 
-	s.Require().Equal(user.ReferredBy, null.StringFrom(mockRefCode))
+	s.Require().Equal(user.ReferringUserID, null.StringFrom(nu2.ID))
 }
 
 func (s *UserControllerTestSuite) TestFailureOnSameEthereumAddressForReferrerAndReferred() {
@@ -828,5 +843,145 @@ func (s *UserControllerTestSuite) TestFailureOnUserAlreadyHasDevices() {
 	err = nu.Reload(ctx, uc.dbs.DBS().Reader)
 	s.Require().NoError(err)
 
-	s.Require().False(nu.ReferredBy.Valid)
+	s.Require().False(nu.ReferringUserID.Valid)
+}
+
+func (s *UserControllerTestSuite) TestGetUser() {
+	ctx := context.Background()
+
+	uc := UserController{
+		dbs:             s.dbs,
+		log:             s.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	app := fiber.New()
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id": "apple",
+			"sub":         "Cwbs",
+			"email":       "steve@apple.com",
+		}})
+		return c.Next()
+	})
+
+	pk, err := crypto.GenerateKey()
+	s.Require().NoError(err)
+
+	addr := crypto.PubkeyToAddress(pk.PublicKey)
+
+	nu := models.User{
+		ID:                "SomeID",
+		EmailConfirmed:    true,
+		CreatedAt:         time.Now(),
+		ReferralCode:      null.StringFrom("123456"),
+		EthereumAddress:   null.StringFrom(addr.Hex()),
+		EthereumConfirmed: true,
+	}
+
+	nu2 := models.User{
+		ID:                "Cwbs",
+		EmailConfirmed:    true,
+		CreatedAt:         time.Now(),
+		ReferralCode:      null.StringFrom("789abx"),
+		EthereumAddress:   null.StringFrom(addr.Hex()),
+		EthereumConfirmed: true,
+		ReferringUserID:   null.StringFrom(nu.ID),
+	}
+
+	err = nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	err = nu2.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	app.Get("/", uc.GetUser)
+
+	r := httptest.NewRequest("GET", "/", nil)
+	resp, err := app.Test(r, -1)
+	s.Require().NoError(err)
+
+	defer resp.Body.Close()
+
+	eResp := UserResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&eResp)
+	s.Require().NoError(err)
+
+	s.Require().Equal(200, resp.StatusCode)
+	s.Require().Equal(eResp.ReferredBy, nu.EthereumAddress)
+}
+
+func (s *UserControllerTestSuite) TestNoReferringUserWhenEthAddressNotConfirmed() {
+	ctx := context.Background()
+
+	uc := UserController{
+		dbs:             s.dbs,
+		log:             s.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	app := fiber.New()
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id": "apple",
+			"sub":         "Cwbs",
+			"email":       "steve@apple.com",
+		}})
+		return c.Next()
+	})
+
+	pk, err := crypto.GenerateKey()
+	s.Require().NoError(err)
+
+	addr := crypto.PubkeyToAddress(pk.PublicKey)
+
+	nu := models.User{
+		ID:                "SomeID",
+		EmailConfirmed:    true,
+		CreatedAt:         time.Now(),
+		ReferralCode:      null.StringFrom("123456"),
+		EthereumAddress:   null.StringFrom(addr.Hex()),
+		EthereumConfirmed: false,
+	}
+
+	nu2 := models.User{
+		ID:              "Cwbs",
+		EmailConfirmed:  true,
+		CreatedAt:       time.Now(),
+		ReferralCode:    null.StringFrom("789abx"),
+		ReferringUserID: null.StringFrom(nu.ID),
+	}
+
+	err = nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	err = nu2.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	app.Get("/", uc.GetUser)
+
+	r := httptest.NewRequest("GET", "/", nil)
+	resp, err := app.Test(r, -1)
+	s.Require().NoError(err)
+
+	defer resp.Body.Close()
+
+	eResp := UserResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&eResp)
+	s.Require().NoError(err)
+
+	s.Require().Equal(200, resp.StatusCode)
+	s.Require().False(eResp.ReferredBy.Valid)
 }

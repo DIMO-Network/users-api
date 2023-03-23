@@ -966,11 +966,11 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 	}
 
 	user.ReferredBy = null.StringFrom(body.ReferralCode)
+	user.ReferredAt = null.TimeFrom(time.Now())
 	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		d.log.Err(err).Msg("Could not save referral code")
 		return fiber.NewError(fiber.StatusInternalServerError, "error occurred completing referral code verification")
 	}
-	user.ReferredAt = null.TimeFrom(time.Now())
 
 	return c.JSON(SubmitReferralCodeResponse{
 		Message: "Referrer code saved",

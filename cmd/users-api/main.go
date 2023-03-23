@@ -192,7 +192,7 @@ func HealthCheck(c *fiber.Ctx) error {
 }
 
 // ErrorHandler custom handler to log recovered errors using our logger and return json instead of string
-func ErrorHandler(c *fiber.Ctx, err error, logger zerolog.Logger) error {
+func ErrorHandler(c *fiber.Ctx, err error, _ zerolog.Logger) error {
 	code := fiber.StatusInternalServerError // Default 500 statuscode
 	message := "Internal error."
 

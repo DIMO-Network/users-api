@@ -183,8 +183,8 @@ func HealthCheck(c *fiber.Ctx) error {
 	res := map[string]interface{}{
 		"data": "Server is up and running",
 	}
-
-	if err := c.JSON(res); err != nil {
+	err := c.JSON(res)
+	if err != nil {
 		return err
 	}
 

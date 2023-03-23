@@ -40,6 +40,7 @@ type User struct {
 	InAppWallet             bool        `boil:"in_app_wallet" json:"in_app_wallet" toml:"in_app_wallet" yaml:"in_app_wallet"`
 	ReferralCode            null.String `boil:"referral_code" json:"referral_code,omitempty" toml:"referral_code" yaml:"referral_code,omitempty"`
 	ReferredBy              null.String `boil:"referred_by" json:"referred_by,omitempty" toml:"referred_by" yaml:"referred_by,omitempty"`
+	ReferredAt              null.Time   `boil:"referred_at" json:"referred_at,omitempty" toml:"referred_at" yaml:"referred_at,omitempty"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -62,6 +63,7 @@ var UserColumns = struct {
 	InAppWallet             string
 	ReferralCode            string
 	ReferredBy              string
+	ReferredAt              string
 }{
 	ID:                      "id",
 	EmailAddress:            "email_address",
@@ -79,6 +81,7 @@ var UserColumns = struct {
 	InAppWallet:             "in_app_wallet",
 	ReferralCode:            "referral_code",
 	ReferredBy:              "referred_by",
+	ReferredAt:              "referred_at",
 }
 
 var UserTableColumns = struct {
@@ -98,6 +101,7 @@ var UserTableColumns = struct {
 	InAppWallet             string
 	ReferralCode            string
 	ReferredBy              string
+	ReferredAt              string
 }{
 	ID:                      "users.id",
 	EmailAddress:            "users.email_address",
@@ -115,6 +119,7 @@ var UserTableColumns = struct {
 	InAppWallet:             "users.in_app_wallet",
 	ReferralCode:            "users.referral_code",
 	ReferredBy:              "users.referred_by",
+	ReferredAt:              "users.referred_at",
 }
 
 // Generated where
@@ -251,6 +256,7 @@ var UserWhere = struct {
 	InAppWallet             whereHelperbool
 	ReferralCode            whereHelpernull_String
 	ReferredBy              whereHelpernull_String
+	ReferredAt              whereHelpernull_Time
 }{
 	ID:                      whereHelperstring{field: "\"users_api\".\"users\".\"id\""},
 	EmailAddress:            whereHelpernull_String{field: "\"users_api\".\"users\".\"email_address\""},
@@ -268,6 +274,7 @@ var UserWhere = struct {
 	InAppWallet:             whereHelperbool{field: "\"users_api\".\"users\".\"in_app_wallet\""},
 	ReferralCode:            whereHelpernull_String{field: "\"users_api\".\"users\".\"referral_code\""},
 	ReferredBy:              whereHelpernull_String{field: "\"users_api\".\"users\".\"referred_by\""},
+	ReferredAt:              whereHelpernull_Time{field: "\"users_api\".\"users\".\"referred_at\""},
 }
 
 // UserRels is where relationship names are stored.
@@ -287,9 +294,9 @@ func (*userR) NewStruct() *userR {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "agreed_tos_at", "auth_provider_id", "ethereum_challenge", "ethereum_challenge_sent", "ethereum_confirmed", "in_app_wallet", "referral_code", "referred_by"}
+	userAllColumns            = []string{"id", "email_address", "email_confirmed", "email_confirmation_sent_at", "email_confirmation_key", "created_at", "country_code", "ethereum_address", "agreed_tos_at", "auth_provider_id", "ethereum_challenge", "ethereum_challenge_sent", "ethereum_confirmed", "in_app_wallet", "referral_code", "referred_by", "referred_at"}
 	userColumnsWithoutDefault = []string{"id", "email_confirmed", "created_at", "auth_provider_id", "ethereum_confirmed"}
-	userColumnsWithDefault    = []string{"email_address", "email_confirmation_sent_at", "email_confirmation_key", "country_code", "ethereum_address", "agreed_tos_at", "ethereum_challenge", "ethereum_challenge_sent", "in_app_wallet", "referral_code", "referred_by"}
+	userColumnsWithDefault    = []string{"email_address", "email_confirmation_sent_at", "email_confirmation_key", "country_code", "ethereum_address", "agreed_tos_at", "ethereum_challenge", "ethereum_challenge_sent", "in_app_wallet", "referral_code", "referred_by", "referred_at"}
 	userPrimaryKeyColumns     = []string{"id"}
 	userGeneratedColumns      = []string{}
 )

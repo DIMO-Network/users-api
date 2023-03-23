@@ -137,6 +137,7 @@ type UserResponse struct {
 	// only present if the account has a confirmed Ethereum address.
 	ReferralCode null.String `json:"referralCode" swaggertype:"string" example:"ANB95N"`
 	ReferredBy   null.String `json:"referredBy" swaggertype:"string" example:"CXB95B"`
+	ReferredAt   null.Time   `json:"referredAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 }
 
 type SubmitReferralCodeRequest struct {
@@ -172,6 +173,7 @@ func formatUser(user *models.User) *UserResponse {
 		AgreedTOSAt:  user.AgreedTosAt,
 		ReferralCode: referralCode,
 		ReferredBy:   user.ReferredBy,
+		ReferredAt:   user.ReferredAt,
 	}
 }
 
@@ -968,6 +970,7 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 		d.log.Err(err).Msg("Could not save referral code")
 		return fiber.NewError(fiber.StatusInternalServerError, "error occurred completing referral code verification")
 	}
+	user.ReferredAt = null.TimeFrom(time.Now())
 
 	return c.JSON(SubmitReferralCodeResponse{
 		Message: "Referrer code saved",

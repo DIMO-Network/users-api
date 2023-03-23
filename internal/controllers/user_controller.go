@@ -148,9 +148,9 @@ type SubmitReferralCodeResponse struct {
 }
 
 func formatUser(user *models.User) *UserResponse {
-	referralCode := user.EthereumAddress
-	if !user.EthereumConfirmed || user.EthereumAddress == null.StringFrom("") {
-		referralCode = null.StringFrom("")
+	var referralCode null.String
+	if user.EthereumConfirmed {
+		referralCode = user.ReferralCode
 	}
 
 	return &UserResponse{

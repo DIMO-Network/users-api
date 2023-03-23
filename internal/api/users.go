@@ -10,7 +10,7 @@ import (
 	"github.com/DIMO-Network/users-api/models"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog"
-	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -26,7 +26,10 @@ type userService struct {
 }
 
 func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.User, error) {
-	dbUser, err := models.FindUser(ctx, s.dbs.DBS().Reader, req.Id)
+	dbUser, err := models.Users(
+		models.UserWhere.ID.EQ(req.Id),
+		qm.Load(models.UserRels.ReferringUser),
+	).One(ctx, s.dbs.DBS().Reader)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, status.Error(codes.NotFound, "No user with that ID found.")
@@ -47,16 +50,11 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 		pbUser.EmailAddress = dbUser.EmailAddress.Ptr()
 	}
 
-	if dbUser.ReferredBy.Valid {
-		referrer, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(dbUser.ReferredBy.String))).One(ctx, s.dbs.DBS().Reader)
-		if err != nil {
-			if err != sql.ErrNoRows {
-				return nil, status.Error(codes.Internal, "Internal error.")
-			}
-		} else if referrer.EthereumConfirmed {
+	if ref := dbUser.R.ReferringUser; ref != nil {
+		if ref.EthereumConfirmed {
 			// This should always be the case.
 			pbUser.ReferredBy = &pb.UserReferrer{
-				EthereumAddress: common.FromHex(referrer.EthereumAddress.String),
+				EthereumAddress: common.FromHex(ref.EthereumAddress.String),
 			}
 		}
 	}

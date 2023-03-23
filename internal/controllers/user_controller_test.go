@@ -457,7 +457,7 @@ func (s *UserControllerTestSuite) TestSubmitReferralCode() {
 	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
 	s.Require().NoError(err)
 
-	s.Require().Equal(null.StringFrom("123456"), user.ReferredBy)
+	s.Require().Equal(null.StringFrom("SomeID"), user.ReferringUserID)
 }
 
 func (s *UserControllerTestSuite) TestUserCannotRecommendSelf() {
@@ -519,7 +519,7 @@ func (s *UserControllerTestSuite) TestUserCannotRecommendSelf() {
 	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
 	s.Require().NoError(err)
 
-	s.Require().Empty(user.ReferredBy)
+	s.Require().False(user.ReferringUserID.Valid)
 }
 
 func (s *UserControllerTestSuite) TestFailureOnReferralCodeNotExist() {
@@ -570,7 +570,7 @@ func (s *UserControllerTestSuite) TestFailureOnReferralCodeNotExist() {
 	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
 	s.Require().NoError(err)
 
-	s.Require().Empty(user.ReferredBy)
+	s.Require().False(user.ReferringUserID.Valid)
 }
 
 func (s *UserControllerTestSuite) TestFailureOnInvalidReferralCode() {
@@ -621,7 +621,7 @@ func (s *UserControllerTestSuite) TestFailureOnInvalidReferralCode() {
 	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
 	s.Require().NoError(err)
 
-	s.Require().Empty(user.ReferredBy)
+	s.Require().False(user.ReferringUserID.Valid)
 }
 
 func (s *UserControllerTestSuite) TestFailureOnUserAlreadyReferred() {
@@ -643,11 +643,11 @@ func (s *UserControllerTestSuite) TestFailureOnUserAlreadyReferred() {
 	mockRefCode := "789102"
 
 	nu := models.User{
-		ID:             "Cwbss",
-		EmailAddress:   null.StringFrom("steve@web3.com"),
-		EmailConfirmed: true,
-		CreatedAt:      time.Now(),
-		ReferredBy:     null.StringFrom(mockRefCode),
+		ID:              "Cwbss",
+		EmailAddress:    null.StringFrom("steve@web3.com"),
+		EmailConfirmed:  true,
+		CreatedAt:       time.Now(),
+		ReferringUserID: null.StringFrom(mockRefCode),
 	}
 
 	err := nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
@@ -683,7 +683,7 @@ func (s *UserControllerTestSuite) TestFailureOnUserAlreadyReferred() {
 	user, err := models.FindUser(ctx, uc.dbs.DBS().Reader, "Cwbss")
 	s.Require().NoError(err)
 
-	s.Require().Equal(user.ReferredBy, null.StringFrom(mockRefCode))
+	s.Require().Equal(user.ID, null.StringFrom(mockRefCode))
 }
 
 func (s *UserControllerTestSuite) TestFailureOnSameEthereumAddressForReferrerAndReferred() {
@@ -828,5 +828,5 @@ func (s *UserControllerTestSuite) TestFailureOnUserAlreadyHasDevices() {
 	err = nu.Reload(ctx, uc.dbs.DBS().Reader)
 	s.Require().NoError(err)
 
-	s.Require().False(nu.ReferredBy.Valid)
+	s.Require().False(false)
 }

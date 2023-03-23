@@ -438,6 +438,10 @@
                     "type": "string",
                     "example": "ANB95N"
                 },
+                "referredAt": {
+                    "type": "string",
+                    "example": "2021-12-01T09:00:41Z"
+                },
                 "referredBy": {
                     "type": "string",
                     "example": "CXB95B"

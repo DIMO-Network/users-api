@@ -94,6 +94,9 @@ definitions:
           only present if the account has a confirmed Ethereum address.
         example: ANB95N
         type: string
+      referredAt:
+        example: "2021-12-01T09:00:41Z"
+        type: string
       referredBy:
         example: CXB95B
         type: string

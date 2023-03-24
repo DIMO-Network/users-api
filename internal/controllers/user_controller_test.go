@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -394,6 +395,72 @@ func (s *UserControllerTestSuite) TestReferralCodeGeneratedOnWeb3Provider() {
 	s.Require().NoError(err)
 
 	s.Regexp(referralCodeRegex, user.ReferralCode.String)
+}
+
+func (s *UserControllerTestSuite) TestReferralCodeConflictHandling() {
+	ctx := context.Background()
+
+	uc := UserController{
+		dbs:             s.dbs,
+		log:             s.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	app := fiber.New()
+
+	privateKey, err := crypto.GenerateKey()
+	s.Require().NoError(err)
+
+	address := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	nu := models.User{
+		ID:             "SomeID",
+		EmailConfirmed: true,
+		CreatedAt:      time.Now(),
+		ReferralCode:   null.StringFrom("123456"),
+	}
+
+	oldInt := randInt
+	callCount := int64(0)
+
+	randInt = func(n *big.Int) (*big.Int, error) {
+		callCount++
+		return big.NewInt(callCount), nil
+	}
+
+	err = nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id":      "web3",
+			"sub":              "Cwbss",
+			"email":            "steve@web3.com",
+			"ethereum_address": address.Hex(),
+		}})
+		return c.Next()
+	})
+
+	app.Get("/", uc.GetUser)
+
+	r := httptest.NewRequest("GET", "/", nil)
+	resp, err := app.Test(r, -1)
+	s.Require().NoError(err)
+
+	defer resp.Body.Close()
+
+	var user UserResponse
+	err = json.NewDecoder(resp.Body).Decode(&user)
+	s.Require().NoError(err)
+
+	s.Regexp(referralCodeRegex, user.ReferralCode.String)
+
+	randInt = oldInt
 }
 
 func (s *UserControllerTestSuite) TestSubmitReferralCode() {

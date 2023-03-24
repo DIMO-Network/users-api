@@ -682,6 +682,10 @@ type ConfirmEthereumRequest struct {
 	Signature string `json:"signature"`
 }
 
+var randInt = func(n *big.Int) (*big.Int, error) {
+	return crypto_rand.Int(crypto_rand.Reader, n)
+}
+
 func (d *UserController) GenerateReferralCode(ctx context.Context) (string, error) {
 	const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	alphabetSize := big.NewInt(int64(len(alphabet)))
@@ -689,7 +693,7 @@ func (d *UserController) GenerateReferralCode(ctx context.Context) (string, erro
 	getCode := func() (string, error) {
 		res := make([]byte, 6)
 		for i := 0; i < 6; i++ {
-			d, err := crypto_rand.Int(crypto_rand.Reader, alphabetSize)
+			d, err := randInt(alphabetSize)
 			if err != nil {
 				return "", err
 			}
@@ -698,20 +702,22 @@ func (d *UserController) GenerateReferralCode(ctx context.Context) (string, erro
 		return string(res), nil
 	}
 
-	for {
-		code, err := getCode()
-		if err != nil {
-			return "", err
-		}
+	return getCode()
 
-		exists, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(code))).Exists(ctx, d.dbs.DBS().Reader)
-		if err != nil {
-			return "", err
-		}
-		if !exists {
-			return code, nil
-		}
-	}
+	// for {
+	// 	code, err := getCode()
+	// 	if err != nil {
+	// 		return "", err
+	// 	}
+
+	// 	exists, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(code))).Exists(ctx, d.dbs.DBS().Reader)
+	// 	if err != nil {
+	// 		return "", err
+	// 	}
+	// 	if !exists {
+	// 		return code, nil
+	// 	}
+	// }
 }
 
 // SubmitEthereumChallenge godoc

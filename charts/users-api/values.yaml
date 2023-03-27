@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   repository: dimozone/users-api
   pullPolicy: IfNotPresent
-  tag: '0704835'
+  tag: 7ed6a06
 imagePullSecrets: []
 nameOverride: ''
 fullnameOverride: ''
@@ -21,6 +21,7 @@ securityContext:
     drop:
       - all
 env:
+  ENVIRONMENT: dev
   PORT: '8080'
   GRPC_PORT: '8086'
   LOG_LEVEL: info

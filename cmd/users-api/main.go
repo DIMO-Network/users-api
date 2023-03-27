@@ -142,7 +142,9 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 	v1User.Post("/agree-tos", userController.AgreeTOS)
 	v1User.Post("/send-confirmation-email", userController.SendConfirmationEmail)
 	v1User.Post("/confirm-email", userController.ConfirmEmail)
-	v1User.Post("/submit-referral-code", userController.SubmitReferralCode)
+	if settings.Environment != "prod" {
+		v1User.Post("/submit-referral-code", userController.SubmitReferralCode)
+	}
 	v1User.Post("/web3/challenge/generate", userController.GenerateEthereumChallenge)
 	v1User.Post("/web3/challenge/submit", userController.SubmitEthereumChallenge)
 

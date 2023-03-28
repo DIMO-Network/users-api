@@ -20,11 +20,11 @@ import (
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
 	"github.com/ansrivas/fiberprometheus/v2"
-	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	jwtware "github.com/gofiber/jwt/v3"
+	"github.com/gofiber/swagger"
 	"github.com/rs/zerolog"
 )
 

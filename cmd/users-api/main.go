@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"time"
+	"strings"
 
 	_ "github.com/lib/pq"
 	_ "go.uber.org/automaxprocs"
@@ -203,6 +204,8 @@ func ErrorHandler(c *fiber.Ctx, err error, _ zerolog.Logger) error {
 		code = e.Code
 		message = err.Error()
 	}
+	
+	logger.Err(err).Int("code", code).Str("path", strings.TrimPrefix(c.Path())).Msg("Failed request.")
 
 	return c.Status(code).JSON(fiber.Map{
 		"code":    code,

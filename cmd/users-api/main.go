@@ -205,7 +205,7 @@ func ErrorHandler(c *fiber.Ctx, err error, _ zerolog.Logger) error {
 		message = err.Error()
 	}
 	
-	logger.Err(err).Int("code", code).Str("path", strings.TrimPrefix(c.Path())).Msg("Failed request.")
+	logger.Err(err).Int("code", code).Str("path", strings.TrimPrefix(c.Path(), "/")).Msg("Failed request.")
 
 	return c.Status(code).JSON(fiber.Map{
 		"code":    code,

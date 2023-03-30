@@ -773,7 +773,7 @@ func (s *UserControllerTestSuite) TestFailureOnSameEthereumAddressForReferrerAnd
 	defer resp.Body.Close()
 
 	s.Require().Equal(400, resp.StatusCode)
-	s.Require().Equal("invalid referral code, user cannot refer self", string(body))
+	s.Require().Equal("User and referrer have the same Ethereum address.", string(body))
 }
 
 func (s *UserControllerTestSuite) TestFailureOnUserAlreadyHasDevices() {

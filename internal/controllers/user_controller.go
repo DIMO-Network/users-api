@@ -936,60 +936,58 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 	userID := getUserID(c)
 	user, err := d.getOrCreateUser(c, userID)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+		return err
+	}
+
+	// TODO(elffjs): Some of these should probably be conflicts.
+	if user.ReferredAt.Valid {
+		return fiber.NewError(fiber.StatusBadRequest, "Already entered a referral code.")
 	}
 
 	dr, err := d.devicesClient.ListUserDevicesForUser(c.Context(), &pb.ListUserDevicesForUserRequest{UserId: userID})
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+		return err
 	}
 
-	if len(dr.UserDevices) > 0 {
-		return fiber.NewError(fiber.StatusBadRequest, "user cannot be referred")
+	if len(dr.UserDevices) != 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "Can't enter a referral code after adding vehicles.")
 	}
 
-	body := new(SubmitReferralCodeRequest)
-
-	if err := c.BodyParser(body); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	var body SubmitReferralCodeRequest
+	if err := c.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
 	}
 
 	d.log.Info().Msgf("Got referral code %q.", body.ReferralCode)
 
 	if !referralCodeRegex.MatchString(body.ReferralCode) {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
+		return fiber.NewError(fiber.StatusBadRequest, "Referral code must be 6 characters and consist of digits and upper-case letters.")
+	}
+
+	if user.ReferralCode.Valid && user.ReferralCode.String == body.ReferralCode {
+		return fiber.NewError(fiber.StatusBadRequest, "Cannot refer self.")
 	}
 
 	referrer, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(body.ReferralCode))).One(c.Context(), d.dbs.DBS().Reader)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
+		if err == sql.ErrNoRows {
+			return fiber.NewError(fiber.StatusBadRequest, "No user with that referral code found.")
 		}
-		d.log.Err(err).Msg("Could not save referral code")
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+		return err
 	}
 
-	if user.EthereumAddress == referrer.EthereumAddress {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code, user cannot refer self")
-	}
-
-	if null.StringFrom(body.ReferralCode) == user.ReferralCode {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
-	}
-
-	if user.ReferringUserID.Valid {
-		return fiber.NewError(fiber.StatusBadRequest, "user has been referred already")
+	if user.EthereumAddress.Valid && user.EthereumAddress == referrer.EthereumAddress {
+		return fiber.NewError(fiber.StatusBadRequest, "User and referrer have the same Ethereum address.")
 	}
 
 	user.ReferringUserID = null.StringFrom(referrer.ID)
 	user.ReferredAt = null.TimeFrom(time.Now())
 	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
-		d.log.Err(err).Msg("Could not save referral code")
-		return fiber.NewError(fiber.StatusInternalServerError, "error occurred completing referral code verification")
+		return err
 	}
 
 	return c.JSON(SubmitReferralCodeResponse{
-		Message: "Referrer code saved",
+		Message: "Referral code used.",
 	})
 }
 

@@ -954,6 +954,8 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
 	}
 
+	d.log.Info().Msgf("Got referral code %q.", body.ReferralCode)
+
 	if !referralCodeRegex.MatchString(body.ReferralCode) {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid referral code")
 	}

@@ -4,8 +4,8 @@ import (
 	"context"
 	"net"
 	"os"
-	"time"
 	"strings"
+	"time"
 
 	_ "github.com/lib/pq"
 	_ "go.uber.org/automaxprocs"
@@ -143,9 +143,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 	v1User.Post("/agree-tos", userController.AgreeTOS)
 	v1User.Post("/send-confirmation-email", userController.SendConfirmationEmail)
 	v1User.Post("/confirm-email", userController.ConfirmEmail)
-	if settings.Environment != "prod" {
-		v1User.Post("/submit-referral-code", userController.SubmitReferralCode)
-	}
+	v1User.Post("/submit-referral-code", userController.SubmitReferralCode)
 	v1User.Post("/web3/challenge/generate", userController.GenerateEthereumChallenge)
 	v1User.Post("/web3/challenge/submit", userController.SubmitEthereumChallenge)
 
@@ -204,7 +202,7 @@ func ErrorHandler(c *fiber.Ctx, err error, logger zerolog.Logger) error {
 		code = e.Code
 		message = err.Error()
 	}
-	
+
 	logger.Err(err).Int("code", code).Str("path", strings.TrimPrefix(c.Path(), "/")).Msg("Failed request.")
 
 	return c.Status(code).JSON(fiber.Map{

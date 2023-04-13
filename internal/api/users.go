@@ -58,6 +58,7 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 		if ref := dbUser.R.ReferringUser; ref != nil && ref.EthereumConfirmed {
 			pbUser.ReferredBy.EthereumAddress = common.FromHex(ref.EthereumAddress.String)
 			pbUser.ReferredBy.ReferrerValid = true
+			pbUser.ReferredBy.Id = referrer.ID
 		}
 	}
 

@@ -959,7 +959,7 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
 	}
 
-	d.log.Info().Msgf("Got referral code %q.", body.ReferralCode)
+	d.log.Info().Str("userId", userID).Msgf("Got referral code %q.", body.ReferralCode)
 
 	referralCode := strings.ToUpper(strings.TrimSpace(body.ReferralCode))
 

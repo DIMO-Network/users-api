@@ -22,7 +22,6 @@ import (
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/gofiber/swagger"
@@ -100,7 +99,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 		EnableStackTrace:  true,
 		StackTraceHandler: nil,
 	}))
-	app.Use(cors.New())
 	app.Get("/", HealthCheck)
 
 	prometheus := fiberprometheus.New("users-api")

@@ -8,14 +8,14 @@ require (
 	github.com/ansrivas/fiberprometheus/v2 v2.1.2
 	github.com/docker/go-connections v0.4.0
 	github.com/friendsofgo/errors v0.9.2
-	github.com/gofiber/fiber/v2 v2.43.0
-	github.com/gofiber/jwt/v3 v3.3.7
+	github.com/gofiber/fiber/v2 v2.44.0
+	github.com/gofiber/jwt/v3 v3.3.9
 	github.com/golang-jwt/jwt/v4 v4.5.0
-	github.com/lib/pq v1.10.7
+	github.com/lib/pq v1.10.8
 	github.com/pressly/goose/v3 v3.10.0
 	github.com/segmentio/ksuid v1.0.4
 	github.com/stretchr/testify v1.8.2
-	github.com/swaggo/swag v1.8.12
+	github.com/swaggo/swag v1.16.1
 	github.com/testcontainers/testcontainers-go v0.19.0
 	github.com/volatiletech/null/v8 v8.1.2
 	github.com/volatiletech/sqlboiler/v4 v4.14.2
@@ -57,12 +57,12 @@ require (
 	github.com/gofiber/adaptor/v2 v2.1.27 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/golang/snappy v0.0.4 // indirect
+	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
-	github.com/holiman/uint256 v1.2.0 // indirect
+	github.com/holiman/uint256 v1.2.2-0.20230321075855-87b91420868c // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
@@ -72,7 +72,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/moby/patternmatcher v0.5.0 // indirect
@@ -108,18 +108,18 @@ require (
 require (
 	github.com/Shopify/sarama v1.38.1
 	github.com/andybalholm/brotli v1.0.5 // indirect
-	github.com/ethereum/go-ethereum v1.11.5
-	github.com/gofiber/swagger v0.1.10
+	github.com/ethereum/go-ethereum v1.11.6
+	github.com/gofiber/swagger v0.1.11
 	github.com/gofrs/uuid v4.3.0+incompatible // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/rs/zerolog v1.29.0
+	github.com/rs/zerolog v1.29.1
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.45.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	github.com/volatiletech/inflect v0.0.1 // indirect
 	github.com/volatiletech/randomize v0.0.1 // indirect
-	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 )

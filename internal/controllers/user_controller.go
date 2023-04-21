@@ -18,6 +18,7 @@ import (
 	"net/textproto"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
@@ -958,17 +959,19 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
 	}
 
-	d.log.Info().Msgf("Got referral code %q.", body.ReferralCode)
+	d.log.Info().Str("userId", userID).Msgf("Got referral code %q.", body.ReferralCode)
 
-	if !referralCodeRegex.MatchString(body.ReferralCode) {
+	referralCode := strings.ToUpper(strings.TrimSpace(body.ReferralCode))
+
+	if !referralCodeRegex.MatchString(referralCode) {
 		return fiber.NewError(fiber.StatusBadRequest, "Referral code must be 6 characters and consist of digits and upper-case letters.")
 	}
 
-	if user.ReferralCode.Valid && user.ReferralCode.String == body.ReferralCode {
+	if user.ReferralCode.Valid && user.ReferralCode.String == referralCode {
 		return fiber.NewError(fiber.StatusBadRequest, "Cannot refer self.")
 	}
 
-	referrer, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(body.ReferralCode))).One(c.Context(), d.dbs.DBS().Reader)
+	referrer, err := models.Users(models.UserWhere.ReferralCode.EQ(null.StringFrom(referralCode))).One(c.Context(), d.dbs.DBS().Reader)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return fiber.NewError(fiber.StatusBadRequest, "No user with that referral code found.")

@@ -12,7 +12,6 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/DIMO-Network/shared"
-	pb "github.com/DIMO-Network/shared/api/users"
 	"github.com/DIMO-Network/shared/db"
 	_ "github.com/DIMO-Network/users-api/docs"
 	"github.com/DIMO-Network/users-api/internal/api"
@@ -20,9 +19,9 @@ import (
 	"github.com/DIMO-Network/users-api/internal/controllers"
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
+	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/gofiber/swagger"
@@ -100,7 +99,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 		EnableStackTrace:  true,
 		StackTraceHandler: nil,
 	}))
-	app.Use(cors.New())
 	app.Get("/", HealthCheck)
 
 	prometheus := fiberprometheus.New("users-api")

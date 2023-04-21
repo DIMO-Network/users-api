@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option go_package = "github.com/DIMO-Network/users-api/pkg/grpc";
+
+package users;
+
+service UserService {
+	rpc GetUser(GetUserRequest) returns (User);
+}
+
+message GetUserRequest {
+	string id = 1;
+}
+
+message User {
+	string id = 1;
+	optional string ethereum_address = 2;
+	optional string email_address = 3;
+    // referred_by is populated if this user entered another user's referral code.
+	optional UserReferrer referred_by = 4;
+}
+
+message UserReferrer {
+	bytes ethereum_address = 1;
+	// referrer_valid will be false if the referring user has deleted their account
+    // or no longer has a confirmed Ethereum address.
+	bool referrer_valid = 2;
+	string id = 3;
+}

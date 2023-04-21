@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"errors"
 
-	pb "github.com/DIMO-Network/shared/api/users"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/models"
+	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"

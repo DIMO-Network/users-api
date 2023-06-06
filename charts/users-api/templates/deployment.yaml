@@ -41,7 +41,7 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          command: ['sh', '-c', "/users-api migrate"]
+          command: ["/users-api", "migrate"]
           envFrom:
           - configMapRef:
               name: {{ include "users-api.fullname" . }}-config

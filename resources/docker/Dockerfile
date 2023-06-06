@@ -29,4 +29,4 @@ USER dimo
 
 EXPOSE 8080
 
-CMD /users-api
+CMD ["/users-api"]

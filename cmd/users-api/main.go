@@ -5,9 +5,9 @@ import (
 	"net"
 	"os"
 	"strings"
-	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	_ "go.uber.org/automaxprocs"
 	"google.golang.org/grpc"
 
@@ -20,10 +20,10 @@ import (
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
-	"github.com/ansrivas/fiberprometheus/v2"
+	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/gofiber/swagger"
 	"github.com/rs/zerolog"
 )
@@ -101,36 +101,20 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 	}))
 	app.Get("/", HealthCheck)
 
-	prometheus := fiberprometheus.New("users-api")
-
 	go func() {
 		monApp := fiber.New(fiber.Config{DisableStartupMessage: true})
 
-		prometheus.RegisterAt(monApp, "/metrics")
+		monApp.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
 		if err := monApp.Listen(":" + settings.MonitoringPort); err != nil {
 			logger.Fatal().Err(err).Str("port", settings.MonitoringPort).Msg("Failed to start monitoring web server.")
 		}
 	}()
 
-	app.Use(prometheus.Middleware)
-
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	keyRefreshInterval := time.Hour
-	keyRefreshUnknownKID := true
 	v1User := app.Group("/v1/user", jwtware.New(jwtware.Config{
-		KeySetURL: settings.JWTKeySetURL,
-		KeyRefreshErrorHandler: func(j *jwtware.KeySet, err error) {
-			logger.Error().Err(err).Msg("Key refresh error")
-		},
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			return c.Status(fiber.StatusUnauthorized).JSON(struct {
-				Message string `json:"message"`
-			}{"Invalid or expired JWT"})
-		},
-		KeyRefreshInterval:   &keyRefreshInterval,
-		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
+		JWKSetURLs: []string{settings.JWTKeySetURL},
 	}))
 
 	userController := controllers.NewUserController(settings, dbs, eventService, &logger)

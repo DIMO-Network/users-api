@@ -14,7 +14,7 @@ RUN go mod tidy
 RUN go mod vendor
 RUN make install
 
-FROM gcr.io/distroless/base-debian11 AS package
+FROM gcr.io/distroless/static-debian11 AS package
 
 LABEL maintainer="DIMO <hello@dimo.zone>"
 

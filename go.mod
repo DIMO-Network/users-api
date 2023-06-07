@@ -1,13 +1,13 @@
 module github.com/DIMO-Network/users-api
 
-go 1.19
+go 1.20
 
 require (
 	github.com/DIMO-Network/devices-api v1.15.1
 	github.com/DIMO-Network/shared v0.9.4
 	github.com/docker/go-connections v0.4.0
 	github.com/friendsofgo/errors v0.9.2
-	github.com/gofiber/contrib/jwt v1.0.0
+	github.com/gofiber/contrib/jwt v1.0.1
 	github.com/gofiber/fiber/v2 v2.46.0
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/lib/pq v1.10.9
@@ -28,7 +28,7 @@ require (
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/MicahParks/keyfunc/v2 v2.0.3 // indirect
+	github.com/MicahParks/keyfunc/v2 v2.1.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/avast/retry-go/v4 v4.3.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.18.0 // indirect

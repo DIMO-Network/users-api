@@ -110,6 +110,7 @@ require (
 	github.com/Shopify/sarama v1.38.1
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/ethereum/go-ethereum v1.12.0
+	github.com/goccy/go-json v0.10.2
 	github.com/gofiber/swagger v0.1.12
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/klauspost/compress v1.16.5 // indirect

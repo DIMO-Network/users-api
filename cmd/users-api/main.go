@@ -6,11 +6,6 @@ import (
 	"os"
 	"strings"
 
-	_ "github.com/lib/pq"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	_ "go.uber.org/automaxprocs"
-	"google.golang.org/grpc"
-
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
 	_ "github.com/DIMO-Network/users-api/docs"
@@ -20,12 +15,17 @@ import (
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
+	"github.com/goccy/go-json"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
+	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
+	_ "go.uber.org/automaxprocs"
+	"google.golang.org/grpc"
 )
 
 // @title DIMO User API
@@ -92,6 +92,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 		},
 		DisableStartupMessage: true,
 		ReadBufferSize:        16000,
+		JSONEncoder:           json.Marshal,
+		JSONDecoder:           json.Unmarshal,
 	})
 
 	app.Use(recover.New(recover.Config{

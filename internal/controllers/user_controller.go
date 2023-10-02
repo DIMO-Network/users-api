@@ -315,7 +315,7 @@ func (d *UserController) GetUser(c *fiber.Ctx) error {
 
 	out.Web3.Used, err = d.computeWeb3Used(c.Context(), user)
 	if err != nil {
-		d.log.Err(err).Msg("WEEU")
+		d.log.Err(err).Str("userId", userID).Msg("Failed to determine whether user owns any NFTs.")
 	}
 
 	return c.JSON(out)
@@ -332,7 +332,7 @@ func (d *UserController) computeWeb3Used(ctx context.Context, user *models.User)
 
 	devices, err := d.devicesClient.ListUserDevicesForUser(ctx, &pb.ListUserDevicesForUserRequest{UserId: user.ID})
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("couldn't retrieve user's vehicles: %w", err)
 	}
 
 	for _, amd := range devices.UserDevices {
@@ -343,7 +343,7 @@ func (d *UserController) computeWeb3Used(ctx context.Context, user *models.User)
 
 	ams, err := d.amClient.ListAftermarketDevicesForUser(ctx, &pb.ListAftermarketDevicesForUserRequest{UserId: user.ID})
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("couldn't retrieve user's aftermarket devices: %w", err)
 	}
 
 	for _, am := range ams.AftermarketDevices {

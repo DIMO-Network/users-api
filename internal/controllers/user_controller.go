@@ -494,6 +494,8 @@ func (d *UserController) DeleteUser(c *fiber.Ctx) error {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
+	d.log.Info().Str("userId", userID).Msg("Deleted user.")
+
 	return c.SendStatus(fiber.StatusNoContent)
 }
 

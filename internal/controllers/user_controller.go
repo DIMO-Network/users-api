@@ -555,6 +555,8 @@ func (d *UserController) AgreeTOS(c *fiber.Ctx) error {
 func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 	userID := getUserID(c)
 
+	logger := d.log.With().Str("userId", userID).Logger()
+
 	user, err := d.getOrCreateUser(c, userID)
 	if err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
@@ -566,6 +568,7 @@ func (d *UserController) SendConfirmationEmail(c *fiber.Ctx) error {
 		return errorResponseHandler(c, fmt.Errorf("email already confirmed"), fiber.StatusBadRequest)
 	}
 	if user.EmailConfirmationSentAt.Valid && time.Since(user.EmailConfirmationSentAt.Time) < d.allowedLateness {
+		logger.Error().Msgf("Rejecting confirmation email request: sent one at %s.", user.EmailConfirmationSentAt.Time)
 		return errorResponseHandler(c, errors.New("email confirmation sent recently, please wait"), fiber.StatusConflict)
 	}
 

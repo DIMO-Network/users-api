@@ -20,9 +20,6 @@ SET ehtereum_address = decode(substr(eth, 3), 'hex')
 FROM users_api.users_eth
 WHERE users.id = users_eth.id;
 
-ALTER TABLE users_api.users
-    ALTER COLUMN ehtereum_address SET NOT NULL;
-
 DROP TABLE users_api.users_eth;
 
 COMMIT TRANSACTION;

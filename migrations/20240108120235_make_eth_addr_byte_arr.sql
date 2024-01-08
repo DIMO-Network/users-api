@@ -5,7 +5,7 @@ SET search_path TO users_api, public;
 BEGIN TRANSACTION;
 
 SELECT  id,
-        ehtereum_address as eth
+        ethereum_address as eth
 INTO    users_api.users_eth
 FROM    users_api.users;
 

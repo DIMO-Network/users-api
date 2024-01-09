@@ -17,6 +17,7 @@ import (
 	"github.com/DIMO-Network/users-api/internal/services"
 	"github.com/DIMO-Network/users-api/models"
 	"github.com/docker/go-connections/nat"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
@@ -935,7 +936,7 @@ func (s *UserControllerTestSuite) TestGetUser() {
 	s.Require().NoError(err)
 
 	s.Require().Equal(200, resp.StatusCode)
-	s.Require().Equal(eResp.ReferredBy, null.StringFrom(hex.EncodeToString(nu.EthereumAddress.Bytes)))
+	s.Require().Equal(eResp.ReferredBy, null.StringFrom(common.BytesToAddress(nu.EthereumAddress.Bytes).Hex()))
 }
 
 func (s *UserControllerTestSuite) TestNoReferringUserWhenEthAddressNotConfirmed() {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/DIMO-Network/shared/db"
@@ -102,7 +103,7 @@ func (s *GenerateReferralCodesSuite) TestGenerateReferralCodeForUsers() {
 
 	address := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	ethAddress, err := hex.DecodeString(address.Hex())
+	ethAddress, err := hex.DecodeString(removeOxPrefix(address.Hex()))
 
 	if err != nil {
 		panic(err)
@@ -130,4 +131,11 @@ func (s *GenerateReferralCodesSuite) TestGenerateReferralCodeForUsers() {
 
 	s.Require().True(res.ReferralCode.Valid)
 	s.Regexp("^[A-Z0-9]{6}$", res.ReferralCode.String)
+}
+
+func removeOxPrefix(ethAddress string) string {
+	if strings.HasPrefix(ethAddress, "0x") {
+		return strings.TrimPrefix(ethAddress, "0x")
+	}
+	return ethAddress
 }

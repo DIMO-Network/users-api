@@ -83,7 +83,9 @@ func (s *GenerateReferralCodesSuite) SetupSuite() {
 
 	s.dbs = dbs
 
-	s.settings = &config.Settings{}
+	s.settings = &config.Settings{
+		DevicesAPIGRPCAddr: "test:1234",
+	}
 }
 
 func (s *GenerateReferralCodesSuite) TearDownSuite() {

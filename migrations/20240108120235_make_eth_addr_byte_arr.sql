@@ -2,8 +2,6 @@
 -- +goose StatementBegin
 SET search_path TO users_api, public;
 
-BEGIN TRANSACTION;
-
 SELECT  id,
         ethereum_address as eth
 INTO    users_api.users_eth
@@ -22,14 +20,11 @@ WHERE users.id = users_eth.id;
 
 DROP TABLE users_api.users_eth;
 
-COMMIT TRANSACTION;
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
 SET search_path TO users_api, public;
-
-BEGIN TRANSACTION;
 
 SELECT  id,
         ethereum_address as eth
@@ -49,5 +44,4 @@ WHERE users.id = users_eth.id;
 
 DROP TABLE users_api.users_eth;
 
-COMMIT TRANSACTION;
 -- +goose StatementEnd

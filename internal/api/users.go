@@ -3,12 +3,12 @@ package api
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/models"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc/codes"
@@ -43,7 +43,8 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 	}
 
 	if dbUser.EthereumConfirmed {
-		pbUser.EthereumAddress = dbUser.EthereumAddress.Ptr()
+		encodedEthAddress := hex.EncodeToString(dbUser.EthereumAddress.Bytes)
+		pbUser.EthereumAddress = &encodedEthAddress
 	}
 
 	if dbUser.EmailConfirmed {
@@ -55,7 +56,7 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 
 		if ref := dbUser.R.ReferringUser; ref != nil && ref.EthereumConfirmed {
 			pbRef.ReferrerValid = true
-			pbRef.EthereumAddress = common.FromHex(ref.EthereumAddress.String)
+			pbRef.EthereumAddress = ref.EthereumAddress.Bytes
 			pbRef.Id = ref.ID
 		}
 

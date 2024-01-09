@@ -4,7 +4,7 @@ SET search_path TO users_api, public;
 
 SELECT  id,
         ethereum_address as eth
-INTO    users_api.users_eth
+INTO    users_eth
 FROM    users_api.users;
 
 ALTER TABLE users_api.users
@@ -15,10 +15,10 @@ LOCK TABLE users_api.users IN ACCESS EXCLUSIVE MODE;
 
 UPDATE users_api.users
 SET ethereum_address = decode(substr(eth, 3), 'hex')
-FROM users_api.users_eth
+FROM users_eth
 WHERE users.id = users_eth.id;
 
-DROP TABLE users_api.users_eth;
+DROP TABLE users_eth;
 
 -- +goose StatementEnd
 
@@ -28,7 +28,7 @@ SET search_path TO users_api, public;
 
 SELECT  id,
         ethereum_address as eth
-INTO    users_api.users_eth
+INTO    users_eth
 FROM    users_api.users;
 
 ALTER TABLE users_api.users
@@ -39,9 +39,9 @@ LOCK TABLE users_api.users IN ACCESS EXCLUSIVE MODE;
 
 UPDATE users_api.users
 SET ethereum_address = '0x' || encode(eth, 'hex')
-FROM users_api.users_eth
+FROM users_eth
 WHERE users.id = users_eth.id;
 
-DROP TABLE users_api.users_eth;
+DROP TABLE users_eth;
 
 -- +goose StatementEnd

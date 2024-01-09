@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -101,9 +102,15 @@ func (s *GenerateReferralCodesSuite) TestGenerateReferralCodeForUsers() {
 
 	address := crypto.PubkeyToAddress(privateKey.PublicKey)
 
+	ethAddress, err := hex.DecodeString(address.Hex())
+
+	if err != nil {
+		panic(err)
+	}
+
 	nu := models.User{
 		ID:                "SomeID",
-		EthereumAddress:   null.StringFrom(address.Hex()),
+		EthereumAddress:   null.BytesFrom(ethAddress),
 		EthereumConfirmed: true,
 	}
 

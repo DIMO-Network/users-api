@@ -430,7 +430,7 @@ func (s *UserControllerTestSuite) TestSubmitReferralCode() {
 
 	addr := crypto.PubkeyToAddress(pk.PublicKey)
 
-	ethAddress, err := hex.DecodeString(addr.Hex())
+	ethAddress, err := hex.DecodeString(removeOxPrefix(addr.Hex()))
 
 	if err != nil {
 		panic(err)
@@ -734,7 +734,7 @@ func (s *UserControllerTestSuite) TestFailureOnSameEthereumAddressForReferrerAnd
 
 	addr := crypto.PubkeyToAddress(pk.PublicKey)
 
-	ethAddress, err := hex.DecodeString(addr.Hex())
+	ethAddress, err := hex.DecodeString(removeOxPrefix(addr.Hex()))
 
 	if err != nil {
 		panic(err)
@@ -891,7 +891,7 @@ func (s *UserControllerTestSuite) TestGetUser() {
 
 	addr := crypto.PubkeyToAddress(pk.PublicKey)
 
-	ethAddress, err := hex.DecodeString(addr.Hex())
+	ethAddress, err := hex.DecodeString(removeOxPrefix(addr.Hex()))
 
 	if err != nil {
 		panic(err)
@@ -935,7 +935,7 @@ func (s *UserControllerTestSuite) TestGetUser() {
 	s.Require().NoError(err)
 
 	s.Require().Equal(200, resp.StatusCode)
-	s.Require().Equal(eResp.ReferredBy, nu.EthereumAddress)
+	s.Require().Equal(eResp.ReferredBy, null.StringFrom(hex.EncodeToString(nu.EthereumAddress.Bytes)))
 }
 
 func (s *UserControllerTestSuite) TestNoReferringUserWhenEthAddressNotConfirmed() {
@@ -968,7 +968,7 @@ func (s *UserControllerTestSuite) TestNoReferringUserWhenEthAddressNotConfirmed(
 
 	addr := crypto.PubkeyToAddress(pk.PublicKey)
 
-	ethAddress, err := hex.DecodeString(addr.Hex())
+	ethAddress, err := hex.DecodeString(removeOxPrefix(addr.Hex()))
 
 	if err != nil {
 		panic(err)

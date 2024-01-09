@@ -262,7 +262,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 				return nil, errors.New("internal error")
 			}
 
-			ethAddress, err := hex.DecodeString(mixAddr.Address().Hex())
+			ethAddress, err := hex.DecodeString(removeOxPrefix(mixAddr.Address().Hex()))
 
 			if err != nil {
 				return nil, fmt.Errorf("invalid ethereum_address %s", ethereum)
@@ -447,7 +447,7 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 			ethereum = null.StringFrom(mixAddr.Address().Hex())
 		}
 
-		ethAddress, err := hex.DecodeString(ethereum.String)
+		ethAddress, err := hex.DecodeString(removeOxPrefix(ethereum.String))
 
 		if err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Invalid Ethereum address %s.", ethereum.String))
@@ -930,7 +930,7 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 			d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", ethereum)
 		}
 
-		ethAddress, err := hex.DecodeString(mixAddr.Address().Hex())
+		ethAddress, err := hex.DecodeString(removeOxPrefix(mixAddr.Address().Hex()))
 
 		if err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, "Invalid ethereum_address.")
@@ -1056,4 +1056,11 @@ func formatAlternateAccounts(users []*models.User) *AlternateAccountsResponse {
 	}
 
 	return &AlternateAccountsResponse{OtherAccounts: accs}
+}
+
+func removeOxPrefix(ethAddress string) string {
+	if strings.HasPrefix(ethAddress, "0x") {
+		return strings.TrimPrefix(ethAddress, "0x")
+	}
+	return ethAddress
 }

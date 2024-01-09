@@ -1040,10 +1040,3 @@ func formatAlternateAccounts(users []*models.User) *AlternateAccountsResponse {
 
 	return &AlternateAccountsResponse{OtherAccounts: accs}
 }
-
-func removeOxPrefix(ethAddress string) string {
-	if strings.HasPrefix(ethAddress, "0x") {
-		return strings.TrimPrefix(ethAddress, "0x")
-	}
-	return ethAddress
-}

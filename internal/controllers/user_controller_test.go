@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"math/big"
@@ -431,18 +430,12 @@ func (s *UserControllerTestSuite) TestSubmitReferralCode() {
 
 	addr := crypto.PubkeyToAddress(pk.PublicKey)
 
-	ethAddress, err := hex.DecodeString(removeOxPrefix(addr.Hex()))
-
-	if err != nil {
-		panic(err)
-	}
-
 	nu := models.User{
 		ID:              "SomeID",
 		EmailConfirmed:  true,
 		CreatedAt:       time.Now(),
 		ReferralCode:    null.StringFrom("123456"),
-		EthereumAddress: null.BytesFrom(ethAddress),
+		EthereumAddress: null.BytesFrom(addr.Bytes()),
 	}
 
 	err = nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
@@ -735,18 +728,12 @@ func (s *UserControllerTestSuite) TestFailureOnSameEthereumAddressForReferrerAnd
 
 	addr := crypto.PubkeyToAddress(pk.PublicKey)
 
-	ethAddress, err := hex.DecodeString(removeOxPrefix(addr.Hex()))
-
-	if err != nil {
-		panic(err)
-	}
-
 	nu := models.User{
 		ID:              "Cwbss",
 		EmailAddress:    null.StringFrom("steve@web3.com"),
 		EmailConfirmed:  true,
 		CreatedAt:       time.Now(),
-		EthereumAddress: null.BytesFrom(ethAddress),
+		EthereumAddress: null.BytesFrom(addr.Bytes()),
 	}
 
 	err = nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
@@ -757,7 +744,7 @@ func (s *UserControllerTestSuite) TestFailureOnSameEthereumAddressForReferrerAnd
 		EmailAddress:    null.StringFrom("steve2@web3.com"),
 		EmailConfirmed:  true,
 		CreatedAt:       time.Now(),
-		EthereumAddress: null.BytesFrom(ethAddress),
+		EthereumAddress: null.BytesFrom(addr.Bytes()),
 		ReferralCode:    null.StringFrom(mockRefCode),
 	}
 
@@ -892,18 +879,12 @@ func (s *UserControllerTestSuite) TestGetUser() {
 
 	addr := crypto.PubkeyToAddress(pk.PublicKey)
 
-	ethAddress, err := hex.DecodeString(removeOxPrefix(addr.Hex()))
-
-	if err != nil {
-		panic(err)
-	}
-
 	nu := models.User{
 		ID:                "SomeID",
 		EmailConfirmed:    true,
 		CreatedAt:         time.Now(),
 		ReferralCode:      null.StringFrom("123456"),
-		EthereumAddress:   null.BytesFrom(ethAddress),
+		EthereumAddress:   null.BytesFrom(addr.Bytes()),
 		EthereumConfirmed: true,
 	}
 
@@ -912,7 +893,7 @@ func (s *UserControllerTestSuite) TestGetUser() {
 		EmailConfirmed:    true,
 		CreatedAt:         time.Now(),
 		ReferralCode:      null.StringFrom("789abx"),
-		EthereumAddress:   null.BytesFrom(ethAddress),
+		EthereumAddress:   null.BytesFrom(addr.Bytes()),
 		EthereumConfirmed: true,
 		ReferringUserID:   null.StringFrom(nu.ID),
 	}
@@ -969,18 +950,12 @@ func (s *UserControllerTestSuite) TestNoReferringUserWhenEthAddressNotConfirmed(
 
 	addr := crypto.PubkeyToAddress(pk.PublicKey)
 
-	ethAddress, err := hex.DecodeString(removeOxPrefix(addr.Hex()))
-
-	if err != nil {
-		panic(err)
-	}
-
 	nu := models.User{
 		ID:                "SomeID",
 		EmailConfirmed:    true,
 		CreatedAt:         time.Now(),
 		ReferralCode:      null.StringFrom("123456"),
-		EthereumAddress:   null.BytesFrom(ethAddress),
+		EthereumAddress:   null.BytesFrom(addr.Bytes()),
 		EthereumConfirmed: false,
 	}
 

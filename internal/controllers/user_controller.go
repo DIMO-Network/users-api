@@ -6,7 +6,6 @@ import (
 	crypto_rand "crypto/rand"
 	"database/sql"
 	_ "embed"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"html/template"
@@ -172,7 +171,7 @@ func formatUser(user *models.User) *UserResponse {
 			ConfirmationSentAt: user.EmailConfirmationSentAt,
 		},
 		Web3: UserResponseWeb3{
-			Address:         null.StringFrom(string(common.BytesToAddress(user.EthereumAddress.Bytes).Hex())),
+			Address:         null.StringFrom(common.BytesToAddress(user.EthereumAddress.Bytes).Hex()),
 			Confirmed:       user.EthereumConfirmed,
 			ChallengeSentAt: user.EthereumChallengeSent,
 			InApp:           user.InAppWallet,
@@ -262,14 +261,8 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 				return nil, errors.New("internal error")
 			}
 
-			ethAddress, err := hex.DecodeString(removeOxPrefix(mixAddr.Address().Hex()))
-
-			if err != nil {
-				return nil, fmt.Errorf("invalid ethereum_address %s", ethereum)
-			}
-
 			user.ReferralCode = null.StringFrom(referralCode)
-			user.EthereumAddress = null.BytesFrom(ethAddress)
+			user.EthereumAddress = null.BytesFrom(mixAddr.Address().Bytes())
 			user.EthereumConfirmed = true
 		default:
 			return nil, fmt.Errorf("unrecognized provider_id %s", providerID)
@@ -447,13 +440,9 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 			ethereum = null.StringFrom(mixAddr.Address().Hex())
 		}
 
-		ethAddress, err := hex.DecodeString(removeOxPrefix(ethereum.String))
+		ethAddress := common.HexToAddress(ethereum.String)
 
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Invalid Ethereum address %s.", ethereum.String))
-		}
-
-		user.EthereumAddress = null.BytesFrom(ethAddress)
+		user.EthereumAddress = null.BytesFrom(ethAddress.Bytes())
 		user.EthereumConfirmed = false
 		user.InAppWallet = body.Web3.InApp
 		user.EthereumChallengeSent = null.Time{}
@@ -930,15 +919,9 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 			d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", ethereum)
 		}
 
-		ethAddress, err := hex.DecodeString(removeOxPrefix(mixAddr.Address().Hex()))
-
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, "Invalid ethereum_address.")
-		}
-
 		otherAccounts, err := models.Users(
 			models.UserWhere.ID.NEQ(userID),
-			models.UserWhere.EthereumAddress.EQ(null.BytesFrom(ethAddress)),
+			models.UserWhere.EthereumAddress.EQ(null.BytesFrom(mixAddr.Address().Bytes())),
 			models.UserWhere.EthereumConfirmed.EQ(true),
 		).All(c.Context(), d.dbs.DBS().Reader)
 

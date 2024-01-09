@@ -3,12 +3,12 @@ package api
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/models"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc/codes"
@@ -43,8 +43,8 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 	}
 
 	if dbUser.EthereumConfirmed {
-		encodedEthAddress := hex.EncodeToString(dbUser.EthereumAddress.Bytes)
-		pbUser.EthereumAddress = &encodedEthAddress
+		hexAddress := common.BytesToAddress(dbUser.EthereumAddress.Bytes).Hex()
+		pbUser.EthereumAddress = &hexAddress
 	}
 
 	if dbUser.EmailConfirmed {

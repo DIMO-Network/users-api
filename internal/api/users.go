@@ -43,7 +43,8 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 	}
 
 	if dbUser.EthereumConfirmed {
-		pbUser.EthereumAddress = dbUser.EthereumAddress.Ptr()
+		hexAddress := common.BytesToAddress(dbUser.EthereumAddress.Bytes).Hex()
+		pbUser.EthereumAddress = &hexAddress
 	}
 
 	if dbUser.EmailConfirmed {
@@ -55,7 +56,7 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 
 		if ref := dbUser.R.ReferringUser; ref != nil && ref.EthereumConfirmed {
 			pbRef.ReferrerValid = true
-			pbRef.EthereumAddress = common.FromHex(ref.EthereumAddress.String)
+			pbRef.EthereumAddress = ref.EthereumAddress.Bytes
 			pbRef.Id = ref.ID
 		}
 

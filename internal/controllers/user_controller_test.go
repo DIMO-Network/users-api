@@ -16,6 +16,7 @@ import (
 	"github.com/DIMO-Network/users-api/internal/services"
 	"github.com/DIMO-Network/users-api/models"
 	"github.com/docker/go-connections/nat"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
@@ -428,12 +429,13 @@ func (s *UserControllerTestSuite) TestSubmitReferralCode() {
 	s.Require().NoError(err)
 
 	addr := crypto.PubkeyToAddress(pk.PublicKey)
+
 	nu := models.User{
 		ID:              "SomeID",
 		EmailConfirmed:  true,
 		CreatedAt:       time.Now(),
 		ReferralCode:    null.StringFrom("123456"),
-		EthereumAddress: null.StringFrom(addr.Hex()),
+		EthereumAddress: null.BytesFrom(addr.Bytes()),
 	}
 
 	err = nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
@@ -731,7 +733,7 @@ func (s *UserControllerTestSuite) TestFailureOnSameEthereumAddressForReferrerAnd
 		EmailAddress:    null.StringFrom("steve@web3.com"),
 		EmailConfirmed:  true,
 		CreatedAt:       time.Now(),
-		EthereumAddress: null.StringFrom(addr.Hex()),
+		EthereumAddress: null.BytesFrom(addr.Bytes()),
 	}
 
 	err = nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
@@ -742,7 +744,7 @@ func (s *UserControllerTestSuite) TestFailureOnSameEthereumAddressForReferrerAnd
 		EmailAddress:    null.StringFrom("steve2@web3.com"),
 		EmailConfirmed:  true,
 		CreatedAt:       time.Now(),
-		EthereumAddress: null.StringFrom(addr.Hex()),
+		EthereumAddress: null.BytesFrom(addr.Bytes()),
 		ReferralCode:    null.StringFrom(mockRefCode),
 	}
 
@@ -882,7 +884,7 @@ func (s *UserControllerTestSuite) TestGetUser() {
 		EmailConfirmed:    true,
 		CreatedAt:         time.Now(),
 		ReferralCode:      null.StringFrom("123456"),
-		EthereumAddress:   null.StringFrom(addr.Hex()),
+		EthereumAddress:   null.BytesFrom(addr.Bytes()),
 		EthereumConfirmed: true,
 	}
 
@@ -891,7 +893,7 @@ func (s *UserControllerTestSuite) TestGetUser() {
 		EmailConfirmed:    true,
 		CreatedAt:         time.Now(),
 		ReferralCode:      null.StringFrom("789abx"),
-		EthereumAddress:   null.StringFrom(addr.Hex()),
+		EthereumAddress:   null.BytesFrom(addr.Bytes()),
 		EthereumConfirmed: true,
 		ReferringUserID:   null.StringFrom(nu.ID),
 	}
@@ -915,7 +917,7 @@ func (s *UserControllerTestSuite) TestGetUser() {
 	s.Require().NoError(err)
 
 	s.Require().Equal(200, resp.StatusCode)
-	s.Require().Equal(eResp.ReferredBy, nu.EthereumAddress)
+	s.Require().Equal(eResp.ReferredBy, null.StringFrom(common.BytesToAddress(nu.EthereumAddress.Bytes).Hex()))
 }
 
 func (s *UserControllerTestSuite) TestNoReferringUserWhenEthAddressNotConfirmed() {
@@ -953,7 +955,7 @@ func (s *UserControllerTestSuite) TestNoReferringUserWhenEthAddressNotConfirmed(
 		EmailConfirmed:    true,
 		CreatedAt:         time.Now(),
 		ReferralCode:      null.StringFrom("123456"),
-		EthereumAddress:   null.StringFrom(addr.Hex()),
+		EthereumAddress:   null.BytesFrom(addr.Bytes()),
 		EthereumConfirmed: false,
 	}
 

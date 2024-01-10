@@ -67,7 +67,7 @@ type DevicesAPI interface {
 }
 
 func NewUserController(settings *config.Settings, dbs db.Store, eventService services.EventService, logger *zerolog.Logger) UserController {
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
 		panic(err)
@@ -160,7 +160,7 @@ func formatUser(user *models.User) *UserResponse {
 
 	var referrer null.String
 	if user.R != nil && user.R.ReferringUser != nil && user.R.ReferringUser.EthereumConfirmed {
-		referrer = user.R.ReferringUser.EthereumAddress
+		referrer = null.StringFrom(common.BytesToAddress(user.R.ReferringUser.EthereumAddress.Bytes).Hex())
 	}
 
 	return &UserResponse{
@@ -171,7 +171,7 @@ func formatUser(user *models.User) *UserResponse {
 			ConfirmationSentAt: user.EmailConfirmationSentAt,
 		},
 		Web3: UserResponseWeb3{
-			Address:         user.EthereumAddress,
+			Address:         null.StringFrom(common.BytesToAddress(user.EthereumAddress.Bytes).Hex()),
 			Confirmed:       user.EthereumConfirmed,
 			ChallengeSentAt: user.EthereumChallengeSent,
 			InApp:           user.InAppWallet,
@@ -262,7 +262,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			}
 
 			user.ReferralCode = null.StringFrom(referralCode)
-			user.EthereumAddress = null.StringFrom(mixAddr.Address().Hex())
+			user.EthereumAddress = null.BytesFrom(mixAddr.Address().Bytes())
 			user.EthereumConfirmed = true
 		default:
 			return nil, fmt.Errorf("unrecognized provider_id %s", providerID)
@@ -430,7 +430,7 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 		user.EmailConfirmationSentAt = null.TimeFromPtr(nil)
 	}
 
-	if body.Web3.Address.Defined && body.Web3.Address.Value != user.EthereumAddress {
+	if body.Web3.Address.Defined && body.Web3.Address.Value != null.StringFrom(common.BytesToAddress(user.EthereumAddress.Bytes).Hex()) {
 		ethereum := body.Web3.Address.Value
 		if ethereum.Valid {
 			mixAddr, err := common.NewMixedcaseAddressFromString(ethereum.String)
@@ -439,7 +439,10 @@ func (d *UserController) UpdateUser(c *fiber.Ctx) error {
 			}
 			ethereum = null.StringFrom(mixAddr.Address().Hex())
 		}
-		user.EthereumAddress = ethereum
+
+		ethAddress := common.HexToAddress(ethereum.String)
+
+		user.EthereumAddress = null.BytesFrom(ethAddress.Bytes())
 		user.EthereumConfirmed = false
 		user.InAppWallet = body.Web3.InApp
 		user.EthereumChallengeSent = null.Time{}
@@ -663,7 +666,7 @@ func (d *UserController) GenerateEthereumChallenge(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "No ethereum address to confirm.")
 	}
 
-	challenge := fmt.Sprintf("%s is asking you to please verify ownership of the address %s by signing this random string: %s", c.Hostname(), user.EthereumAddress.String, nonce)
+	challenge := fmt.Sprintf("%s is asking you to please verify ownership of the address %s by signing this random string: %s", c.Hostname(), common.BytesToAddress(user.EthereumAddress.Bytes).Hex(), nonce)
 
 	now := time.Now()
 	user.EthereumChallengeSent = null.TimeFrom(now)
@@ -757,7 +760,7 @@ func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
 	}
 
-	addrb := common.HexToAddress(user.EthereumAddress.String)
+	addrb := common.BytesToAddress(user.EthereumAddress.Bytes)
 
 	signb, err := hexutil.Decode(submitBody.Signature)
 	if err != nil {
@@ -918,9 +921,10 @@ func (d *UserController) CheckAccount(c *fiber.Ctx) error {
 
 		otherAccounts, err := models.Users(
 			models.UserWhere.ID.NEQ(userID),
-			models.UserWhere.EthereumAddress.EQ(null.StringFrom(mixAddr.Address().Hex())),
+			models.UserWhere.EthereumAddress.EQ(null.BytesFrom(mixAddr.Address().Bytes())),
 			models.UserWhere.EthereumConfirmed.EQ(true),
 		).All(c.Context(), d.dbs.DBS().Reader)
+
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 		}
@@ -984,7 +988,7 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 		return err
 	}
 
-	if user.EthereumAddress.Valid && user.EthereumAddress == referrer.EthereumAddress {
+	if user.EthereumAddress.Valid && common.BytesToAddress(user.EthereumAddress.Bytes).Hex() == common.BytesToAddress(referrer.EthereumAddress.Bytes).Hex() {
 		return fiber.NewError(fiber.StatusBadRequest, "User and referrer have the same Ethereum address.")
 	}
 
@@ -1028,7 +1032,7 @@ func formatAlternateAccounts(users []*models.User) *AlternateAccountsResponse {
 		case "web3":
 			acc := &AltAccount{
 				Type:  user.AuthProviderID,
-				Login: user.EthereumAddress.String,
+				Login: common.BytesToAddress(user.EthereumAddress.Bytes).Hex(),
 			}
 			accs = append(accs, acc)
 		}

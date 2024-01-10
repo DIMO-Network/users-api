@@ -81,7 +81,9 @@ func (s *GenerateReferralCodesSuite) SetupSuite() {
 
 	s.dbs = dbs
 
-	s.settings = &config.Settings{}
+	s.settings = &config.Settings{
+		DevicesAPIGRPCAddr: "test:1234",
+	}
 }
 
 func (s *GenerateReferralCodesSuite) TearDownSuite() {
@@ -103,7 +105,7 @@ func (s *GenerateReferralCodesSuite) TestGenerateReferralCodeForUsers() {
 
 	nu := models.User{
 		ID:                "SomeID",
-		EthereumAddress:   null.StringFrom(address.Hex()),
+		EthereumAddress:   null.BytesFrom(address.Bytes()),
 		EthereumConfirmed: true,
 	}
 

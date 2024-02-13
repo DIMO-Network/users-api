@@ -12,6 +12,7 @@ import (
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/users-api/internal/api"
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
 	"github.com/DIMO-Network/users-api/models"
@@ -1053,4 +1054,37 @@ func (s *UserControllerTestSuite) TestReferralCodeConflictHandling() {
 	s.Regexp(referralCodeRegex, user.ReferralCode.String)
 
 	randInt = oldInt
+}
+
+func (s *UserControllerTestSuite) TestGetUserByEthAddr() {
+	ctx := context.Background()
+
+	userService := api.NewUserService(s.dbs, s.logger)
+
+	ethAddr := common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678")
+	testUser := models.User{
+		ID:                "TestUserID",
+		EthereumAddress:   null.BytesFrom(ethAddr.Bytes()),
+		EmailConfirmed:    true,
+		EmailAddress:      null.StringFrom("testuser@example.com"),
+		EthereumConfirmed: true,
+	}
+
+	err := testUser.Insert(ctx, s.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	req := &pb.GetUserByEthRequest{
+		EthAddr: ethAddr.Bytes(),
+	}
+
+	resultUser, err := userService.GetUserByEthAddr(ctx, req)
+	s.Require().NoError(err)
+
+	s.Require().NotNil(resultUser)
+	s.Require().Equal("TestUserID", resultUser.Id)
+	s.Require().Equal("testuser@example.com", *resultUser.EmailAddress)
+	s.Require().Equal(ethAddr.Hex(), *resultUser.EthereumAddress)
+
+	_, err = models.Users(models.UserWhere.ID.EQ("TestUserID")).DeleteAll(ctx, s.dbs.DBS().Writer)
+	s.Require().NoError(err)
 }

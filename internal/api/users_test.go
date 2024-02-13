@@ -82,7 +82,7 @@ func (s *UserServiceTestSuite) TearDownSuite() {
 
 func (s *UserServiceTestSuite) TestGetUserByEthAddr() {
 	ctx := context.Background()
-	userService := NewUserService(s.dbs, s.logger)
+	userSvc := NewUserService(s.dbs, s.logger)
 
 	ethAddr := common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678")
 	testUser := models.User{
@@ -100,7 +100,7 @@ func (s *UserServiceTestSuite) TestGetUserByEthAddr() {
 		EthAddr: ethAddr.Bytes(),
 	}
 
-	resultUser, err := userService.GetUserByEthAddr(ctx, req)
+	resultUser, err := userSvc.GetUserByEthAddr(ctx, req)
 	s.Require().NoError(err)
 
 	s.Require().NotNil(resultUser)

@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"testing"
+
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/models"
@@ -14,7 +16,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"testing"
 )
 
 type UserServiceTestSuite struct {

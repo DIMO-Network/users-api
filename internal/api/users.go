@@ -3,15 +3,14 @@ package api
 import (
 	"context"
 	"database/sql"
-
 	"errors"
-	"github.com/volatiletech/null/v8"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/models"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

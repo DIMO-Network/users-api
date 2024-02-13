@@ -1020,7 +1020,7 @@ func (s *UserControllerTestSuite) TestReferralCodeConflictHandling() {
 	oldInt := randInt
 	callCount := int64(0)
 
-	randInt = func(n *big.Int) (*big.Int, error) {
+	randInt = func(_ *big.Int) (*big.Int, error) {
 		callCount++
 		return big.NewInt(callCount), nil
 	}

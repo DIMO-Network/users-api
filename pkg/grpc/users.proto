@@ -6,7 +6,7 @@ package users;
 
 service UserService {
 	rpc GetUser(GetUserRequest) returns (User);
-	rpc GetUserByEth(GetUserByEthRequest) returns (User);
+	rpc GetUserByEthAddr(GetUserByEthRequest) returns (User);
 }
 
 message GetUserRequest {

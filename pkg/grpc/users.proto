@@ -6,10 +6,15 @@ package users;
 
 service UserService {
 	rpc GetUser(GetUserRequest) returns (User);
+	rpc GetUserByEth(GetUserByEthRequest) returns (User);
 }
 
 message GetUserRequest {
 	string id = 1;
+}
+
+message GetUserByEthRequest {
+	bytes eth_addr = 1;
 }
 
 message User {

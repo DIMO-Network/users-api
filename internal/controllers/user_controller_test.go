@@ -849,7 +849,7 @@ func (s *UserControllerTestSuite) TestFailureOnUserAlreadyHasDevices() {
 	s.Require().False(nu.ReferringUserID.Valid)
 }
 
-func (s *UserControllerTestSuite) TestGetUser() {
+func (s *UserControllerTestSuite) TestGetUser_OnlyUserID() {
 	ctx := context.Background()
 
 	uc := UserController{

@@ -32,10 +32,15 @@
         },
         "/v1/user": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Get attributes for the authenticated user",
+                "summary": "Get attributes for the authenticated user. If multiple records for the same user, gets the one with the email confirmed.",
                 "responses": {
                     "200": {
                         "description": "OK",

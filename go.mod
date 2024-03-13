@@ -22,7 +22,7 @@ require (
 	github.com/volatiletech/strmangle v0.0.4
 	go.uber.org/automaxprocs v1.5.2
 	google.golang.org/grpc v1.55.0
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/protobuf v1.33.0
 )
 
 require (

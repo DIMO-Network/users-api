@@ -920,6 +920,77 @@ func (s *UserControllerTestSuite) TestGetUser_OnlyUserID() {
 	s.Require().Equal(eResp.ReferredBy, null.StringFrom(common.BytesToAddress(nu.EthereumAddress.Bytes).Hex()))
 }
 
+func (s *UserControllerTestSuite) TestGetUser_EthAddr() {
+	ctx := context.Background()
+
+	uc := UserController{
+		dbs:             s.dbs,
+		log:             s.logger,
+		allowedLateness: 5 * time.Minute,
+		countryCodes:    []string{"USA", "CAN"},
+		emailTemplate:   nil,
+		eventService:    &es{},
+		devicesClient:   &udsc{},
+		amClient:        &adsc{},
+	}
+
+	pk, err := crypto.GenerateKey()
+	s.Require().NoError(err)
+
+	addr := crypto.PubkeyToAddress(pk.PublicKey)
+
+	app := fiber.New()
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", &jwt.Token{Claims: jwt.MapClaims{
+			"provider_id":      "apple",
+			"sub":              "SomeID",
+			"ethereum_address": addr.Hex(),
+		}})
+		return c.Next()
+	})
+	// both users with same eth addr
+	nu := models.User{
+		ID:                "SomeID",
+		EmailConfirmed:    false, // we don't want this user to be returned
+		CreatedAt:         time.Now(),
+		ReferralCode:      null.StringFrom("123456"),
+		EthereumAddress:   null.BytesFrom(addr.Bytes()),
+		EthereumConfirmed: true,
+	}
+	nu2 := models.User{
+		ID:                "Cwbs",
+		EmailConfirmed:    true,
+		EmailAddress:      null.StringFrom("steve@crapple.com"),
+		CreatedAt:         time.Now(),
+		ReferralCode:      null.StringFrom("789abx"),
+		EthereumAddress:   null.BytesFrom(addr.Bytes()),
+		EthereumConfirmed: true,
+	}
+
+	err = nu.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	err = nu2.Insert(ctx, uc.dbs.DBS().Writer, boil.Infer())
+	s.Require().NoError(err)
+
+	app.Get("/", uc.GetUser)
+
+	r := httptest.NewRequest("GET", "/", nil)
+	resp, err := app.Test(r, -1)
+	s.Require().NoError(err)
+
+	defer resp.Body.Close()
+
+	eResp := UserResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&eResp)
+	s.Require().NoError(err)
+
+	s.Assert().Equal(200, resp.StatusCode)
+	s.Require().Equal(eResp.ID, nu.ID)                                     // use the original ID
+	s.Require().Equal(eResp.Email.Address.String, nu2.EmailAddress.String) // but the confirmed account email address
+}
+
 func (s *UserControllerTestSuite) TestNoReferringUserWhenEthAddressNotConfirmed() {
 	ctx := context.Background()
 

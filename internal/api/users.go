@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/models"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"

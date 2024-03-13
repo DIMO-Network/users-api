@@ -137,7 +137,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 
 	// Start Server
 	if err := app.Listen(":" + settings.Port); err != nil {
-		logger.Fatal().Err(err)
+		logger.Fatal().Err(err).Send()
 	}
 }
 

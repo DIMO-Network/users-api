@@ -297,18 +297,44 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 	return user, nil
 }
 
+// getUserByEth gets the users from the db with matching eth addr, but selects the one with email confirmed if more than one
+func (d *UserController) getUserByEth(ctx context.Context, ethAddr common.Address) (user *models.User, err error) {
+	user, err = models.Users(
+		models.UserWhere.EthereumAddress.EQ(null.BytesFrom(ethAddr.Bytes())),
+		qm.Load(models.UserRels.ReferringUser),
+		qm.OrderBy("email_confirmed desc"),
+	).One(ctx, d.dbs.DBS().Reader)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 // GetUser godoc
-// @Summary Get attributes for the authenticated user
+// @Summary Get attributes for the authenticated user. If multiple records for the same user, gets the one with the email confirmed.
 // @Produce json
 // @Success 200 {object} controllers.UserResponse
 // @Failure 403 {object} controllers.ErrorResponse
+// @Security BearerAuth
 // @Router /v1/user [get]
 func (d *UserController) GetUser(c *fiber.Ctx) error {
 	userID := getUserID(c)
-
 	user, err := d.getOrCreateUser(c, userID)
 	if err != nil {
 		return err
+	}
+	// many users have multiple entries for the same eth_addr, but we want to use the one with verified email
+	// get users by eth addr, if it exists, order by email_confirmed desc, if userId different, use the better user but just replace the user_id
+	ethAddr := getUserEthAddr(c)
+	if ethAddr != nil {
+		userBetter, err := d.getUserByEth(c.Context(), *ethAddr)
+		if err == nil {
+			if user.ID != userBetter.ID {
+				// use the user with better information but preserve the original ID of the claim so not to potentially break stuff
+				user = userBetter
+				user.ID = userID
+			}
+		}
 	}
 
 	out := formatUser(user)

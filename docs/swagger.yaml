@@ -237,7 +237,10 @@ paths:
           description: Forbidden
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
-      summary: Get attributes for the authenticated user
+      security:
+      - BearerAuth: []
+      summary: Get attributes for the authenticated user. If multiple records for
+        the same user, gets the one with the email confirmed.
     put:
       consumes:
       - application/json

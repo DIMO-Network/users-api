@@ -892,75 +892,6 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-// CheckAccount godoc
-// @Summary Suggests to a user with an identity token other accounts that may also be theirs.
-// @Success 200 {object} controllers.AlternateAccountsResponse
-// @Failure 400 {object} controllers.ErrorResponse
-// @Failure 500 {object} controllers.ErrorResponse
-// @Router /v1/user/check-accounts [get]
-func (d *UserController) CheckAccount(c *fiber.Ctx) error {
-	token := c.Locals("user").(*jwt.Token)
-	claims := token.Claims.(jwt.MapClaims)
-
-	userID, ok := getStringClaim(claims, "sub")
-	if !ok {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid token, no sub claim.")
-	}
-
-	providerID, ok := getStringClaim(claims, "provider_id")
-	if !ok {
-		return fiber.NewError(fiber.StatusBadRequest, "Token lacks provider_id.")
-	}
-
-	switch providerID {
-	case "apple", "google":
-		email, ok := getStringClaim(claims, "email")
-		if !ok {
-			return fiber.NewError(fiber.StatusBadRequest, "No email in token.")
-		}
-		if !emailPattern.MatchString(email) {
-			return fiber.NewError(fiber.StatusBadRequest, "Invalid email.")
-		}
-
-		otherAccounts, err := models.Users(
-			models.UserWhere.ID.NEQ(userID),
-			models.UserWhere.EmailAddress.EQ(null.StringFrom(email)),
-			models.UserWhere.EmailConfirmed.EQ(true),
-		).All(c.Context(), d.dbs.DBS().Reader)
-		if err != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
-		}
-
-		return c.JSON(formatAlternateAccounts(otherAccounts))
-	case "web3":
-		ethereum, ok := getStringClaim(claims, "ethereum_address")
-		if !ok {
-			return fiber.NewError(fiber.StatusBadRequest, "Token lacks ethereum_address.")
-		}
-		mixAddr, err := common.NewMixedcaseAddressFromString(ethereum)
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, "Invalid ethereum_address.")
-		}
-		if !mixAddr.ValidChecksum() {
-			d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", ethereum)
-		}
-
-		otherAccounts, err := models.Users(
-			models.UserWhere.ID.NEQ(userID),
-			models.UserWhere.EthereumAddress.EQ(null.BytesFrom(mixAddr.Address().Bytes())),
-			models.UserWhere.EthereumConfirmed.EQ(true),
-		).All(c.Context(), d.dbs.DBS().Reader)
-
-		if err != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
-		}
-
-		return c.JSON(formatAlternateAccounts(otherAccounts))
-	}
-
-	return fiber.NewError(fiber.StatusBadRequest, "Unrecognized authentication provider.")
-}
-
 // SubmitReferralCode godoc
 // @Summary Takes the referral code, validates and stores it
 // @Param submitReferralCodeRequest body controllers.SubmitReferralCodeRequest true "ReferralCode is the 6-digit, alphanumeric referral code from another user."
@@ -1041,28 +972,4 @@ type AlternateAccountsResponse struct {
 	// OtherAccounts is a list of any other accounts that share email or
 	// ethereum address with the provided token.
 	OtherAccounts []*AltAccount `json:"otherAccounts"`
-}
-
-func formatAlternateAccounts(users []*models.User) *AlternateAccountsResponse {
-	accs := []*AltAccount{}
-
-	for _, user := range users {
-		switch user.AuthProviderID {
-		case "apple", "google":
-			acc := &AltAccount{
-				Type:  user.AuthProviderID,
-				Login: user.EmailAddress.String,
-			}
-
-			accs = append(accs, acc)
-		case "web3":
-			acc := &AltAccount{
-				Type:  user.AuthProviderID,
-				Login: common.BytesToAddress(user.EthereumAddress.Bytes).Hex(),
-			}
-			accs = append(accs, acc)
-		}
-	}
-
-	return &AlternateAccountsResponse{OtherAccounts: accs}
 }

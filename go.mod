@@ -22,7 +22,7 @@ require (
 	github.com/volatiletech/strmangle v0.0.4
 	go.uber.org/automaxprocs v1.5.2
 	google.golang.org/grpc v1.58.3
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.33.0
 )
 
 require (
@@ -124,7 +124,7 @@ require (
 	github.com/gofiber/swagger v0.1.12
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
-	github.com/pkg/errors v0.9.1
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/zerolog v1.29.1
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

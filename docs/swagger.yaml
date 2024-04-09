@@ -1,26 +1,4 @@
 definitions:
-  controllers.AltAccount:
-    properties:
-      login:
-        description: |-
-          Login is the login username for the provider, either an email address
-          or an EIP-55-compliant ethereum address.
-        type: string
-      type:
-        description: Type is the authentication provider, one of "web3", "apple",
-          "google".
-        type: string
-    type: object
-  controllers.AlternateAccountsResponse:
-    properties:
-      otherAccounts:
-        description: |-
-          OtherAccounts is a list of any other accounts that share email or
-          ethereum address with the provided token.
-        items:
-          $ref: '#/definitions/controllers.AltAccount'
-        type: array
-    type: object
   controllers.ChallengeResponse:
     properties:
       challenge:
@@ -81,8 +59,7 @@ definitions:
         example: "2021-12-01T09:00:00Z"
         type: string
       email:
-        allOf:
-        - $ref: '#/definitions/controllers.UserResponseEmail'
+        $ref: '#/definitions/controllers.UserResponseEmail'
         description: Email describes the user's email and the state of its confirmation.
       id:
         description: ID is the user's DIMO-internal ID.
@@ -101,8 +78,7 @@ definitions:
         example: 0x3497B704a954789BC39999262510DE9B09Ff1366
         type: string
       web3:
-        allOf:
-        - $ref: '#/definitions/controllers.UserResponseWeb3'
+        $ref: '#/definitions/controllers.UserResponseWeb3'
         description: Web3 describes the user's blockchain account.
     type: object
   controllers.UserResponseEmail:
@@ -277,23 +253,6 @@ paths:
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
       summary: Agree to the current terms of service
-  /v1/user/check-accounts:
-    get:
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controllers.AlternateAccountsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
-      summary: Suggests to a user with an identity token other accounts that may also
-        be theirs.
   /v1/user/confirm-email:
     post:
       consumes:

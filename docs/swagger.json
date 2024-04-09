@@ -139,31 +139,6 @@
                 }
             }
         },
-        "/v1/user/check-accounts": {
-            "get": {
-                "summary": "Suggests to a user with an identity token other accounts that may also be theirs.",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.AlternateAccountsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/user/confirm-email": {
             "post": {
                 "consumes": [
@@ -324,31 +299,6 @@
         }
     },
     "definitions": {
-        "controllers.AltAccount": {
-            "type": "object",
-            "properties": {
-                "login": {
-                    "description": "Login is the login username for the provider, either an email address\nor an EIP-55-compliant ethereum address.",
-                    "type": "string"
-                },
-                "type": {
-                    "description": "Type is the authentication provider, one of \"web3\", \"apple\", \"google\".",
-                    "type": "string"
-                }
-            }
-        },
-        "controllers.AlternateAccountsResponse": {
-            "type": "object",
-            "properties": {
-                "otherAccounts": {
-                    "description": "OtherAccounts is a list of any other accounts that share email or\nethereum address with the provided token.",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/controllers.AltAccount"
-                    }
-                }
-            }
-        },
         "controllers.ChallengeResponse": {
             "type": "object",
             "properties": {
@@ -427,11 +377,7 @@
                 },
                 "email": {
                     "description": "Email describes the user's email and the state of its confirmation.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/controllers.UserResponseEmail"
-                        }
-                    ]
+                    "$ref": "#/definitions/controllers.UserResponseEmail"
                 },
                 "id": {
                     "description": "ID is the user's DIMO-internal ID.",
@@ -453,11 +399,7 @@
                 },
                 "web3": {
                     "description": "Web3 describes the user's blockchain account.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/controllers.UserResponseWeb3"
-                        }
-                    ]
+                    "$ref": "#/definitions/controllers.UserResponseWeb3"
                 }
             }
         },

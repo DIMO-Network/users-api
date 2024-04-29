@@ -1,6 +1,6 @@
 module github.com/DIMO-Network/users-api
 
-go 1.20
+go 1.22
 
 require (
 	github.com/DIMO-Network/devices-api v1.15.1
@@ -124,7 +124,7 @@ require (
 	github.com/gofiber/swagger v0.1.12
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
-	github.com/pkg/errors v0.9.1
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/zerolog v1.29.1
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

@@ -72,7 +72,7 @@ func (s *UserServiceTestSuite) SetupSuite() {
 	s.dbs = db.NewDbConnectionFromSettings(ctx, &dbset, true)
 	s.dbs.WaitForDB(logger)
 
-	err = database.MigrateDatabase(logger, &dbset, "", "../../migrations")
+	err = database.MigrateDatabase(ctx, logger, &dbset, "", "../../migrations")
 	s.Require().NoError(err)
 }
 

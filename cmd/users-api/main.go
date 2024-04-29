@@ -63,7 +63,7 @@ func main() {
 				command = command + " " + os.Args[3]
 			}
 		}
-		if err := database.MigrateDatabase(logger, &settings.DB, command, "migrations"); err != nil {
+		if err := database.MigrateDatabase(ctx, logger, &settings.DB, command, "migrations"); err != nil {
 			logger.Fatal().Err(err).Msg("Failed to migrate datbase.")
 		}
 	case "generate-events":

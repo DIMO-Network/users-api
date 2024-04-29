@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/DIMO-Network/shared/db"
@@ -8,7 +9,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func MigrateDatabase(_ zerolog.Logger, settings *db.Settings, command, migrationsDir string) error {
+func MigrateDatabase(ctx context.Context, _ zerolog.Logger, settings *db.Settings, command, migrationsDir string) error {
 	db, err := sql.Open("postgres", settings.BuildConnectionString(true))
 	if err != nil {
 		return err
@@ -28,5 +29,5 @@ func MigrateDatabase(_ zerolog.Logger, settings *db.Settings, command, migration
 		return err
 	}
 	goose.SetTableName("users_api.migrations")
-	return goose.Run(command, db, migrationsDir)
+	return goose.RunContext(ctx, command, db, migrationsDir)
 }

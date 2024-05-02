@@ -26,6 +26,7 @@ ingress:
     nginx.ingress.kubernetes.io/enable-cors: 'true'
     nginx.ingress.kubernetes.io/cors-allow-origin: https://app.dimo.zone
     nginx.ingress.kubernetes.io/limit-rps: '9'
+    nginx.ingress.kubernetes.io/limit-connections: "10"
     external-dns.alpha.kubernetes.io/hostname: users-api.dimo.zone
   hosts:
     - host: users-api.dimo.zone

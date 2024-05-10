@@ -84,7 +84,7 @@ func (s *UserControllerTestSuite) SetupSuite() {
 		MaxIdleConnections: 10,
 	}
 
-	err = database.MigrateDatabase(logger, &dbset, "", "../../migrations")
+	err = database.MigrateDatabase(ctx, logger, &dbset, "", "../../migrations")
 	s.Require().NoError(err)
 
 	dbs := db.NewDbConnectionFromSettings(ctx, &dbset, true)

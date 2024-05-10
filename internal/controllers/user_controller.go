@@ -945,13 +945,18 @@ func (d *UserController) SubmitReferralCode(c *fiber.Ctx) error {
 		return err
 	}
 
-	if user.EthereumAddress.Valid && common.BytesToAddress(user.EthereumAddress.Bytes).Hex() == common.BytesToAddress(referrer.EthereumAddress.Bytes).Hex() {
+	if user.EthereumAddress.Valid && common.BytesToAddress(user.EthereumAddress.Bytes) == common.BytesToAddress(referrer.EthereumAddress.Bytes) {
 		return fiber.NewError(fiber.StatusBadRequest, "User and referrer have the same Ethereum address.")
+	}
+
+	// No circular referrals.
+	if referrer.ReferringUserID.Valid && referrer.ReferringUserID.String == user.ID {
+		return fiber.NewError(fiber.StatusBadRequest, "Referrer was referred by this user.")
 	}
 
 	user.ReferringUserID = null.StringFrom(referrer.ID)
 	user.ReferredAt = null.TimeFrom(time.Now())
-	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Whitelist(models.UserColumns.ReferringUserID, models.UserColumns.ReferredAt)); err != nil {
 		return err
 	}
 

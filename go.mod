@@ -9,7 +9,7 @@ require (
 	github.com/docker/go-connections v0.5.0
 	github.com/friendsofgo/errors v0.9.2
 	github.com/gofiber/contrib/jwt v1.0.9
-	github.com/gofiber/fiber/v2 v2.52.4
+	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/lib/pq v1.10.9
 	github.com/pressly/goose/v3 v3.20.0

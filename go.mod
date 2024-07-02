@@ -123,7 +123,7 @@ require (
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/ethereum/go-ethereum v1.14.6
-	github.com/goccy/go-json v0.10.2
+	github.com/goccy/go-json v0.10.3
 	github.com/gofiber/swagger v1.0.0
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/klauspost/compress v1.17.9 // indirect

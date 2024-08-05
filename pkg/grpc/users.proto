@@ -28,9 +28,9 @@ message GetUsersByEthereumAddressResponse {
 
 message User {
 	string id = 1;
-	// ethereum address is the hex-encoded, checksummed ethereum address. Use
-	// ethereum_address_bytes instead.
-	optional string ethereum_address = 2 [deprecated = true];
+	// ethereum address is the hex-encoded, checksummed ethereum address. You probably
+	// want ethereum_address_bytes instead.
+	optional string ethereum_address = 2;
 	optional string email_address = 3;
 	// referred_by is populated if this user entered another user's referral code.
 	optional UserReferrer referred_by = 4;

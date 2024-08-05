@@ -39,37 +39,43 @@ func (s *userService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 		return nil, status.Error(codes.Internal, "Internal error.")
 	}
 
-	pbUser := &pb.User{
-		Id: dbUser.ID,
+	return formatUser(dbUser), nil
+}
+
+func formatUser(user *models.User) *pb.User {
+	out := pb.User{
+		Id: user.ID,
 	}
 
-	if dbUser.EthereumConfirmed {
-		hexAddress := common.BytesToAddress(dbUser.EthereumAddress.Bytes).Hex()
-		pbUser.EthereumAddress = &hexAddress
+	if user.EthereumConfirmed {
+		hexAddress := common.BytesToAddress(user.EthereumAddress.Bytes).Hex()
+		out.EthereumAddress = &hexAddress
+		out.EthereumAddressBytes = user.EthereumAddress.Bytes
 	}
 
-	if dbUser.EmailConfirmed {
-		pbUser.EmailAddress = dbUser.EmailAddress.Ptr()
+	if user.EmailConfirmed {
+		out.EmailAddress = user.EmailAddress.Ptr()
 	}
 
-	if dbUser.ReferredAt.Valid {
+	if user.ReferredAt.Valid {
 		var pbRef pb.UserReferrer
 
-		if ref := dbUser.R.ReferringUser; ref != nil && ref.EthereumConfirmed {
+		if ref := user.R.ReferringUser; ref != nil && ref.EthereumConfirmed {
 			pbRef.ReferrerValid = true
 			pbRef.EthereumAddress = ref.EthereumAddress.Bytes
 			pbRef.Id = ref.ID
 		}
 
-		pbUser.ReferredBy = &pbRef
+		out.ReferredBy = &pbRef
 	}
 
-	return pbUser, nil
+	return &out
 }
 
 func (s *userService) GetUserByEthAddr(ctx context.Context, req *pb.GetUserByEthRequest) (*pb.User, error) {
 	dbUser, err := models.Users(
 		models.UserWhere.EthereumAddress.EQ(null.BytesFrom(req.EthAddr)),
+		models.UserWhere.EthereumConfirmed.EQ(true),
 		qm.Load(models.UserRels.ReferringUser),
 	).One(ctx, s.dbs.DBS().Reader)
 	if err != nil {
@@ -80,27 +86,24 @@ func (s *userService) GetUserByEthAddr(ctx context.Context, req *pb.GetUserByEth
 		return nil, status.Error(codes.Internal, "Internal error.")
 	}
 
-	hexAddr := common.BytesToAddress(dbUser.EthereumAddress.Bytes).Hex()
-	pbUser := &pb.User{
-		EthereumAddress: &hexAddr,
-		Id:              dbUser.ID, //should this eventually be deprecated?
+	return formatUser(dbUser), nil
+}
+
+func (s *userService) GetUsersByEthereumAddress(ctx context.Context, in *pb.GetUsersByEthereumAddressRequest) (*pb.GetUsersByEthereumAddressResponse, error) {
+	users, err := models.Users(
+		models.UserWhere.EthereumConfirmed.EQ(true),
+		models.UserWhere.EthereumAddress.EQ(null.BytesFrom(in.EthereumAddress)),
+		qm.Load(models.UserRels.ReferringUser),
+	).All(ctx, s.dbs.DBS().Reader)
+	if err != nil {
+		return nil, err
 	}
 
-	if dbUser.EmailConfirmed {
-		pbUser.EmailAddress = dbUser.EmailAddress.Ptr()
+	var out pb.GetUsersByEthereumAddressResponse
+
+	for _, u := range users {
+		out.Users = append(out.Users, formatUser(u))
 	}
 
-	if dbUser.ReferredAt.Valid {
-		var pbRef pb.UserReferrer
-
-		if ref := dbUser.R.ReferringUser; ref != nil && ref.EthereumConfirmed {
-			pbRef.ReferrerValid = true
-			pbRef.EthereumAddress = ref.EthereumAddress.Bytes
-			pbRef.Id = ref.ID
-		}
-
-		pbUser.ReferredBy = &pbRef
-	}
-
-	return pbUser, nil
+	return &out, nil
 }

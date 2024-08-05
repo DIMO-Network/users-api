@@ -94,6 +94,7 @@ func (s *userService) GetUsersByEthereumAddress(ctx context.Context, in *pb.GetU
 		models.UserWhere.EthereumConfirmed.EQ(true),
 		models.UserWhere.EthereumAddress.EQ(null.BytesFrom(in.EthereumAddress)),
 		qm.Load(models.UserRels.ReferringUser),
+		qm.OrderBy(models.UserColumns.CreatedAt+" DESC"),
 	).All(ctx, s.dbs.DBS().Reader)
 	if err != nil {
 		return nil, err

@@ -74,7 +74,7 @@ func NewUserController(settings *config.Settings, dbs db.Store, eventService ser
 	}
 	t := template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail))
 
-	gc, err := grpc.Dial(settings.DevicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	gc, err := grpc.NewClient(settings.DevicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}

@@ -7,6 +7,7 @@ package users;
 service UserService {
 	rpc GetUser(GetUserRequest) returns (User);
 	rpc GetUserByEthAddr(GetUserByEthRequest) returns (User);
+	rpc GetUsersByEthereumAddress(GetUsersByEthereumAddressRequest) returns (GetUsersByEthereumAddressResponse);
 }
 
 message GetUserRequest {
@@ -17,12 +18,23 @@ message GetUserByEthRequest {
 	bytes eth_addr = 1;
 }
 
+message GetUsersByEthereumAddressRequest {
+	bytes ethereum_address = 1;
+}
+
+message GetUsersByEthereumAddressResponse {
+	repeated User users = 1;
+}
+
 message User {
 	string id = 1;
+	// ethereum address is the hex-encoded, checksummed ethereum address. You probably
+	// want ethereum_address_bytes instead.
 	optional string ethereum_address = 2;
 	optional string email_address = 3;
-    // referred_by is populated if this user entered another user's referral code.
+	// referred_by is populated if this user entered another user's referral code.
 	optional UserReferrer referred_by = 4;
+	optional bytes ethereum_address_bytes = 5;
 }
 
 message UserReferrer {

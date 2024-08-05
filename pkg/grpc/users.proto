@@ -18,10 +18,6 @@ message GetUserByEthRequest {
 	bytes eth_addr = 1;
 }
 
-message GetUsersByEthRequest {
-	bytes ethereum_address = 1;
-}
-
 message GetUsersByEthereumAddressRequest {
 	bytes ethereum_address = 1;
 }

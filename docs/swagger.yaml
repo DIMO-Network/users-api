@@ -66,6 +66,9 @@ definitions:
         description: ID is the user's DIMO-internal ID.
         example: ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl
         type: string
+      migratedAt:
+        example: "2024-09-17T09:00:00Z"
+        type: string
       referralCode:
         description: |-
           ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,
@@ -296,6 +299,16 @@ paths:
           schema:
             $ref: '#/definitions/internal_controllers.ErrorResponse'
       summary: Send a confirmation email to the authenticated user
+  /v1/user/set-migrated:
+    post:
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
+      summary: Sets the migration timestamp.
   /v1/user/submit-referral-code:
     post:
       parameters:

@@ -129,7 +129,8 @@ type UserResponse struct {
 	// Email describes the user's email and the state of its confirmation.
 	Email UserResponseEmail `json:"email"`
 	// Web3 describes the user's blockchain account.
-	Web3 UserResponseWeb3 `json:"web3"`
+	Web3       UserResponseWeb3 `json:"web3"`
+	MigratedAt *time.Time       `json:"migratedAt" example:"2024-09-17T09:00:00Z"`
 	// CreatedAt is when the user first logged in.
 	CreatedAt time.Time `json:"createdAt" swaggertype:"string" example:"2021-12-01T09:00:00Z"`
 	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.
@@ -182,6 +183,7 @@ func formatUser(user *models.User) *UserResponse {
 		ReferralCode: referralCode,
 		ReferredBy:   referrer,
 		ReferredAt:   user.ReferredAt,
+		MigratedAt:   user.MigratedAt.Ptr(),
 	}
 }
 

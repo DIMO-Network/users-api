@@ -623,7 +623,7 @@ func (d *UserController) AgreeTOS(c *fiber.Ctx) error {
 }
 
 // SetMigrated godoc
-// @Summary Agree to the current terms of service
+// @Summary Sets the migration timestamp.
 // @Success 204
 // @Failure 400 {object} controllers.ErrorResponse
 // @Router /v1/user/set-migrated [post]

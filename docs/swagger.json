@@ -205,7 +205,7 @@
         },
         "/v1/user/set-migrated": {
             "post": {
-                "summary": "Agree to the current terms of service",
+                "summary": "Sets the migration timestamp.",
                 "responses": {
                     "204": {
                         "description": "No Content"
@@ -430,6 +430,10 @@
                     "description": "ID is the user's DIMO-internal ID.",
                     "type": "string",
                     "example": "ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"
+                },
+                "migratedAt": {
+                    "type": "string",
+                    "example": "2024-09-17T09:00:00Z"
                 },
                 "referralCode": {
                     "description": "ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,\nonly present if the account has a confirmed Ethereum address.",

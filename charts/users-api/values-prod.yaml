@@ -2,7 +2,7 @@ replicaCount: 2
 image:
   repository: dimozone/users-api
   pullPolicy: IfNotPresent
-  tag: 0.7.7
+  tag: 0.7.8
 env:
   ENVIRONMENT: prod
   PORT: '8080'
@@ -24,7 +24,7 @@ ingress:
     nginx.ingress.kubernetes.io/auth-tls-secret: ingress/cf-origin-ca
     nginx.ingress.kubernetes.io/auth-tls-verify-client: 'on'
     nginx.ingress.kubernetes.io/enable-cors: 'true'
-    nginx.ingress.kubernetes.io/cors-allow-origin: https://app.dimo.zone
+    nginx.ingress.kubernetes.io/cors-allow-origin: '*'
     nginx.ingress.kubernetes.io/limit-rps: '9'
     nginx.ingress.kubernetes.io/limit-connections: '10'
     external-dns.alpha.kubernetes.io/hostname: users-api.dimo.zone

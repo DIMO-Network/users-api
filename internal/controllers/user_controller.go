@@ -620,6 +620,28 @@ func (d *UserController) AgreeTOS(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
+// SetMigrated godoc
+// @Summary Agree to the current terms of service
+// @Success 204
+// @Failure 400 {object} controllers.ErrorResponse
+// @Router /v1/user/set-migrated [post]
+func (d *UserController) SetMigrated(c *fiber.Ctx) error {
+	userID := getUserID(c)
+
+	user, err := d.getOrCreateUser(c, userID)
+	if err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	user.MigratedAt = null.TimeFrom(time.Now())
+
+	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
+		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
 // SendConfirmationEmail godoc
 // @Summary Send a confirmation email to the authenticated user
 // @Success 204

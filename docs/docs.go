@@ -212,6 +212,22 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/user/set-migrated": {
+            "post": {
+                "summary": "Agree to the current terms of service",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/user/submit-referral-code": {
             "post": {
                 "summary": "Takes the referral code, validates and stores it",

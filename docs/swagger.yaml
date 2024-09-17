@@ -296,6 +296,16 @@ paths:
           schema:
             $ref: '#/definitions/internal_controllers.ErrorResponse'
       summary: Send a confirmation email to the authenticated user
+  /v1/user/set-migrated:
+    post:
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
+      summary: Agree to the current terms of service
   /v1/user/submit-referral-code:
     post:
       parameters:

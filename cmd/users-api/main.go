@@ -129,6 +129,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 	v1User.Put("/", userController.UpdateUser)
 	v1User.Delete("/", userController.DeleteUser)
 	v1User.Post("/agree-tos", userController.AgreeTOS)
+	v1User.Post("/set-migrated", userController.SetMigrated)
 	v1User.Post("/send-confirmation-email", userController.SendConfirmationEmail)
 	v1User.Post("/confirm-email", userController.ConfirmEmail)
 	v1User.Post("/submit-referral-code", userController.SubmitReferralCode)

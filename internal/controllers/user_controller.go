@@ -331,19 +331,20 @@ func (d *UserController) GetUserV2(c *fiber.Ctx) error {
 		return err
 	}
 
+	// TODO(elffjs): The stuff below makes me incredibly nervous. Commenting it out for now. Talk to James.
 	// many users have multiple entries for the same eth_addr, but we want to use the one with verified email
 	// get users by eth addr, if it exists, order by email_confirmed desc, if userId different, use the better user but just replace the user_id
-	ethAddr := getUserEthAddr(c)
-	if ethAddr != nil {
-		userBetter, err := d.getUserByEth(c.Context(), *ethAddr)
-		if err == nil {
-			if user.ID != userBetter.ID {
-				// use the user with better information but preserve the original ID of the claim so not to potentially break stuff
-				user = userBetter
-				user.ID = userID
-			}
-		}
-	}
+	// ethAddr := getUserEthAddr(c)
+	// if ethAddr != nil {
+	// 	userBetter, err := d.getUserByEth(c.Context(), *ethAddr)
+	// 	if err == nil {
+	// 		if user.ID != userBetter.ID {
+	// 			// use the user with better information but preserve the original ID of the claim so not to potentially break stuff
+	// 			user = userBetter
+	// 			user.ID = userID
+	// 		}
+	// 	}
+	// }
 
 	out := formatUser(user)
 

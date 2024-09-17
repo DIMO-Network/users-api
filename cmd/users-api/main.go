@@ -115,11 +115,16 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	v1User := app.Group("/v1/user", jwtware.New(jwtware.Config{
+	auth := jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{settings.JWTKeySetURL},
-	}))
+	})
+
+	v1User := app.Group("/v1/user", auth)
 
 	userController := controllers.NewUserController(settings, dbs, eventService, &logger)
+
+	app.Get("/v2/user", auth, userController.GetUserV2)
+
 	v1User.Get("/", userController.GetUser)
 	v1User.Put("/", userController.UpdateUser)
 	v1User.Delete("/", userController.DeleteUser)

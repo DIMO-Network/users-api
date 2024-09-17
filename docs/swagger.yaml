@@ -1,5 +1,5 @@
 definitions:
-  controllers.ChallengeResponse:
+  internal_controllers.ChallengeResponse:
     properties:
       challenge:
         description: Challenge is the message to be signed.
@@ -9,14 +9,14 @@ definitions:
           be accepted.
         type: string
     type: object
-  controllers.ConfirmEmailRequest:
+  internal_controllers.ConfirmEmailRequest:
     properties:
       key:
         description: Key is the 6-digit number from the confirmation email
         example: "010990"
         type: string
     type: object
-  controllers.ConfirmEthereumRequest:
+  internal_controllers.ConfirmEthereumRequest:
     properties:
       signature:
         description: |-
@@ -24,12 +24,12 @@ definitions:
           question.
         type: string
     type: object
-  controllers.ErrorResponse:
+  internal_controllers.ErrorResponse:
     properties:
       errorMessage:
         type: string
     type: object
-  controllers.SubmitReferralCodeRequest:
+  internal_controllers.SubmitReferralCodeRequest:
     properties:
       referralCode:
         description: ReferralCode is the 6-digit, alphanumeric referral code from
@@ -37,12 +37,12 @@ definitions:
         example: ANB95N
         type: string
     type: object
-  controllers.SubmitReferralCodeResponse:
+  internal_controllers.SubmitReferralCodeResponse:
     properties:
       message:
         type: string
     type: object
-  controllers.UserResponse:
+  internal_controllers.UserResponse:
     properties:
       agreedTosAt:
         description: AgreedTosAt is the time at which the user last agreed to the
@@ -59,7 +59,8 @@ definitions:
         example: "2021-12-01T09:00:00Z"
         type: string
       email:
-        $ref: '#/definitions/controllers.UserResponseEmail'
+        allOf:
+        - $ref: '#/definitions/internal_controllers.UserResponseEmail'
         description: Email describes the user's email and the state of its confirmation.
       id:
         description: ID is the user's DIMO-internal ID.
@@ -78,10 +79,11 @@ definitions:
         example: 0x3497B704a954789BC39999262510DE9B09Ff1366
         type: string
       web3:
-        $ref: '#/definitions/controllers.UserResponseWeb3'
+        allOf:
+        - $ref: '#/definitions/internal_controllers.UserResponseWeb3'
         description: Web3 describes the user's blockchain account.
     type: object
-  controllers.UserResponseEmail:
+  internal_controllers.UserResponseEmail:
     properties:
       address:
         description: Address is the email address for the user.
@@ -99,7 +101,7 @@ definitions:
         example: false
         type: boolean
     type: object
-  controllers.UserResponseWeb3:
+  internal_controllers.UserResponseWeb3:
     properties:
       address:
         description: Address is the Ethereum address associated with the user.
@@ -130,7 +132,7 @@ definitions:
         example: false
         type: boolean
     type: object
-  controllers.UserUpdateRequest:
+  internal_controllers.UserUpdateRequest:
     properties:
       countryCode:
         description: CountryCode, if specified, should be a valid ISO 3166-1 alpha-3
@@ -191,15 +193,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
         "409":
           description: Returned if the user still has devices.
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
       summary: Delete the authenticated user. Fails if the user has any devices.
     get:
       produces:
@@ -208,11 +210,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controllers.UserResponse'
+            $ref: '#/definitions/internal_controllers.UserResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get attributes for the authenticated user. If multiple records for
@@ -226,22 +228,22 @@ paths:
         name: userUpdateRequest
         required: true
         schema:
-          $ref: '#/definitions/controllers.UserUpdateRequest'
+          $ref: '#/definitions/internal_controllers.UserUpdateRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controllers.UserResponse'
+            $ref: '#/definitions/internal_controllers.UserResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
       summary: Modify attributes for the authenticated user
   /v1/user/agree-tos:
     post:
@@ -251,7 +253,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
       summary: Agree to the current terms of service
   /v1/user/confirm-email:
     post:
@@ -263,18 +265,18 @@ paths:
         name: confirmEmailRequest
         required: true
         schema:
-          $ref: '#/definitions/controllers.ConfirmEmailRequest'
+          $ref: '#/definitions/internal_controllers.ConfirmEmailRequest'
       responses:
         "204":
           description: No Content
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
       summary: Submit an email confirmation key
   /v1/user/send-confirmation-email:
     post:
@@ -284,15 +286,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
       summary: Send a confirmation email to the authenticated user
   /v1/user/submit-referral-code:
     post:
@@ -303,20 +305,20 @@ paths:
         name: submitReferralCodeRequest
         required: true
         schema:
-          $ref: '#/definitions/controllers.SubmitReferralCodeRequest'
+          $ref: '#/definitions/internal_controllers.SubmitReferralCodeRequest'
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controllers.SubmitReferralCodeResponse'
+            $ref: '#/definitions/internal_controllers.SubmitReferralCodeResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
       summary: Takes the referral code, validates and stores it
   /v1/user/web3/challenge/generate:
     post:
@@ -324,15 +326,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controllers.ChallengeResponse'
+            $ref: '#/definitions/internal_controllers.ChallengeResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
       summary: Generate a challenge message for the user to sign.
   /v1/user/web3/challenge/submit:
     post:
@@ -342,19 +344,36 @@ paths:
         name: confirmEthereumRequest
         required: true
         schema:
-          $ref: '#/definitions/controllers.ConfirmEthereumRequest'
+          $ref: '#/definitions/internal_controllers.ConfirmEthereumRequest'
       responses:
         "204":
           description: No Content
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/controllers.ErrorResponse'
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
       summary: Confirm ownership of an ethereum address by submitting a signature
+  /v2/user:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controllers.UserResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get attributes for the authenticated user. If multiple records for
+        the same user, gets the one with the email confirmed.
 securityDefinitions:
   BearerAuth:
     in: header

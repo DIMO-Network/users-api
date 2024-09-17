@@ -310,6 +310,51 @@ func (d *UserController) getUserByEth(ctx context.Context, ethAddr common.Addres
 	return user, nil
 }
 
+// GetUserV2 godoc
+// @Summary Get attributes for the authenticated user. If multiple records for the same user, gets the one with the email confirmed.
+// @Produce json
+// @Success 200 {object} controllers.UserResponse
+// @Failure 403 {object} controllers.ErrorResponse
+// @Security BearerAuth
+// @Router /v2/user [get]
+func (d *UserController) GetUserV2(c *fiber.Ctx) error {
+	userID := getUserID(c)
+
+	user, err := models.Users(
+		models.UserWhere.ID.EQ(userID),
+		qm.Load(models.UserRels.ReferringUser),
+	).One(c.Context(), d.dbs.DBS().Reader)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No user with id %s.", userID))
+		}
+		return err
+	}
+
+	// many users have multiple entries for the same eth_addr, but we want to use the one with verified email
+	// get users by eth addr, if it exists, order by email_confirmed desc, if userId different, use the better user but just replace the user_id
+	ethAddr := getUserEthAddr(c)
+	if ethAddr != nil {
+		userBetter, err := d.getUserByEth(c.Context(), *ethAddr)
+		if err == nil {
+			if user.ID != userBetter.ID {
+				// use the user with better information but preserve the original ID of the claim so not to potentially break stuff
+				user = userBetter
+				user.ID = userID
+			}
+		}
+	}
+
+	out := formatUser(user)
+
+	out.Web3.Used, err = d.computeWeb3Used(c.Context(), user)
+	if err != nil {
+		d.log.Err(err).Str("userId", userID).Msg("Failed to determine whether user owns any NFTs.")
+	}
+
+	return c.JSON(out)
+}
+
 // GetUser godoc
 // @Summary Get attributes for the authenticated user. If multiple records for the same user, gets the one with the email confirmed.
 // @Produce json

@@ -45,13 +45,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controllers.UserResponse"
+                            "$ref": "#/definitions/internal_controllers.UserResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     }
                 }
@@ -71,7 +71,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controllers.UserUpdateRequest"
+                            "$ref": "#/definitions/internal_controllers.UserUpdateRequest"
                         }
                     }
                 ],
@@ -79,19 +79,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controllers.UserResponse"
+                            "$ref": "#/definitions/internal_controllers.UserResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     }
                 }
@@ -105,19 +105,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Returned if the user still has devices.",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     }
                 }
@@ -133,7 +133,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     }
                 }
@@ -152,7 +152,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controllers.ConfirmEmailRequest"
+                            "$ref": "#/definitions/internal_controllers.ConfirmEmailRequest"
                         }
                     }
                 ],
@@ -163,13 +163,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     }
                 }
@@ -185,19 +185,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     }
                 }
@@ -213,7 +213,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controllers.SubmitReferralCodeRequest"
+                            "$ref": "#/definitions/internal_controllers.SubmitReferralCodeRequest"
                         }
                     }
                 ],
@@ -221,19 +221,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controllers.SubmitReferralCodeResponse"
+                            "$ref": "#/definitions/internal_controllers.SubmitReferralCodeResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     }
                 }
@@ -246,19 +246,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ChallengeResponse"
+                            "$ref": "#/definitions/internal_controllers.ChallengeResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     }
                 }
@@ -274,7 +274,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controllers.ConfirmEthereumRequest"
+                            "$ref": "#/definitions/internal_controllers.ConfirmEthereumRequest"
                         }
                     }
                 ],
@@ -285,13 +285,40 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ErrorResponse"
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/user": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get attributes for the authenticated user. If multiple records for the same user, gets the one with the email confirmed.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controllers.UserResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     }
                 }
@@ -299,7 +326,7 @@
         }
     },
     "definitions": {
-        "controllers.ChallengeResponse": {
+        "internal_controllers.ChallengeResponse": {
             "type": "object",
             "properties": {
                 "challenge": {
@@ -312,7 +339,7 @@
                 }
             }
         },
-        "controllers.ConfirmEmailRequest": {
+        "internal_controllers.ConfirmEmailRequest": {
             "type": "object",
             "properties": {
                 "key": {
@@ -322,7 +349,7 @@
                 }
             }
         },
-        "controllers.ConfirmEthereumRequest": {
+        "internal_controllers.ConfirmEthereumRequest": {
             "type": "object",
             "properties": {
                 "signature": {
@@ -331,7 +358,7 @@
                 }
             }
         },
-        "controllers.ErrorResponse": {
+        "internal_controllers.ErrorResponse": {
             "type": "object",
             "properties": {
                 "errorMessage": {
@@ -339,7 +366,7 @@
                 }
             }
         },
-        "controllers.SubmitReferralCodeRequest": {
+        "internal_controllers.SubmitReferralCodeRequest": {
             "type": "object",
             "properties": {
                 "referralCode": {
@@ -349,7 +376,7 @@
                 }
             }
         },
-        "controllers.SubmitReferralCodeResponse": {
+        "internal_controllers.SubmitReferralCodeResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -357,7 +384,7 @@
                 }
             }
         },
-        "controllers.UserResponse": {
+        "internal_controllers.UserResponse": {
             "type": "object",
             "properties": {
                 "agreedTosAt": {
@@ -377,7 +404,11 @@
                 },
                 "email": {
                     "description": "Email describes the user's email and the state of its confirmation.",
-                    "$ref": "#/definitions/controllers.UserResponseEmail"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/internal_controllers.UserResponseEmail"
+                        }
+                    ]
                 },
                 "id": {
                     "description": "ID is the user's DIMO-internal ID.",
@@ -399,11 +430,15 @@
                 },
                 "web3": {
                     "description": "Web3 describes the user's blockchain account.",
-                    "$ref": "#/definitions/controllers.UserResponseWeb3"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/internal_controllers.UserResponseWeb3"
+                        }
+                    ]
                 }
             }
         },
-        "controllers.UserResponseEmail": {
+        "internal_controllers.UserResponseEmail": {
             "type": "object",
             "properties": {
                 "address": {
@@ -423,7 +458,7 @@
                 }
             }
         },
-        "controllers.UserResponseWeb3": {
+        "internal_controllers.UserResponseWeb3": {
             "type": "object",
             "properties": {
                 "address": {
@@ -453,7 +488,7 @@
                 }
             }
         },
-        "controllers.UserUpdateRequest": {
+        "internal_controllers.UserUpdateRequest": {
             "type": "object",
             "properties": {
                 "countryCode": {

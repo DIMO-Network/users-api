@@ -17,7 +17,7 @@ definitions:
     type: object
   internal_controllers.CheckEmailResponse:
     properties:
-      InUse:
+      inUse:
         description: InUse specifies whether the email is attached to a DIMO user.
         type: boolean
     type: object

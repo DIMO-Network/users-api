@@ -39,5 +39,5 @@ type CheckEmailRequest struct {
 
 type CheckEmailResponse struct {
 	// InUse specifies whether the email is attached to a DIMO user.
-	InUse bool `json:"InUse"`
+	InUse bool `json:"inUse"`
 }

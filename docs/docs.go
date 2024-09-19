@@ -415,7 +415,7 @@ const docTemplate = `{
         "internal_controllers.CheckEmailResponse": {
             "type": "object",
             "properties": {
-                "InUse": {
+                "inUse": {
                     "description": "InUse specifies whether the email is attached to a DIMO user.",
                     "type": "boolean"
                 }

@@ -9,6 +9,18 @@ definitions:
           be accepted.
         type: string
     type: object
+  internal_controllers.CheckEmailRequest:
+    properties:
+      address:
+        description: Address is the email address to check. Must be confirmed.
+        type: string
+    type: object
+  internal_controllers.CheckEmailResponse:
+    properties:
+      InUse:
+        description: InUse specifies whether the email is attached to a DIMO user.
+        type: boolean
+    type: object
   internal_controllers.ConfirmEmailRequest:
     properties:
       key:
@@ -188,6 +200,32 @@ paths:
       summary: Show the status of server.
       tags:
       - root
+  /v1/check-email:
+    get:
+      parameters:
+      - description: Specify the email to check.
+        in: body
+        name: checkEmailRequest
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controllers.CheckEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "0":
+          description: ""
+          schema:
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controllers.CheckEmailResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
+      summary: Get attributes for the authenticated user. If multiple records for
+        the same user, gets the one with the email confirmed.
   /v1/user:
     delete:
       responses:

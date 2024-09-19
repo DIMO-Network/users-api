@@ -123,6 +123,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 
 	userController := controllers.NewUserController(settings, dbs, eventService, &logger)
 
+	app.Post("/v1/check-email", userController.CheckEmail)
+
 	app.Get("/v2/user", auth, userController.GetUserV2)
 
 	v1User.Get("/", userController.GetUser)

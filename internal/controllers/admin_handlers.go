@@ -11,7 +11,7 @@ import (
 // @Produce json
 // @Param checkEmailRequest body controllers.CheckEmailRequest true "Specify the email to check."
 // @Success 200 {object} controllers.CheckEmailResponse
-// @Failure 400 {object} controllers.ErrorResponse
+// @Failure 00 {object} controllers.ErrorResponse
 // @Failure 500 {object} controllers.ErrorResponse
 // @Router /v1/check-email [get]
 func (d *UserController) CheckEmail(c *fiber.Ctx) error {
@@ -29,7 +29,7 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(CheckEmailResponse{EmailInUse: exists})
+	return c.JSON(CheckEmailResponse{InUse: exists})
 }
 
 type CheckEmailRequest struct {
@@ -38,6 +38,6 @@ type CheckEmailRequest struct {
 }
 
 type CheckEmailResponse struct {
-	// EmailInUse specifies whether the email is attached to a DIMO user.
-	EmailInUse bool `json:"emailInUse"`
+	// InUse specifies whether the email is attached to a DIMO user.
+	InUse bool `json:"InUse"`
 }

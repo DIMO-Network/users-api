@@ -57,16 +57,16 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
+                    "0": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
+                        }
+                    },
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/internal_controllers.CheckEmailResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }
                     },
                     "500": {
@@ -415,8 +415,8 @@ const docTemplate = `{
         "internal_controllers.CheckEmailResponse": {
             "type": "object",
             "properties": {
-                "emailInUse": {
-                    "description": "EmailInUse specifies whether the email is attached to a DIMO user.",
+                "InUse": {
+                    "description": "InUse specifies whether the email is attached to a DIMO user.",
                     "type": "boolean"
                 }
             }

@@ -17,9 +17,8 @@ definitions:
     type: object
   internal_controllers.CheckEmailResponse:
     properties:
-      emailInUse:
-        description: EmailInUse specifies whether the email is attached to a DIMO
-          user.
+      InUse:
+        description: InUse specifies whether the email is attached to a DIMO user.
         type: boolean
     type: object
   internal_controllers.ConfirmEmailRequest:
@@ -213,14 +212,14 @@ paths:
       produces:
       - application/json
       responses:
+        "0":
+          description: ""
+          schema:
+            $ref: '#/definitions/internal_controllers.ErrorResponse'
         "200":
           description: OK
           schema:
             $ref: '#/definitions/internal_controllers.CheckEmailResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_controllers.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:

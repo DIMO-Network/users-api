@@ -63,8 +63,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/internal_controllers.CheckEmailResponse"
                         }
                     },
-                    "403": {
-                        "description": "Forbidden",
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/internal_controllers.ErrorResponse"
                         }

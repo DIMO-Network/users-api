@@ -11,7 +11,8 @@ import (
 // @Produce json
 // @Param checkEmailRequest body controllers.CheckEmailRequest true "Specify the email to check."
 // @Success 200 {object} controllers.CheckEmailResponse
-// @Failure 403 {object} controllers.ErrorResponse
+// @Failure 400 {object} controllers.ErrorResponse
+// @Failure 500 {object} controllers.ErrorResponse
 // @Router /v1/check-email [get]
 func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 	var cer CheckEmailRequest

@@ -39,6 +39,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/check-email": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get attributes for the authenticated user. If multiple records for the same user, gets the one with the email confirmed.",
+                "parameters": [
+                    {
+                        "description": "Specify the email to check.",
+                        "name": "checkEmailRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controllers.CheckEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controllers.CheckEmailResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/user": {
             "get": {
                 "security": [
@@ -361,6 +399,24 @@ const docTemplate = `{
                 "expiresAt": {
                     "description": "ExpiresAt is the time at which the signed challenge will no longer be accepted.",
                     "type": "string"
+                }
+            }
+        },
+        "internal_controllers.CheckEmailRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "Address is the email address to check. Must be confirmed.",
+                    "type": "string"
+                }
+            }
+        },
+        "internal_controllers.CheckEmailResponse": {
+            "type": "object",
+            "properties": {
+                "emailInUse": {
+                    "description": "EmailInUse specifies whether the email is attached to a DIMO user.",
+                    "type": "boolean"
                 }
             }
         },

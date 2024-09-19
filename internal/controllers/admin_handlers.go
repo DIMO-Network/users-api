@@ -13,7 +13,7 @@ import (
 // @Success 200 {object} controllers.CheckEmailResponse
 // @Failure 00 {object} controllers.ErrorResponse
 // @Failure 500 {object} controllers.ErrorResponse
-// @Router /v1/check-email [get]
+// @Router /v1/check-email [post]
 func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 	var cer CheckEmailRequest
 

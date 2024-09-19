@@ -201,7 +201,7 @@ paths:
       tags:
       - root
   /v1/check-email:
-    get:
+    post:
       parameters:
       - description: Specify the email to check.
         in: body

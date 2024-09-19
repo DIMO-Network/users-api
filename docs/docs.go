@@ -40,7 +40,7 @@ const docTemplate = `{
             }
         },
         "/v1/check-email": {
-            "get": {
+            "post": {
                 "produces": [
                     "application/json"
                 ],

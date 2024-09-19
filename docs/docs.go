@@ -41,11 +41,6 @@ const docTemplate = `{
         },
         "/v1/check-email": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "produces": [
                     "application/json"
                 ],

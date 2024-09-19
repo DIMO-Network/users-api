@@ -221,8 +221,6 @@ paths:
           description: Forbidden
           schema:
             $ref: '#/definitions/internal_controllers.ErrorResponse'
-      security:
-      - BearerAuth: []
       summary: Get attributes for the authenticated user. If multiple records for
         the same user, gets the one with the email confirmed.
   /v1/user:

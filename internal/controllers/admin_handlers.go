@@ -44,6 +44,7 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 	v, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.VehicleNFTAddr), client)
 	tk, _ := contracts.NewToken(common.HexToAddress(d.Settings.TokenAddr), client)
 
+	addrBlank := make(map[common.Address]struct{})
 	addrToIsInApp := make(map[common.Address]bool)
 	
 	for _, user := range users {
@@ -58,6 +59,10 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 			if !markedInApp && user.InAppWallet {
 				addrToIsInApp[addr] = true
 			}
+			continue
+		}
+
+		if _, ok := addrBlank[addr]; ok {
 			continue
 		}
 
@@ -87,11 +92,11 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 		if err != nil {
 			return err
 		}
-		if !used {
-			continue
-		}
-
-		addrToIsInApp[addr] = user.InAppWallet
+		if used {
+			addrToIsInApp[addr] = user.InAppWallet
+		} else {
+			addrBlank[addr] = struct{}{}
+		}	
 	}
 
 	usedInApp, usedExternal := 0, 0

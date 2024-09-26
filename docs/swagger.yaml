@@ -13,6 +13,7 @@ definitions:
     properties:
       address:
         description: Address is the email address to check. Must be confirmed.
+        example: thaler@a16z.com
         type: string
     type: object
   internal_controllers.CheckEmailResponse:
@@ -20,6 +21,13 @@ definitions:
       inUse:
         description: InUse specifies whether the email is attached to a DIMO user.
         type: boolean
+      wallets:
+        properties:
+          external:
+            type: integer
+          inApp:
+            type: integer
+        type: object
     type: object
   internal_controllers.ConfirmEmailRequest:
     properties:

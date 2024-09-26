@@ -35,8 +35,6 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 		return err
 	}
 
-	usedInApp, usedExternal := 0, 0
-
 	client, err := ethclient.Dial(d.Settings.MainRPCURL)
 	if err != nil {
 		return err
@@ -46,6 +44,8 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 	v, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.VehicleNFTAddr), client)
 	tk, _ := contracts.NewToken(common.HexToAddress(d.Settings.TokenAddr), client)
 
+	addrToIsInApp := make(map[common.Address]bool)
+	
 	for _, user := range users {
 		if !user.EthereumAddress.Valid || len(user.EthereumAddress.Bytes) != common.AddressLength {
 			d.log.Warn().Msg("User %s is marked as having a confirmed Ethereum address, but the address is invalid.")
@@ -53,6 +53,13 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 		}
 
 		addr := common.BytesToAddress(user.EthereumAddress.Bytes)
+
+		if markedInApp, ok := addrToIsInApp[addr]; ok {
+			if !markedInApp && user.InAppWallet {
+				addrToIsInApp[addr] = true
+			}
+			continue
+		}
 
 		zero := big.NewInt(0)
 
@@ -84,7 +91,12 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 			continue
 		}
 
-		if user.InAppWallet {
+		addrToIsInApp[addr] = user.InAppWallet
+	}
+
+	usedInApp, usedExternal := 0, 0
+	for _, isInApp := range addrToIsInApp {
+		if isInApp {
 			usedInApp++
 		} else {
 			usedExternal++

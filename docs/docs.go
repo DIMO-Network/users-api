@@ -408,7 +408,8 @@ const docTemplate = `{
             "properties": {
                 "address": {
                     "description": "Address is the email address to check. Must be confirmed.",
-                    "type": "string"
+                    "type": "string",
+                    "example": "thaler@a16z.com"
                 }
             }
         },
@@ -418,6 +419,17 @@ const docTemplate = `{
                 "inUse": {
                     "description": "InUse specifies whether the email is attached to a DIMO user.",
                     "type": "boolean"
+                },
+                "wallets": {
+                    "type": "object",
+                    "properties": {
+                        "external": {
+                            "type": "integer"
+                        },
+                        "inApp": {
+                            "type": "integer"
+                        }
+                    }
                 }
             }
         },

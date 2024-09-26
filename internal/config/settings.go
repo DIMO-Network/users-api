@@ -22,4 +22,8 @@ type Settings struct {
 	EventsTopic        string      `yaml:"EVENTS_TOPIC"`
 	MonitoringPort     string      `yaml:"MON_PORT"`
 	DevicesAPIGRPCAddr string      `yaml:"DEVICES_API_GRPC_ADDR"`
+
+	VehicleNFTAddr string `yaml:"VEHICLE_NFT_ADDR"`
+	ADNFTAddr      string `yaml:"AD_NFT_ADDR"`
+	TokenAddr      string `yaml:"TOKEN_ADDR"`
 }

@@ -1,7 +1,12 @@
 package controllers
 
 import (
+	"math/big"
+
+	"github.com/DIMO-Network/users-api/internal/controllers/contracts"
 	"github.com/DIMO-Network/users-api/models"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gofiber/fiber/v2"
 	"github.com/volatiletech/null/v8"
 )
@@ -21,23 +26,72 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse body.")
 	}
 
-	exists, err := models.Users(
+	users, err := models.Users(
 		models.UserWhere.EmailAddress.EQ(null.StringFrom(cer.Address)),
 		models.UserWhere.EmailConfirmed.EQ(true),
-	).Exists(c.Context(), d.dbs.DBS().Reader)
+		models.UserWhere.EthereumConfirmed.EQ(true),
+	).All(c.Context(), d.dbs.DBS().Reader)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(CheckEmailResponse{InUse: exists})
+	usedInApp, usedExternal := 0, 0
+
+	var x *ethclient.Client
+
+	ad, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.ADNFTAddr), x)
+	v, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.VehicleNFTAddr), x)
+	tk, _ := contracts.NewToken(common.HexToAddress(d.Settings.TokenAddr), x)
+
+	for _, user := range users {
+		if !user.EthereumAddress.Valid || len(user.EthereumAddress.Bytes) != common.AddressLength {
+			d.log.Warn().Msg("User %s is marked as having a confirmed Ethereum address, but the address is invalid.")
+			continue
+		}
+
+		addr := common.BytesToAddress(user.EthereumAddress.Bytes)
+
+		adBal, err := ad.BalanceOf(nil, addr)
+		if err != nil {
+			return err
+		}
+
+		vBal, err := v.BalanceOf(nil, addr)
+		if err != nil {
+			return err
+		}
+
+		tkBal, err := tk.BalanceOf(nil, addr)
+		if err != nil {
+			return err
+		}
+
+		if adBal.Cmp(big.NewInt(0)) == 0 && vBal.Cmp(big.NewInt(0)) == 0 && tkBal.Cmp(big.NewInt(0)) == 0 {
+			continue
+		}
+
+		if user.InAppWallet {
+			usedInApp++
+		} else {
+			usedExternal++
+		}
+
+	}
+
+	return c.JSON(CheckEmailResponse{InUse: len(users) > 0})
 }
 
 type CheckEmailRequest struct {
 	// Address is the email address to check. Must be confirmed.
-	Address string `json:"address"`
+	Address string `json:"address" example:"thaler@a16z.com"`
 }
 
 type CheckEmailResponse struct {
 	// InUse specifies whether the email is attached to a DIMO user.
 	InUse bool `json:"inUse"`
+
+	Wallets struct {
+		External int `json:"external"`
+		InApp    int `json:"inApp"`
+	}
 }

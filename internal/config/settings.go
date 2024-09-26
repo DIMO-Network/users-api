@@ -26,4 +26,6 @@ type Settings struct {
 	VehicleNFTAddr string `yaml:"VEHICLE_NFT_ADDR"`
 	ADNFTAddr      string `yaml:"AD_NFT_ADDR"`
 	TokenAddr      string `yaml:"TOKEN_ADDR"`
+
+	MainRPCURL string `yaml:"MAIN_RPC_URL"`
 }

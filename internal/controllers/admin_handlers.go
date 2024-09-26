@@ -37,11 +37,14 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 
 	usedInApp, usedExternal := 0, 0
 
-	var x *ethclient.Client
+	client, err := ethclient.Dial(d.Settings.MainRPCURL)
+	if err != nil {
+		return err
+	}
 
-	ad, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.ADNFTAddr), x)
-	v, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.VehicleNFTAddr), x)
-	tk, _ := contracts.NewToken(common.HexToAddress(d.Settings.TokenAddr), x)
+	ad, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.ADNFTAddr), client)
+	v, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.VehicleNFTAddr), client)
+	tk, _ := contracts.NewToken(common.HexToAddress(d.Settings.TokenAddr), client)
 
 	for _, user := range users {
 		if !user.EthereumAddress.Valid || len(user.EthereumAddress.Bytes) != common.AddressLength {
@@ -51,22 +54,33 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 
 		addr := common.BytesToAddress(user.EthereumAddress.Bytes)
 
-		adBal, err := ad.BalanceOf(nil, addr)
+		zero := big.NewInt(0)
+
+		used, err := func() (bool, error) {
+			if adBal, err := ad.BalanceOf(nil, addr); err != nil {
+				return false, err
+			} else if adBal.Cmp(zero) > 0 {
+				return true, nil
+			}
+
+			if vBal, err := v.BalanceOf(nil, addr); err != nil {
+				return false, err
+			} else if vBal.Cmp(zero) > 0 {
+				return true, nil
+			}
+
+			if tkBal, err := tk.BalanceOf(nil, addr); err != nil {
+				return false, err
+			} else if tkBal.Cmp(zero) > 0 {
+				return true, nil
+			}
+
+			return false, nil
+		}()
 		if err != nil {
 			return err
 		}
-
-		vBal, err := v.BalanceOf(nil, addr)
-		if err != nil {
-			return err
-		}
-
-		tkBal, err := tk.BalanceOf(nil, addr)
-		if err != nil {
-			return err
-		}
-
-		if adBal.Cmp(big.NewInt(0)) == 0 && vBal.Cmp(big.NewInt(0)) == 0 && tkBal.Cmp(big.NewInt(0)) == 0 {
+		if !used {
 			continue
 		}
 
@@ -75,10 +89,18 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 		} else {
 			usedExternal++
 		}
-
 	}
 
-	return c.JSON(CheckEmailResponse{InUse: len(users) > 0})
+	return c.JSON(CheckEmailResponse{
+		InUse: usedInApp > 0 || usedExternal > 0,
+		Wallets: struct {
+			External int `json:"external"`
+			InApp    int `json:"inApp"`
+		}{
+			External: usedExternal,
+			InApp:    usedInApp,
+		},
+	})
 }
 
 type CheckEmailRequest struct {

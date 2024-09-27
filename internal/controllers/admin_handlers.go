@@ -130,5 +130,5 @@ type CheckWallets struct {
 type CheckEmailResponse struct {
 	// InUse specifies whether the email is attached to a DIMO user.
 	InUse   bool         `json:"inUse"`
-	Wallets CheckWallets `json:"wallets"
+	Wallets CheckWallets `json:"wallets"`
 }

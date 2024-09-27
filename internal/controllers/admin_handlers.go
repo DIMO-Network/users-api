@@ -110,10 +110,7 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 
 	return c.JSON(CheckEmailResponse{
 		InUse: usedInApp > 0 || usedExternal > 0,
-		Wallets: struct {
-			External int `json:"external"`
-			InApp    int `json:"inApp"`
-		}{
+		Wallets: CheckWallets{
 			External: usedExternal,
 			InApp:    usedInApp,
 		},
@@ -125,12 +122,13 @@ type CheckEmailRequest struct {
 	Address string `json:"address" example:"thaler@a16z.com"`
 }
 
+type CheckWallets struct {
+	External int `json:"external"`
+	InApp    int `json:"inApp"`
+}
+
 type CheckEmailResponse struct {
 	// InUse specifies whether the email is attached to a DIMO user.
-	InUse bool `json:"inUse"`
-
-	Wallets struct {
-		External int `json:"external"`
-		InApp    int `json:"inApp"`
-	}
+	InUse   bool         `json:"inUse"`
+	Wallets CheckWallets `json:"wallets"
 }

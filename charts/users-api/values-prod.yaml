@@ -17,6 +17,9 @@ env:
   KAFKA_BROKERS: kafka-prod-dimo-kafka-kafka-brokers:9092
   EMAIL_FROM: hello@dimo.zone
   DEVICES_API_GRPC_ADDR: devices-api-prod:8086
+  VEHICLE_NFT_ADDR: '0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF'
+  AD_NFT_ADDR: '0x9c94C395cBcBDe662235E0A9d3bB87Ad708561BA'
+  TOKEN_ADDR: '0xe261d618a959afffd53168cd07d12e37b26761db'
 ingress:
   enabled: true
   className: nginx

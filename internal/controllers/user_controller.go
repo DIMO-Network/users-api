@@ -635,7 +635,11 @@ func (d *UserController) SetMigrated(c *fiber.Ctx) error {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
-	user.MigratedAt = null.TimeFrom(time.Now())
+	if d.Settings.Environment == "dev" && c.Params("clear") == "true" {
+		user.MigratedAt = null.TimeFromPtr(nil)
+	} else {
+		user.MigratedAt = null.TimeFrom(time.Now())
+	}
 
 	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)

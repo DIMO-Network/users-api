@@ -45,8 +45,9 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 	tk, _ := contracts.NewToken(common.HexToAddress(d.Settings.TokenAddr), client)
 
 	addrBlank := make(map[common.Address]struct{})
-	addrToIsInApp := make(map[common.Address]bool)
-	
+	addrsMigrated := make(map[common.Address]struct{})
+	usedAddrToIsInApp := make(map[common.Address]bool)
+
 	for _, user := range users {
 		if !user.EthereumAddress.Valid || len(user.EthereumAddress.Bytes) != common.AddressLength {
 			d.log.Warn().Msg("User %s is marked as having a confirmed Ethereum address, but the address is invalid.")
@@ -55,9 +56,20 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 
 		addr := common.BytesToAddress(user.EthereumAddress.Bytes)
 
-		if markedInApp, ok := addrToIsInApp[addr]; ok {
-			if !markedInApp && user.InAppWallet {
-				addrToIsInApp[addr] = true
+		if _, ok := addrsMigrated[addr]; ok {
+			continue
+		}
+
+		if user.MigratedAt.Valid {
+			delete(usedAddrToIsInApp, addr)
+			delete(addrBlank, addr) // No great need to do this.
+			addrsMigrated[addr] = struct{}{}
+			continue
+		}
+
+		if _, ok := usedAddrToIsInApp[addr]; ok {
+			if user.InAppWallet {
+				usedAddrToIsInApp[addr] = true
 			}
 			continue
 		}
@@ -93,14 +105,14 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 			return err
 		}
 		if used {
-			addrToIsInApp[addr] = user.InAppWallet
+			usedAddrToIsInApp[addr] = user.InAppWallet
 		} else {
 			addrBlank[addr] = struct{}{}
-		}	
+		}
 	}
 
 	usedInApp, usedExternal := 0, 0
-	for _, isInApp := range addrToIsInApp {
+	for _, isInApp := range usedAddrToIsInApp {
 		if isInApp {
 			usedInApp++
 		} else {
@@ -109,7 +121,7 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(CheckEmailResponse{
-		InUse: usedInApp > 0 || usedExternal > 0,
+		InUse: len(usedAddrToIsInApp) > 0,
 		Wallets: CheckWallets{
 			External: usedExternal,
 			InApp:    usedInApp,

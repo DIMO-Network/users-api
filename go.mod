@@ -6,6 +6,7 @@ require (
 	github.com/DIMO-Network/devices-api v1.27.12
 	github.com/DIMO-Network/shared v0.10.19
 	github.com/IBM/sarama v1.43.2
+	github.com/customerio/cdp-analytics-go v0.0.0-20231102115827-d9af6a6d570c
 	github.com/docker/go-connections v0.5.0
 	github.com/friendsofgo/errors v0.9.2
 	github.com/gofiber/contrib/jwt v1.0.9
@@ -42,6 +43,7 @@ require (
 	github.com/aws/smithy-go v1.20.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.3 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
@@ -108,6 +110,7 @@ require (
 	github.com/prometheus/procfs v0.14.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/segmentio/backo-go v1.0.0 // indirect
 	github.com/sethvargo/go-retry v0.2.4 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/shirou/gopsutil/v3 v3.24.1 // indirect

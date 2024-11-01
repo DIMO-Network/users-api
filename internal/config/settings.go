@@ -28,4 +28,6 @@ type Settings struct {
 	TokenAddr      string `yaml:"TOKEN_ADDR"`
 
 	MainRPCURL string `yaml:"MAIN_RPC_URL"`
+
+	CustomerIOAPIKey string `yaml:"CUSTOMER_IO_API_KEY"`
 }

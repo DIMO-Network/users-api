@@ -34,6 +34,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
 
+	analytics "github.com/customerio/cdp-analytics-go"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc"
@@ -60,6 +61,7 @@ type UserController struct {
 	eventService    services.EventService
 	devicesClient   DevicesAPI
 	amClient        pb.AftermarketDeviceServiceClient
+	cioClient       analytics.Client
 }
 
 type DevicesAPI interface {
@@ -79,6 +81,11 @@ func NewUserController(settings *config.Settings, dbs db.Store, eventService ser
 		panic(err)
 	}
 
+	cioClient, err := analytics.NewWithConfig(settings.CustomerIOAPIKey, analytics.Config{})
+	if err != nil {
+		panic(err)
+	}
+
 	dc := pb.NewUserDeviceServiceClient(gc)
 
 	amc := pb.NewAftermarketDeviceServiceClient(gc)
@@ -93,6 +100,7 @@ func NewUserController(settings *config.Settings, dbs db.Store, eventService ser
 		eventService:    eventService,
 		devicesClient:   dc,
 		amClient:        amc,
+		cioClient:       cioClient,
 	}
 }
 
@@ -243,6 +251,12 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			user.EmailAddress = null.StringFrom(email)
 			user.EmailConfirmed = true
 			user.EthereumConfirmed = false
+
+			d.cioClient.Enqueue(
+				analytics.Identify{
+					UserId: email,
+				},
+			)
 		case "web3":
 			ethereum, ok := getStringClaim(claims, "ethereum_address")
 			if !ok {
@@ -906,6 +920,21 @@ func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "internal error")
 	}
 
+	if user.EmailConfirmed && user.EmailAddress.Valid {
+		// This would be quite alarming, if it's not valid.
+		typ := "eoa"
+		if user.InAppWallet {
+			typ = "in_app"
+		}
+
+		d.cioClient.Enqueue(
+			analytics.Identify{
+				UserId: user.EmailAddress.String,
+				Traits: analytics.NewTraits().Set("ethereum_wallet_address", addrb.Hex()).Set("legacy_wallet_address", addrb.Hex()).Set("legacy_wallet_address_type", typ),
+			},
+		)
+	}
+
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
@@ -961,6 +990,22 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 	user.EmailConfirmationSentAt = null.TimeFromPtr(nil)
 	if _, err := user.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+	}
+
+	if user.EthereumConfirmed && user.EthereumAddress.Valid {
+		addr := common.BytesToAddress(user.EthereumAddress.Bytes)
+		// This would be quite alarming to not end up here.
+		typ := "eoa"
+		if user.InAppWallet {
+			typ = "in_app"
+		}
+
+		d.cioClient.Enqueue(
+			analytics.Identify{
+				UserId: user.EmailAddress.String,
+				Traits: analytics.NewTraits().Set("ethereum_wallet_address", addr.Hex()).Set("legacy_wallet_address", addr.Hex()).Set("legacy_wallet_address_type", typ),
+			},
+		)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

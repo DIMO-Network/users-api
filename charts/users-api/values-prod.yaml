@@ -2,7 +2,7 @@ replicaCount: 2
 image:
   repository: dimozone/users-api
   pullPolicy: IfNotPresent
-  tag: 0.8.1
+  tag: 0.9.0
 env:
   ENVIRONMENT: prod
   PORT: '8080'

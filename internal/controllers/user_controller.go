@@ -635,7 +635,7 @@ func (d *UserController) SetMigrated(c *fiber.Ctx) error {
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}
 
-	if d.Settings.Environment == "dev" && c.Params("clear") == "true" {
+	if d.Settings.Environment == "dev" && c.Query("clear") == "true" {
 		user.MigratedAt = null.TimeFromPtr(nil)
 	} else {
 		user.MigratedAt = null.TimeFrom(time.Now())

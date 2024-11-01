@@ -251,12 +251,6 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			user.EmailAddress = null.StringFrom(email)
 			user.EmailConfirmed = true
 			user.EthereumConfirmed = false
-
-			d.cioClient.Enqueue(
-				analytics.Identify{
-					UserId: email,
-				},
-			)
 		case "web3":
 			ethereum, ok := getStringClaim(claims, "ethereum_address")
 			if !ok {
@@ -927,12 +921,15 @@ func (d *UserController) SubmitEthereumChallenge(c *fiber.Ctx) error {
 			typ = "in_app"
 		}
 
-		d.cioClient.Enqueue(
+		err := d.cioClient.Enqueue(
 			analytics.Identify{
 				UserId: user.EmailAddress.String,
 				Traits: analytics.NewTraits().Set("ethereum_wallet_address", addrb.Hex()).Set("legacy_wallet_address", addrb.Hex()).Set("legacy_wallet_address_type", typ),
 			},
 		)
+		if err != nil {
+			d.log.Err(err).Str("userId", user.ID).Msg("Error sending CIO event on wallet confirmation.")
+		}
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -1000,12 +997,15 @@ func (d *UserController) ConfirmEmail(c *fiber.Ctx) error {
 			typ = "in_app"
 		}
 
-		d.cioClient.Enqueue(
+		err := d.cioClient.Enqueue(
 			analytics.Identify{
 				UserId: user.EmailAddress.String,
 				Traits: analytics.NewTraits().Set("ethereum_wallet_address", addr.Hex()).Set("legacy_wallet_address", addr.Hex()).Set("legacy_wallet_address_type", typ),
 			},
 		)
+		if err != nil {
+			d.log.Err(err).Str("userId", user.ID).Msg("Error sending CIO event on email confirmation.")
+		}
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

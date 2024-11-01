@@ -15,6 +15,7 @@ import (
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
+	analytics "github.com/customerio/cdp-analytics-go"
 	"github.com/goccy/go-json"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
@@ -78,6 +79,22 @@ func main() {
 
 		if err := grc.Execute(ctx); err != nil {
 			logger.Fatal().Err(err).Msg("Error during referral code generation.")
+		}
+	case "generate-cio":
+		cioClient, err := analytics.NewWithConfig(settings.CustomerIOAPIKey, analytics.Config{})
+		if err != nil {
+			panic(err)
+		}
+
+		grc := &generateCioCmd{
+			dbs:      dbs,
+			log:      &logger,
+			Settings: &settings,
+			cio:      cioClient,
+		}
+
+		if err := grc.Execute(ctx); err != nil {
+			logger.Fatal().Err(err).Msg("Error during CIO event generation.")
 		}
 	default:
 		eventService := services.NewEventService(&logger, &settings)

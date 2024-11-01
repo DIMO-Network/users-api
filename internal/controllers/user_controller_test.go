@@ -15,6 +15,7 @@ import (
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
 	"github.com/DIMO-Network/users-api/models"
+	analytics "github.com/customerio/cdp-analytics-go"
 	"github.com/docker/go-connections/nat"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -132,6 +133,7 @@ func (s *UserControllerTestSuite) TestSubmitChallenge() {
 		eventService:    &es{},
 		devicesClient:   &udsc{},
 		amClient:        &adsc{},
+		cioClient:       &dummyCIO{},
 	}
 
 	app := fiber.New()
@@ -225,6 +227,16 @@ func (s *UserControllerTestSuite) TestGenerateReferralCode() {
 	s.Regexp(referralCodeRegex, code)
 }
 
+type dummyCIO struct{}
+
+func (c *dummyCIO) Close() error {
+	return nil
+}
+
+func (c *dummyCIO) Enqueue(analytics.Message) error {
+	return nil
+}
+
 func (s *UserControllerTestSuite) TestConfirmingAddressGeneratesReferralCode() {
 	uc := UserController{
 		dbs:             s.dbs,
@@ -235,6 +247,7 @@ func (s *UserControllerTestSuite) TestConfirmingAddressGeneratesReferralCode() {
 		eventService:    &es{},
 		devicesClient:   &udsc{},
 		amClient:        &adsc{},
+		cioClient:       &dummyCIO{},
 	}
 
 	app := fiber.New()

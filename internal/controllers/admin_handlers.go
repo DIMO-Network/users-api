@@ -42,7 +42,6 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 
 	ad, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.ADNFTAddr), client)
 	v, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.VehicleNFTAddr), client)
-	tk, _ := contracts.NewToken(common.HexToAddress(d.Settings.TokenAddr), client)
 
 	addrBlank := make(map[common.Address]struct{})
 	addrsMigrated := make(map[common.Address]struct{})
@@ -90,12 +89,6 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 			if vBal, err := v.BalanceOf(nil, addr); err != nil {
 				return false, err
 			} else if vBal.Cmp(zero) > 0 {
-				return true, nil
-			}
-
-			if tkBal, err := tk.BalanceOf(nil, addr); err != nil {
-				return false, err
-			} else if tkBal.Cmp(zero) > 0 {
 				return true, nil
 			}
 

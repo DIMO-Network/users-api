@@ -11,6 +11,12 @@ import (
 	"github.com/volatiletech/null/v8"
 )
 
+var zero = big.NewInt(0)
+
+func nonZero(x *big.Int) bool {
+	return x.Cmp(zero) != 0
+}
+
 // GetUser godoc
 // @Summary Get attributes for the authenticated user. If multiple records for the same user, gets the one with the email confirmed.
 // @Produce json
@@ -30,91 +36,78 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 		models.UserWhere.EmailAddress.EQ(null.StringFrom(cer.Address)),
 		models.UserWhere.EmailConfirmed.EQ(true),
 		models.UserWhere.EthereumConfirmed.EQ(true),
+		models.UserWhere.EthereumAddress.IsNotNull(),
 	).All(c.Context(), d.dbs.DBS().Reader)
 	if err != nil {
 		return err
 	}
 
+	// TODO(elffjs): Don't do this.
 	client, err := ethclient.Dial(d.Settings.MainRPCURL)
 	if err != nil {
 		return err
 	}
 
+	type knownInfo struct {
+		HasNFTs        bool
+		ConfirmedInApp bool
+	}
+
 	ad, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.ADNFTAddr), client)
 	v, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.VehicleNFTAddr), client)
 
-	addrBlank := make(map[common.Address]struct{})
-	addrsMigrated := make(map[common.Address]struct{})
-	usedAddrToIsInApp := make(map[common.Address]bool)
+	addrInfos := make(map[common.Address]*knownInfo)
 
 	for _, user := range users {
-		if !user.EthereumAddress.Valid || len(user.EthereumAddress.Bytes) != common.AddressLength {
+		if len(user.EthereumAddress.Bytes) != common.AddressLength {
 			d.log.Warn().Msg("User %s is marked as having a confirmed Ethereum address, but the address is invalid.")
 			continue
 		}
 
 		addr := common.BytesToAddress(user.EthereumAddress.Bytes)
 
-		if _, ok := addrsMigrated[addr]; ok {
-			continue
-		}
+		if _, ok := addrInfos[addr]; !ok {
+			// Check the chain.
+			used, err := func() (bool, error) {
+				if vBal, err := v.BalanceOf(nil, addr); err != nil {
+					return false, err
+				} else if nonZero(vBal) {
+					return true, nil
+				}
 
-		if user.MigratedAt.Valid {
-			delete(usedAddrToIsInApp, addr)
-			delete(addrBlank, addr) // No great need to do this.
-			addrsMigrated[addr] = struct{}{}
-			continue
-		}
-
-		if _, ok := usedAddrToIsInApp[addr]; ok {
-			if user.InAppWallet {
-				usedAddrToIsInApp[addr] = true
-			}
-			continue
-		}
-
-		if _, ok := addrBlank[addr]; ok {
-			continue
-		}
-
-		zero := big.NewInt(0)
-
-		used, err := func() (bool, error) {
-			if adBal, err := ad.BalanceOf(nil, addr); err != nil {
-				return false, err
-			} else if adBal.Cmp(zero) > 0 {
-				return true, nil
+				if adBal, err := ad.BalanceOf(nil, addr); err != nil {
+					return false, err
+				} else {
+					return nonZero(adBal), nil
+				}
+			}()
+			if err != nil {
+				return err
 			}
 
-			if vBal, err := v.BalanceOf(nil, addr); err != nil {
-				return false, err
-			} else if vBal.Cmp(zero) > 0 {
-				return true, nil
+			addrInfos[addr] = &knownInfo{
+				HasNFTs: used,
 			}
-
-			return false, nil
-		}()
-		if err != nil {
-			return err
 		}
-		if used {
-			usedAddrToIsInApp[addr] = user.InAppWallet
-		} else {
-			addrBlank[addr] = struct{}{}
+
+		if user.InAppWallet {
+			addrInfos[addr].ConfirmedInApp = true
 		}
 	}
 
 	usedInApp, usedExternal := 0, 0
-	for _, isInApp := range usedAddrToIsInApp {
-		if isInApp {
-			usedInApp++
-		} else {
-			usedExternal++
+	for _, info := range addrInfos {
+		if info.HasNFTs {
+			if info.ConfirmedInApp {
+				usedInApp++
+			} else {
+				usedExternal++
+			}
 		}
 	}
 
 	return c.JSON(CheckEmailResponse{
-		InUse: len(usedAddrToIsInApp) > 0,
+		InUse: usedInApp+usedExternal > 0,
 		Wallets: CheckWallets{
 			External: usedExternal,
 			InApp:    usedInApp,

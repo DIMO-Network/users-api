@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/DIMO-Network/users-api/internal/controllers/contracts"
@@ -48,15 +49,11 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 		return err
 	}
 
-	type knownInfo struct {
-		HasNFTs        bool
-		ConfirmedInApp bool
-	}
-
 	ad, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.ADNFTAddr), client)
 	v, _ := contracts.NewMultiPrivilege(common.HexToAddress(d.Settings.VehicleNFTAddr), client)
+	tok, _ := contracts.NewToken(common.HexToAddress(d.Settings.TokenAddr), client)
 
-	addrInfos := make(map[common.Address]*knownInfo)
+	addrsInAppStatus := make(map[common.Address]bool)
 
 	for _, user := range users {
 		if len(user.EthereumAddress.Bytes) != common.AddressLength {
@@ -66,39 +63,47 @@ func (d *UserController) CheckEmail(c *fiber.Ctx) error {
 
 		addr := common.BytesToAddress(user.EthereumAddress.Bytes)
 
-		if _, ok := addrInfos[addr]; !ok {
-			// Check the chain.
-			used, err := func() (bool, error) {
-				if vBal, err := v.BalanceOf(nil, addr); err != nil {
-					return false, err
-				} else if nonZero(vBal) {
-					return true, nil
-				}
-
-				if adBal, err := ad.BalanceOf(nil, addr); err != nil {
-					return false, err
-				} else {
-					return nonZero(adBal), nil
-				}
-			}()
-			if err != nil {
-				return err
+		if _, ok := addrsInAppStatus[addr]; ok {
+			if user.InAppWallet {
+				addrsInAppStatus[addr] = true
 			}
-
-			addrInfos[addr] = &knownInfo{
-				HasNFTs: used,
-			}
-		}
-
-		if user.InAppWallet {
-			addrInfos[addr].ConfirmedInApp = true
+		} else {
+			addrsInAppStatus[addr] = user.InAppWallet
 		}
 	}
 
 	usedInApp, usedExternal := 0, 0
-	for _, info := range addrInfos {
-		if info.HasNFTs {
-			if info.ConfirmedInApp {
+
+	for addr, inApp := range addrsInAppStatus {
+		used, err := func() (bool, error) {
+			if vBal, err := v.BalanceOf(nil, addr); err != nil {
+				return false, err
+			} else if nonZero(vBal) {
+				return true, nil
+			}
+
+			if adBal, err := ad.BalanceOf(nil, addr); err != nil {
+				return false, err
+			} else if nonZero(adBal) {
+				return true, nil
+			}
+
+			if inApp {
+				if tokBal, err := tok.BalanceOf(nil, addr); err != nil {
+					return false, err
+				} else if nonZero(tokBal) {
+					return true, nil
+				}
+			}
+
+			return false, nil
+		}()
+		if err != nil {
+			return fmt.Errorf("error checking chain: %w", err)
+		}
+
+		if used {
+			if inApp {
 				usedInApp++
 			} else {
 				usedExternal++

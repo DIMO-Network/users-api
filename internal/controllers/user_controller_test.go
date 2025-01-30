@@ -53,7 +53,7 @@ func (s *UserControllerTestSuite) SetupSuite() {
 	nport := fmt.Sprintf("%d/tcp", port)
 
 	req := testcontainers.ContainerRequest{
-		Image:        "postgres:12.11-alpine",
+		Image:        "postgres:16.6-alpine",
 		ExposedPorts: []string{nport},
 		AutoRemove:   true,
 		Env: map[string]string{

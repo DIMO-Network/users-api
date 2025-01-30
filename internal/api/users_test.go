@@ -37,7 +37,7 @@ func (s *UserServiceTestSuite) SetupSuite() {
 
 	port := "5432/tcp"
 	req := testcontainers.ContainerRequest{
-		Image:        "postgres:12.11-alpine",
+		Image:        "postgres:16.6-alpine",
 		ExposedPorts: []string{port},
 		Env: map[string]string{
 			"POSTGRES_DB":       "users_api_test",

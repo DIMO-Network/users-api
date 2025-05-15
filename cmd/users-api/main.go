@@ -15,7 +15,6 @@ import (
 	"github.com/DIMO-Network/users-api/internal/database"
 	"github.com/DIMO-Network/users-api/internal/services"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
-	analytics "github.com/customerio/cdp-analytics-go"
 	"github.com/goccy/go-json"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
@@ -67,35 +66,6 @@ func main() {
 		if err := database.MigrateDatabase(ctx, logger, &settings.DB, command, "migrations"); err != nil {
 			logger.Fatal().Err(err).Msg("Failed to migrate datbase.")
 		}
-	case "generate-events":
-		eventService := services.NewEventService(&logger, &settings)
-		generateEvents(&logger, &settings, dbs, eventService)
-	case "generate-referral-codes":
-		grc := &generateReferralCodeCmd{
-			dbs:      dbs,
-			log:      &logger,
-			Settings: &settings,
-		}
-
-		if err := grc.Execute(ctx); err != nil {
-			logger.Fatal().Err(err).Msg("Error during referral code generation.")
-		}
-	case "generate-cio":
-		cioClient, err := analytics.NewWithConfig(settings.CustomerIOAPIKey, analytics.Config{})
-		if err != nil {
-			panic(err)
-		}
-
-		grc := &generateCioCmd{
-			dbs:      dbs,
-			log:      &logger,
-			Settings: &settings,
-			cio:      cioClient,
-		}
-
-		if err := grc.Execute(ctx); err != nil {
-			logger.Fatal().Err(err).Msg("Error during CIO event generation.")
-		}
 	default:
 		eventService := services.NewEventService(&logger, &settings)
 		startWebAPI(logger, &settings, dbs, eventService)
@@ -145,15 +115,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 	app.Get("/v2/user", auth, userController.GetUserV2)
 
 	v1User.Get("/", userController.GetUser)
-	v1User.Put("/", userController.UpdateUser)
 	v1User.Delete("/", userController.DeleteUser)
-	v1User.Post("/agree-tos", userController.AgreeTOS)
 	v1User.Post("/set-migrated", userController.SetMigrated)
-	v1User.Post("/send-confirmation-email", userController.SendConfirmationEmail)
-	v1User.Post("/confirm-email", userController.ConfirmEmail)
-	v1User.Post("/submit-referral-code", userController.SubmitReferralCode)
-	v1User.Post("/web3/challenge/generate", userController.GenerateEthereumChallenge)
-	v1User.Post("/web3/challenge/submit", userController.SubmitEthereumChallenge)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 

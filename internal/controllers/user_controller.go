@@ -148,7 +148,7 @@ func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *mod
 			return nil, err
 		}
 
-		return nil, fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No user with id %q found. This API is deprecated and new users cannot be created.", userID))
+		return nil, fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No user with id %q. This API is deprecated and new users cannot be created.", userID))
 	}
 
 	return user, nil
@@ -304,7 +304,7 @@ func (d *UserController) DeleteUser(c *fiber.Ctx) error {
 	user, err := models.FindUser(c.Context(), tx, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return errorResponseHandler(c, err, fiber.StatusBadRequest)
+			return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No user with id %q.", userID))
 		}
 		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
 	}

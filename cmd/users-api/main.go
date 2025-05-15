@@ -13,7 +13,6 @@ import (
 	"github.com/DIMO-Network/users-api/internal/config"
 	"github.com/DIMO-Network/users-api/internal/controllers"
 	"github.com/DIMO-Network/users-api/internal/database"
-	"github.com/DIMO-Network/users-api/internal/services"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/goccy/go-json"
 	jwtware "github.com/gofiber/contrib/jwt"
@@ -67,12 +66,11 @@ func main() {
 			logger.Fatal().Err(err).Msg("Failed to migrate datbase.")
 		}
 	default:
-		eventService := services.NewEventService(&logger, &settings)
-		startWebAPI(logger, &settings, dbs, eventService)
+		startWebAPI(logger, &settings, dbs)
 	}
 }
 
-func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store, eventService services.EventService) {
+func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return ErrorHandler(c, err, logger)
@@ -108,7 +106,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs db.Store,
 
 	v1User := app.Group("/v1/user", auth)
 
-	userController := controllers.NewUserController(settings, dbs, eventService, &logger)
+	userController := controllers.NewUserController(settings, dbs, &logger)
 
 	app.Post("/v1/check-email", userController.CheckEmail)
 

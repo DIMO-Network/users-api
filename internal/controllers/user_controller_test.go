@@ -10,9 +10,7 @@ import (
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/internal/database"
-	"github.com/DIMO-Network/users-api/internal/services"
 	"github.com/DIMO-Network/users-api/models"
-	analytics "github.com/customerio/cdp-analytics-go"
 	"github.com/docker/go-connections/nat"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -99,12 +97,6 @@ func (s *UserControllerTestSuite) TearDownTest() {
 	s.Require().NoError(err)
 }
 
-type es struct{}
-
-func (e *es) Emit(*services.Event) error {
-	return nil
-}
-
 type udsc struct {
 	store map[string][]*pb.UserDevice
 }
@@ -119,16 +111,6 @@ func (c *adsc) ListAftermarketDevicesForUser(_ context.Context, _ *pb.ListAfterm
 	return &pb.ListAftermarketDevicesForUserResponse{AftermarketDevices: []*pb.AftermarketDevice{}}, nil
 }
 
-type dummyCIO struct{}
-
-func (c *dummyCIO) Close() error {
-	return nil
-}
-
-func (c *dummyCIO) Enqueue(analytics.Message) error {
-	return nil
-}
-
 func (s *UserControllerTestSuite) TestGetUser_OnlyUserID() {
 	ctx := context.Background()
 
@@ -136,9 +118,6 @@ func (s *UserControllerTestSuite) TestGetUser_OnlyUserID() {
 		dbs:             s.dbs,
 		log:             s.logger,
 		allowedLateness: 5 * time.Minute,
-		countryCodes:    []string{"USA", "CAN"},
-		emailTemplate:   nil,
-		eventService:    &es{},
 		devicesClient:   &udsc{},
 		amClient:        &adsc{},
 	}
@@ -207,9 +186,6 @@ func (s *UserControllerTestSuite) TestGetUser_EthAddr() {
 		dbs:             s.dbs,
 		log:             s.logger,
 		allowedLateness: 5 * time.Minute,
-		countryCodes:    []string{"USA", "CAN"},
-		emailTemplate:   nil,
-		eventService:    &es{},
 		devicesClient:   &udsc{},
 		amClient:        &adsc{},
 	}

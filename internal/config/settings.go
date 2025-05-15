@@ -12,14 +12,7 @@ type Settings struct {
 	LogLevel           string      `yaml:"LOG_LEVEL"`
 	DB                 db.Settings `yaml:"DB"`
 	ServiceName        string      `yaml:"SERVICE_NAME"`
-	EmailHost          string      `yaml:"EMAIL_HOST"`
-	EmailPort          string      `yaml:"EMAIL_PORT"`
-	EmailUsername      string      `yaml:"EMAIL_USERNAME"`
-	EmailPassword      string      `yaml:"EMAIL_PASSWORD"`
-	EmailFrom          string      `yaml:"EMAIL_FROM"`
 	JWTKeySetURL       string      `yaml:"JWT_KEY_SET_URL"`
-	KafkaBrokers       string      `yaml:"KAFKA_BROKERS"`
-	EventsTopic        string      `yaml:"EVENTS_TOPIC"`
 	MonitoringPort     string      `yaml:"MON_PORT"`
 	DevicesAPIGRPCAddr string      `yaml:"DEVICES_API_GRPC_ADDR"`
 
@@ -28,6 +21,4 @@ type Settings struct {
 	TokenAddr      string `yaml:"TOKEN_ADDR"`
 
 	MainRPCURL string `yaml:"MAIN_RPC_URL"`
-
-	CustomerIOAPIKey string `yaml:"CUSTOMER_IO_API_KEY"`
 }

@@ -6,70 +6,38 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"html/template"
-	"math/rand"
-	"regexp"
 	"time"
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/users-api/internal/config"
-	"github.com/DIMO-Network/users-api/internal/services"
 	"github.com/DIMO-Network/users-api/models"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
 
-	analytics "github.com/customerio/cdp-analytics-go"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// Sorted JSON array of valid ISO 3116-1 apha-3 codes
-//
-//go:embed country_codes.json
-var rawCountryCodes []byte
-
-//go:embed confirmation_email.html
-var rawConfirmationEmail string
-
-var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
-
 type UserController struct {
 	Settings        *config.Settings
 	dbs             db.Store
 	log             *zerolog.Logger
 	allowedLateness time.Duration
-	countryCodes    []string
-	emailTemplate   *template.Template
-	eventService    services.EventService
 	devicesClient   DevicesAPI
 	amClient        pb.AftermarketDeviceServiceClient
-	cioClient       analytics.Client
 }
 
 type DevicesAPI interface {
 	ListUserDevicesForUser(ctx context.Context, in *pb.ListUserDevicesForUserRequest, opts ...grpc.CallOption) (*pb.ListUserDevicesForUserResponse, error)
 }
 
-func NewUserController(settings *config.Settings, dbs db.Store, eventService services.EventService, logger *zerolog.Logger) UserController {
-	rand.New(rand.NewSource(time.Now().UnixNano()))
-	var countryCodes []string
-	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
-		panic(err)
-	}
-	t := template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail))
-
+func NewUserController(settings *config.Settings, dbs db.Store, logger *zerolog.Logger) UserController {
 	gc, err := grpc.NewClient(settings.DevicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		panic(err)
-	}
-
-	cioClient, err := analytics.NewWithConfig(settings.CustomerIOAPIKey, analytics.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -83,12 +51,8 @@ func NewUserController(settings *config.Settings, dbs db.Store, eventService ser
 		dbs:             dbs,
 		log:             logger,
 		allowedLateness: 5 * time.Minute,
-		countryCodes:    countryCodes,
-		emailTemplate:   t,
-		eventService:    eventService,
 		devicesClient:   dc,
 		amClient:        amc,
-		cioClient:       cioClient,
 	}
 }
 
@@ -140,15 +104,6 @@ type UserResponse struct {
 	ReferredAt   null.Time   `json:"referredAt" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 }
 
-type SubmitReferralCodeRequest struct {
-	// ReferralCode is the 6-digit, alphanumeric referral code from another user.
-	ReferralCode string `json:"referralCode" example:"ANB95N"`
-}
-
-type SubmitReferralCodeResponse struct {
-	Message string `json:"message"`
-}
-
 func formatUser(user *models.User) *UserResponse {
 	var referralCode null.String
 	if user.EthereumConfirmed {
@@ -181,12 +136,6 @@ func formatUser(user *models.User) *UserResponse {
 		ReferredAt:   user.ReferredAt,
 		MigratedAt:   user.MigratedAt.Ptr(),
 	}
-}
-
-type UserCreationEventData struct {
-	Timestamp time.Time `json:"timestamp"`
-	UserID    string    `json:"userId"`
-	Method    string    `json:"method"`
 }
 
 func (d *UserController) getOrCreateUser(c *fiber.Ctx, userID string) (user *models.User, err error) {
